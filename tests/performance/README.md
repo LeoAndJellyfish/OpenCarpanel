@@ -33,3 +33,7 @@ cargo test -p opencarpanel-host --test end_to_end_latency --release -- --nocaptu
 ```
 
 这个自动化门禁测量本机 UDP 发包到 WebSocket snapshot，不包含真实游戏发包和浏览器 rAF 绘制；不得把它写成手机端完整延迟成绩。
+
+已记录结果：
+
+- [2026-08-11 Windows synthetic smoke](results/2026-08-11-windows-synthetic-smoke.md)
