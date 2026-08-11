@@ -40,3 +40,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 npm run check:web
 ```
+
+## License
+
+OpenCarpanel 使用 [Apache License 2.0](LICENSE) 开源。该许可证允许使用、修改、分发和商业使用，同时要求保留许可证与相关声明，并提供明确的专利授权与专利诉讼终止条款。

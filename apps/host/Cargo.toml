@@ -4,6 +4,7 @@ description = "Local OpenCarpanel host process"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 publish = false
 
 [lints]
