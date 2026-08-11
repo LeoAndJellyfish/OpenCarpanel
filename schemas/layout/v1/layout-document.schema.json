@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LayoutDocument",
+  "description": "Versioned responsive dashboard document.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/LayoutId"
+    },
+    "name": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 0
+    },
+    "theme": {
+      "$ref": "#/$defs/ThemeSettings",
+      "default": {
+        "accent": "#3ee6a8",
+        "background": "#07090f",
+        "foreground": "#f5f7fb",
+        "warning": "#ff4d5e"
+      }
+    },
+    "widgets": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/WidgetInstance"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "revision",
+    "id",
+    "name"
+  ],
+  "$defs": {
+    "ComponentType": {
+      "description": "Validated dotted built-in component type.",
+      "type": "string"
+    },
+    "GridPlacement": {
+      "description": "Integer geometry for one widget at one breakpoint.",
+      "type": "object",
+      "properties": {
+        "height": {
+          "description": "Height in grid rows.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "width": {
+          "description": "Width in grid columns.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "x": {
+          "description": "Zero-based grid column.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "y": {
+          "description": "Zero-based grid row.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ]
+    },
+    "InstanceId": {
+      "description": "Validated widget instance identifier.",
+      "type": "string"
+    },
+    "LayoutId": {
+      "description": "Validated layout identifier.",
+      "type": "string"
+    },
+    "ThemeSettings": {
+      "description": "Safe theme tokens exposed to built-in widgets.",
+      "type": "object",
+      "properties": {
+        "accent": {
+          "description": "Accent CSS color token.",
+          "type": "string",
+          "default": "#3ee6a8"
+        },
+        "background": {
+          "description": "Dashboard background CSS color token.",
+          "type": "string",
+          "default": "#07090f"
+        },
+        "foreground": {
+          "description": "Primary foreground CSS color token.",
+          "type": "string",
+          "default": "#f5f7fb"
+        },
+        "warning": {
+          "description": "Warning CSS color token.",
+          "type": "string",
+          "default": "#ff4d5e"
+        }
+      }
+    },
+    "WidgetInstance": {
+      "description": "One built-in widget instance in a layout.",
+      "type": "object",
+      "properties": {
+        "componentType": {
+          "description": "Registered built-in component type, such as `core.tachometer`.",
+          "$ref": "#/$defs/ComponentType"
+        },
+        "instanceId": {
+          "description": "Stable instance id used by editor operations.",
+          "$ref": "#/$defs/InstanceId"
+        },
+        "placements": {
+          "description": "Breakpoint-specific geometry.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/GridPlacement"
+          },
+          "default": {}
+        },
+        "settings": {
+          "description": "Component settings validated again by the component-specific schema.",
+          "default": null
+        }
+      },
+      "required": [
+        "instanceId",
+        "componentType"
+      ]
+    }
+  }
+}
