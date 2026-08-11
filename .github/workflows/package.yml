@@ -1,0 +1,53 @@
+name: Package preview
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install locked web dependencies
+        run: npm ci
+
+      - name: Build and stage release directory
+        run: npm run package:host
+
+      - name: Upload unsigned preview artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: opencarpanel-${{ runner.os }}-${{ runner.arch }}
+          path: dist/release/OpenCarpanel-*
+          if-no-files-found: error
+          retention-days: 14

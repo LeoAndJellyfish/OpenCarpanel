@@ -11,10 +11,14 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "build:host": "npm run build:web && cargo build --release --locked -p opencarpanel-host",
     "build:web": "npm run build --workspace @opencarpanel/dashboard && node tools/check-dashboard-bundle.mjs",
     "check:web": "npm run check:web-types && npm run check --workspaces --if-present",
     "check:web-types": "node tools/check-web-types.mjs",
     "generate:web-types": "node tools/generate-web-types.mjs",
+    "package:host": "npm run build:host && node tools/package-release.mjs",
+    "test:host-latency": "cargo test -p opencarpanel-host --test end_to_end_latency --release -- --nocapture",
+    "test:host-soak": "node tests/performance/host-soak.mjs",
     "test:web": "npm run test --workspaces --if-present"
   },
   "devDependencies": {

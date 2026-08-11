@@ -22,16 +22,18 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .issue_pairing_token(Duration::from_secs(15 * 60))
         .await?;
     let pairing_url = opencarpanel_host::pairing_url(running.http_address(), &pairing_token);
-    println!("\nOpenCarpanel 已启动。请让手机/iPad 与电脑连接同一局域网，然后扫描：\n");
+    let dashboard_url = pairing_url
+        .split_once("/#")
+        .map_or(pairing_url.as_str(), |(base, _fragment)| base);
+    println!("\nOpenCarpanel 已启动。请让手机/iPad 与电脑连接同一局域网。\n");
+    println!("配对地址（15 分钟内一次有效）：\n{pairing_url}\n");
+    println!("扫描二维码：\n");
     match opencarpanel_host::terminal_qr(&pairing_url) {
         Ok(qr) => println!("{qr}"),
         Err(error) => warn!(%error, "could not render terminal pairing QR code"),
     }
-    println!("\n配对地址（15 分钟内一次有效）：\n{pairing_url}\n");
-    println!(
-        "配对后可打开编辑器：{}/edit\n",
-        pairing_url.split("/#").next().unwrap_or_default()
-    );
+    println!("\n配对后可打开编辑器：{dashboard_url}/edit");
+    println!("本机诊断：{dashboard_url}/api/v1/diagnostics\n");
     println!(
         "F1 24 UDP 目标端口：{}\n按 Ctrl+C 退出。\n",
         running.udp_address().port()
