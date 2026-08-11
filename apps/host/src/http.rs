@@ -6,7 +6,9 @@ use opencarpanel_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 use tokio::sync::Semaphore;
 
-use crate::{HostState, layout_api, pairing::PairingService, static_assets, websocket};
+use crate::{
+    HostState, diagnostics, layout_api, pairing::PairingService, static_assets, websocket,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct HttpState {
@@ -32,6 +34,7 @@ pub(crate) fn router(
     Router::new()
         .route("/", get(static_assets::root))
         .route("/api/v1/health", get(health))
+        .route("/api/v1/diagnostics", get(diagnostics::get))
         .route("/api/v1/ws", get(websocket::upgrade))
         .route(
             "/api/v1/layouts/{layout_id}",

@@ -25,22 +25,31 @@ const MAX_UDP_DATAGRAM_LEN: usize = 65_507;
 /// Read-only counters useful for local diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HostMetrics {
+    /// Milliseconds since the Host state was initialized.
+    pub uptime_ms: u64,
     /// UDP datagrams received by the Host.
     pub packets_received: u64,
     /// Datagram decode failures.
     pub packet_errors: u64,
     /// Host-monotonic receipt time of the newest datagram.
     pub last_packet_at_us: u64,
+    /// Latest-state snapshots published since startup.
+    pub snapshots_published: u64,
+    /// Reliable-event resumes that exceeded the bounded replay window.
+    pub event_resyncs: u64,
 }
 
 /// Shared latest-value state published by the UDP ingestion loop.
 #[derive(Debug)]
 pub struct HostState {
+    started_at: Instant,
     adapter_id: String,
     capabilities: Vec<TelemetryField>,
     packets_received: AtomicU64,
     packet_errors: AtomicU64,
     last_packet_at_us: AtomicU64,
+    snapshots_published: AtomicU64,
+    event_resyncs: AtomicU64,
     snapshot_sender: watch::Sender<Arc<TelemetrySnapshot>>,
     event_hub: EventHub,
 }
@@ -53,11 +62,14 @@ impl HostState {
     ) -> Self {
         let (snapshot_sender, _snapshot_receiver) = watch::channel(Arc::new(snapshot));
         Self {
+            started_at: Instant::now(),
             adapter_id: adapter_id.into(),
             capabilities,
             packets_received: AtomicU64::new(0),
             packet_errors: AtomicU64::new(0),
             last_packet_at_us: AtomicU64::new(0),
+            snapshots_published: AtomicU64::new(0),
+            event_resyncs: AtomicU64::new(0),
             snapshot_sender,
             event_hub: EventHub::new(),
         }
@@ -84,6 +96,7 @@ impl HostState {
     /// Replaces the latest snapshot without retaining intermediate values.
     pub fn replace_snapshot(&self, snapshot: TelemetrySnapshot) {
         self.snapshot_sender.send_replace(Arc::new(snapshot));
+        self.snapshots_published.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Publishes and retains one ordered reliable telemetry event.
@@ -96,17 +109,28 @@ impl HostState {
     }
 
     pub(crate) async fn replay_events_after(&self, sequence: u64) -> ReplayBatch {
-        self.event_hub.replay_after(sequence).await
+        let replay = self.event_hub.replay_after(sequence).await;
+        if matches!(replay, ReplayBatch::ResyncRequired(_)) {
+            self.event_resyncs.fetch_add(1, Ordering::Relaxed);
+        }
+        replay
     }
 
     /// Returns a point-in-time local metrics view.
     #[must_use]
     pub fn metrics(&self) -> HostMetrics {
         HostMetrics {
+            uptime_ms: self.elapsed_micros() / 1_000,
             packets_received: self.packets_received.load(Ordering::Relaxed),
             packet_errors: self.packet_errors.load(Ordering::Relaxed),
             last_packet_at_us: self.last_packet_at_us.load(Ordering::Relaxed),
+            snapshots_published: self.snapshots_published.load(Ordering::Relaxed),
+            event_resyncs: self.event_resyncs.load(Ordering::Relaxed),
         }
+    }
+
+    fn elapsed_micros(&self) -> u64 {
+        u64::try_from(self.started_at.elapsed().as_micros()).unwrap_or(u64::MAX)
     }
 }
 
@@ -117,7 +141,6 @@ pub(crate) async fn run_udp_ingestion(
     mut adapter: F1_24Adapter,
     mut reducer: TelemetryReducer,
 ) -> io::Result<()> {
-    let started_at = Instant::now();
     let mut buffer = vec![0_u8; MAX_UDP_DATAGRAM_LEN].into_boxed_slice();
     let mut output = AdapterOutput::with_capacity(1, 4);
 
@@ -134,8 +157,7 @@ pub(crate) async fn run_udp_ingestion(
             }
             received = socket.recv_from(&mut buffer) => {
                 let (length, _source) = received?;
-                let received_at_us = u64::try_from(started_at.elapsed().as_micros())
-                    .unwrap_or(u64::MAX);
+                let received_at_us = state.elapsed_micros();
                 state.packets_received.fetch_add(1, Ordering::Relaxed);
                 state.last_packet_at_us.store(received_at_us, Ordering::Relaxed);
                 output.clear();

@@ -1,6 +1,7 @@
 //! Supervised local UDP and HTTP runtime for `OpenCarpanel`.
 
 mod app;
+mod diagnostics;
 mod events;
 mod http;
 mod layout_api;
