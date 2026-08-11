@@ -16,6 +16,10 @@ impl<'a> Cursor<'a> {
         Ok(self.take::<1>()?[0])
     }
 
+    pub(crate) fn read_i8(&mut self) -> Result<i8, DecodeError> {
+        Ok(i8::from_le_bytes(self.take()?))
+    }
+
     pub(crate) fn read_u16_le(&mut self) -> Result<u16, DecodeError> {
         Ok(u16::from_le_bytes(self.take()?))
     }
@@ -34,6 +38,20 @@ impl<'a> Cursor<'a> {
 
     pub(crate) fn remaining(&self) -> &'a [u8] {
         &self.bytes[self.offset..]
+    }
+
+    pub(crate) fn skip(&mut self, length: usize) -> Result<(), DecodeError> {
+        let remaining = self.bytes.len().saturating_sub(self.offset);
+        if remaining < length {
+            return Err(DecodeError::UnexpectedEnd {
+                offset: self.offset,
+                needed: length,
+                remaining,
+            });
+        }
+
+        self.offset += length;
+        Ok(())
     }
 
     fn take<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], DecodeError> {

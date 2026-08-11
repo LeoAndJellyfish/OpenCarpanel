@@ -30,6 +30,10 @@ dependencies = [
 [[package]]
 name = "opencarpanel-adapter-f1-24"
 version = "0.1.0"
+dependencies = [
+ "opencarpanel-adapter-api",
+ "opencarpanel-telemetry-core",
+]
 
 [[package]]
 name = "opencarpanel-config"

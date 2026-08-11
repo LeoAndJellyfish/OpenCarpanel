@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixture": "synthetic-car-telemetry-built-in-test",
+  "source": {
+    "kind": "synthetic",
+    "specification": "Data Output from F1 24 v27.2x.docx",
+    "retrievedAt": "2026-08-11",
+    "sha256": "7487B636DA7B15C57D8CE1E2EAD2FB9361D47C4F21D8D3C2EF3AAB2AAB3F2DD1"
+  },
+  "redistribution": "No vendor or recorded gameplay bytes included; tests build all bytes field-by-field.",
+  "packetFormat": 2024,
+  "packetVersion": 1,
+  "packetId": 6,
+  "datagramLength": 1352,
+  "carCount": 22,
+  "carTelemetryDataLength": 60,
+  "playerIndex": 7,
+  "expected": {
+    "vehicle.speedMps": 90.0,
+    "vehicle.throttle": 0.75,
+    "vehicle.brake": 0.25,
+    "vehicle.gear": 7,
+    "vehicle.rpm": 11800,
+    "vehicle.drs": "active"
+  }
+}
