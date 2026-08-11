@@ -1,0 +1,15 @@
+[package]
+name = "opencarpanel-telemetry-replay"
+description = "Bounded local UDP telemetry capture and deterministic replay tool"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ctrlc = "3.5.1"
+opencarpanel-adapter-api = { path = "../../crates/adapter-api" }
+
+[lints]
+workspace = true

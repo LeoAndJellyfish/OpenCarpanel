@@ -6,6 +6,7 @@ members = [
   "crates/config",
   "crates/protocol",
   "crates/telemetry-core",
+  "tools/telemetry-replay",
 ]
 resolver = "3"
 
