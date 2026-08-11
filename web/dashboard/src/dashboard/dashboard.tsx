@@ -1,18 +1,19 @@
+import type { BreakpointName, LayoutDocument } from "@opencarpanel/widget-sdk";
 import { useEffect, useRef } from "preact/hooks";
 
 import type { ConnectionView } from "../connection/client";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";
-import { GearWidget } from "../widgets/gear";
-import { SpeedWidget } from "../widgets/speed";
-import { TachometerWidget } from "../widgets/tachometer";
-import { StatusRail } from "./status-rail";
+import { LayoutGrid } from "./layout-grid";
+import { themePresetId } from "./theme";
 
 export interface DashboardProps {
   readonly loop: TelemetryRenderLoop;
   readonly connection: ConnectionView;
+  readonly layout: LayoutDocument;
+  readonly breakpoint: BreakpointName;
 }
 
-export function Dashboard({ loop, connection }: DashboardProps) {
+export function Dashboard({ loop, connection, layout, breakpoint }: DashboardProps) {
   const root = useRef<HTMLElement>(null);
 
   useEffect(
@@ -26,14 +27,19 @@ export function Dashboard({ loop, connection }: DashboardProps) {
   );
 
   return (
-    <main ref={root} class="drive-dashboard" data-stale="true">
+    <main
+      ref={root}
+      class="drive-dashboard"
+      data-stale="true"
+      data-theme={themePresetId(layout.theme)}
+    >
       <div class="dashboard-frame" aria-hidden="true" />
-      <TachometerWidget loop={loop} />
-      <div class="primary-grid">
-        <SpeedWidget loop={loop} />
-        <GearWidget loop={loop} />
-        <StatusRail loop={loop} connection={connection} />
-      </div>
+      <LayoutGrid
+        layout={layout}
+        breakpoint={breakpoint}
+        loop={loop}
+        connection={connection}
+      />
       <footer class="drive-footer">
         <span>F1 24 / LOCAL TELEMETRY</span>
         <span>OPEN CARPANEL — 01</span>

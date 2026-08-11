@@ -3,11 +3,13 @@ use std::{
     fmt::{self, Display, Formatter},
     io,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     sync::Arc,
 };
 
 use opencarpanel_adapter_api::{AdapterError, GameAdapter};
 use opencarpanel_adapter_f1_24::{ADAPTER_ID, F1_24Adapter};
+use opencarpanel_config::LayoutRepository;
 use opencarpanel_telemetry_core::TelemetryReducer;
 use tokio::{
     net::{TcpListener, UdpSocket},
@@ -21,12 +23,14 @@ use crate::{
 };
 
 /// Network endpoints used when binding the Host.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HostConfig {
     /// HTTP/WebSocket listen address.
     pub http_address: SocketAddr,
     /// F1 UDP telemetry listen address.
     pub udp_address: SocketAddr,
+    /// Persistent layouts and settings directory.
+    pub data_directory: PathBuf,
 }
 
 impl Default for HostConfig {
@@ -35,6 +39,7 @@ impl Default for HostConfig {
         Self {
             http_address: SocketAddr::new(any_v4, 20_778),
             udp_address: SocketAddr::new(any_v4, 20_777),
+            data_directory: default_data_directory(),
         }
     }
 }
@@ -106,6 +111,7 @@ pub struct RunningHost {
     pairing: Arc<PairingService>,
     shutdown_sender: watch::Sender<bool>,
     supervisor: Option<JoinHandle<Result<(), HostError>>>,
+    _temporary_data: Option<tempfile::TempDir>,
 }
 
 impl RunningHost {
@@ -170,21 +176,32 @@ impl Drop for RunningHost {
 /// Returns [`HostError::Bind`] with actionable address context or an adapter
 /// initialization error.
 pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
-    let http_listener = TcpListener::bind(config.http_address)
-        .await
-        .map_err(|source| HostError::Bind {
-            service: "HTTP",
-            address: config.http_address,
-            source,
-        })?;
-    let udp_socket = UdpSocket::bind(config.udp_address)
+    let HostConfig {
+        http_address,
+        udp_address,
+        data_directory,
+    } = config;
+    let http_listener =
+        TcpListener::bind(http_address)
+            .await
+            .map_err(|source| HostError::Bind {
+                service: "HTTP",
+                address: http_address,
+                source,
+            })?;
+    let udp_socket = UdpSocket::bind(udp_address)
         .await
         .map_err(|source| HostError::Bind {
             service: "F1 UDP",
-            address: config.udp_address,
+            address: udp_address,
             source,
         })?;
-    spawn_host(http_listener, udp_socket).await
+    spawn_host_inner(
+        http_listener,
+        udp_socket,
+        LayoutRepository::new(data_directory),
+        None,
+    )
 }
 
 /// Starts the Host from caller-owned, pre-bound sockets.
@@ -194,9 +211,36 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
 /// # Errors
 ///
 /// Returns [`HostError`] if socket addresses or adapter initialization fail.
-pub async fn spawn_host(
+pub fn spawn_host(
     http_listener: TcpListener,
     udp_socket: UdpSocket,
+) -> Result<RunningHost, HostError> {
+    let temporary_data = tempfile::tempdir().map_err(|source| HostError::Runtime {
+        service: "temporary Host data directory",
+        source,
+    })?;
+    let layouts = LayoutRepository::new(temporary_data.path());
+    spawn_host_inner(http_listener, udp_socket, layouts, Some(temporary_data))
+}
+
+/// Starts the Host with an injected persistent layout repository.
+///
+/// # Errors
+///
+/// Returns [`HostError`] if socket addresses or adapter initialization fail.
+pub fn spawn_host_with_layout_repository(
+    http_listener: TcpListener,
+    udp_socket: UdpSocket,
+    layouts: LayoutRepository,
+) -> Result<RunningHost, HostError> {
+    spawn_host_inner(http_listener, udp_socket, layouts, None)
+}
+
+fn spawn_host_inner(
+    http_listener: TcpListener,
+    udp_socket: UdpSocket,
+    layouts: LayoutRepository,
+    temporary_data: Option<tempfile::TempDir>,
 ) -> Result<RunningHost, HostError> {
     let http_address = http_listener
         .local_addr()
@@ -219,17 +263,22 @@ pub async fn spawn_host(
         reducer.snapshot().clone(),
     ));
     let pairing = Arc::new(PairingService::new());
+    let layouts = Arc::new(layouts);
     let (shutdown_sender, shutdown_receiver) = watch::channel(false);
     let supervisor_state = Arc::clone(&state);
     let supervisor_pairing = Arc::clone(&pairing);
+    let supervisor_layouts = Arc::clone(&layouts);
     let supervisor = tokio::spawn(run_supervised(
         http_listener,
         udp_socket,
         shutdown_receiver,
-        supervisor_state,
-        supervisor_pairing,
-        adapter,
-        reducer,
+        RuntimeServices {
+            state: supervisor_state,
+            pairing: supervisor_pairing,
+            layouts: supervisor_layouts,
+            adapter,
+            reducer,
+        },
     ));
 
     Ok(RunningHost {
@@ -239,23 +288,36 @@ pub async fn spawn_host(
         pairing,
         shutdown_sender,
         supervisor: Some(supervisor),
+        _temporary_data: temporary_data,
     })
+}
+
+struct RuntimeServices {
+    state: Arc<HostState>,
+    pairing: Arc<PairingService>,
+    layouts: Arc<LayoutRepository>,
+    adapter: F1_24Adapter,
+    reducer: TelemetryReducer,
 }
 
 async fn run_supervised(
     http_listener: TcpListener,
     udp_socket: UdpSocket,
     shutdown: watch::Receiver<bool>,
-    state: Arc<HostState>,
-    pairing: Arc<PairingService>,
-    adapter: F1_24Adapter,
-    reducer: TelemetryReducer,
+    services: RuntimeServices,
 ) -> Result<(), HostError> {
+    let RuntimeServices {
+        state,
+        pairing,
+        layouts,
+        adapter,
+        reducer,
+    } = services;
     let http_shutdown = shutdown.clone();
     let udp_shutdown = shutdown;
     let http_state = Arc::clone(&state);
     let http_service = async move {
-        axum::serve(http_listener, http::router(http_state, pairing))
+        axum::serve(http_listener, http::router(http_state, pairing, layouts))
             .with_graceful_shutdown(wait_for_shutdown(http_shutdown))
             .await
             .map_err(|source| HostError::Runtime {
@@ -274,4 +336,25 @@ async fn run_supervised(
 
     tokio::try_join!(http_service, udp_service)?;
     Ok(())
+}
+
+fn default_data_directory() -> PathBuf {
+    if let Some(configured) = std::env::var_os("OPENCARPANEL_DATA_DIR") {
+        return PathBuf::from(configured);
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Some(local_data) = std::env::var_os("LOCALAPPDATA") {
+        return PathBuf::from(local_data).join("OpenCarpanel");
+    }
+
+    #[cfg(target_os = "macos")]
+    if let Some(user_home) = std::env::var_os("HOME") {
+        return PathBuf::from(user_home)
+            .join("Library")
+            .join("Application Support")
+            .join("OpenCarpanel");
+    }
+
+    std::env::temp_dir().join("OpenCarpanel")
 }

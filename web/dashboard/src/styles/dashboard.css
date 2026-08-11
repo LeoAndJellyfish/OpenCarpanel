@@ -311,3 +311,94 @@ body {
     font-size: clamp(3rem, 18vh, 5.5rem);
   }
 }
+
+.drive-dashboard {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.dashboard-layout-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(4px, 0.8vw, 12px);
+  min-height: 0;
+  padding: 4px 8px 1vh;
+}
+
+.dashboard-layout-grid[data-breakpoint="phonePortrait"] {
+  grid-template-rows: repeat(18, minmax(0, 1fr));
+}
+
+.dashboard-layout-grid[data-breakpoint="phoneLandscape"] {
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+.dashboard-layout-grid[data-breakpoint="tablet"],
+.dashboard-layout-grid[data-breakpoint="desktop"] {
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+}
+
+.layout-widget-frame {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  container-type: size;
+}
+
+.layout-widget-frame > .dashboard-widget {
+  width: 100%;
+  height: 100%;
+}
+
+.layout-widget-frame .tachometer-widget {
+  padding-inline: clamp(4px, 1.5cqw, 20px);
+}
+
+.layout-widget-frame .gear-value {
+  font-size: min(82cqh, 96cqw);
+}
+
+.layout-widget-frame .speed-widget {
+  display: grid;
+  align-content: end;
+  padding: 8cqh 3cqw;
+}
+
+.layout-widget-frame .speed-value {
+  font-size: min(56cqh, 42cqw);
+}
+
+.layout-widget-frame .status-rail {
+  align-self: center;
+  padding: 0 3cqw;
+}
+
+.unknown-widget {
+  display: grid;
+  padding: 12px;
+  border: 1px dashed var(--redline);
+  color: var(--redline);
+  font-size: 0.75rem;
+  place-items: center;
+}
+
+.drive-dashboard[data-theme="cyan"] {
+  --surface-0: #061015;
+  --ink: #eefcff;
+  --signal: #42e8ff;
+  --redline: #ff5e6c;
+}
+
+.drive-dashboard[data-theme="amber"] {
+  --surface-0: #0e0b08;
+  --ink: #fff5e5;
+  --signal: #ffbd45;
+  --redline: #ff4b3e;
+}
+
+.drive-dashboard[data-theme="mono"] {
+  --surface-0: #050505;
+  --ink: #fff;
+  --signal: #fff;
+  --redline: #ff4b3e;
+}

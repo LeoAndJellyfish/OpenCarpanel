@@ -110,6 +110,10 @@ impl PairingService {
         }
     }
 
+    pub(crate) async fn authorize_device_session(&self, session: &str) -> Result<(), PairingError> {
+        self.resume_device_session(session).await.map(|_| ())
+    }
+
     async fn consume_pairing_token(&self, token: &str) -> Result<Authentication, PairingError> {
         let candidate = digest(token);
         let session = random_credential::<DEVICE_SESSION_BYTES>()?;

@@ -16,8 +16,7 @@ async fn host() -> Result<RunningHost, Box<dyn Error>> {
     Ok(spawn_host(
         TcpListener::bind("127.0.0.1:0").await?,
         UdpSocket::bind("127.0.0.1:0").await?,
-    )
-    .await?)
+    )?)
 }
 
 async fn connect(host: &RunningHost) -> Result<ClientSocket, Box<dyn Error>> {

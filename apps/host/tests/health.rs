@@ -11,7 +11,7 @@ async fn health_endpoint_reports_protocol_and_adapter_then_shuts_down() -> Resul
 {
     let http_listener = TcpListener::bind("127.0.0.1:0").await?;
     let udp_socket = UdpSocket::bind("127.0.0.1:0").await?;
-    let running = spawn_host(http_listener, udp_socket).await?;
+    let running = spawn_host(http_listener, udp_socket)?;
     let http_address = running.http_address();
 
     let response = http_get(http_address, "/api/v1/health").await?;

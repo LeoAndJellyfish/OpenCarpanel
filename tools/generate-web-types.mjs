@@ -19,6 +19,10 @@ const schemas = [
     source: path.join(workspaceRoot, "schemas", "protocol", "v1", "server-message.schema.json"),
     output: "server-message.ts",
   },
+  {
+    source: path.join(workspaceRoot, "schemas", "layout", "v1", "layout-document.schema.json"),
+    output: "layout-document.ts",
+  },
 ];
 
 function outputArgument(arguments_) {
@@ -133,6 +137,7 @@ export const SERVER_MESSAGE_TYPES = [${quoteList(messageTypes(serverSchema, sche
     path.join(outputDirectory, "index.ts"),
     `${bannerComment}
 export type { ClientMessage } from "./client-message";
+export type { LayoutDocument } from "./layout-document";
 export type { ServerMessage } from "./server-message";
 export { CLIENT_MESSAGE_TYPES, PROTOCOL_VERSION, SERVER_MESSAGE_TYPES } from "./wire-metadata";
 `,

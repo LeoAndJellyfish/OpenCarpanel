@@ -30,7 +30,7 @@ fn synthetic_player_packet() -> Vec<u8> {
 async fn udp_datagram_updates_the_latest_snapshot_without_a_queue() -> Result<(), Box<dyn Error>> {
     let http_listener = TcpListener::bind("127.0.0.1:0").await?;
     let udp_socket = UdpSocket::bind("127.0.0.1:0").await?;
-    let running = spawn_host(http_listener, udp_socket).await?;
+    let running = spawn_host(http_listener, udp_socket)?;
     let mut snapshots = running.state().subscribe_snapshots();
     let sender = UdpSocket::bind("127.0.0.1:0").await?;
 

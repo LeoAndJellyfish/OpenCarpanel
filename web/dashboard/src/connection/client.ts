@@ -5,7 +5,8 @@ import {
   type ServerMessage,
 } from "@opencarpanel/widget-sdk";
 
-const DEVICE_SESSION_KEY = "opencarpanel.device-session.v1";
+import { readDeviceSession, writeDeviceSession } from "./session";
+
 const LAST_EVENT_SEQUENCE_KEY = "opencarpanel.last-event-sequence.v1";
 
 export type ConnectionPhase =
@@ -85,7 +86,7 @@ export class TelemetryConnection {
     this.#stopped = false;
     this.#terminalError = false;
     this.#pairingToken = pairingToken;
-    this.#deviceSession = window.localStorage.getItem(DEVICE_SESSION_KEY) ?? undefined;
+    this.#deviceSession = readDeviceSession(window.localStorage);
     const hello = this.#helloMessage();
     if (!hello) {
       this.#observe({
@@ -198,7 +199,7 @@ export class TelemetryConnection {
     switch (message.type) {
       case "hello":
         if (message.deviceSession) {
-          window.localStorage.setItem(DEVICE_SESSION_KEY, message.deviceSession);
+          writeDeviceSession(window.localStorage, message.deviceSession);
           this.#deviceSession = message.deviceSession;
         }
         this.#pairingToken = undefined;

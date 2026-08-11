@@ -1,0 +1,365 @@
+use std::{collections::BTreeMap, sync::Arc};
+
+use axum::{
+    Json,
+    body::Bytes,
+    extract::{Path, State},
+    http::{HeaderMap, StatusCode, header},
+    response::{IntoResponse, Response},
+};
+use opencarpanel_config::{
+    BreakpointName, ComponentType, ConfigError, GridPlacement, InstanceId, LayoutDocument,
+    LayoutId, LayoutRepository, MAX_LAYOUT_BYTES, ThemeSettings, ValidationError, WidgetInstance,
+};
+use serde::Serialize;
+use serde_json::{Value, json};
+
+use crate::http::HttpState;
+
+const DEFAULT_LAYOUT_ID: &str = "default";
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LayoutEnvelope {
+    document: LayoutDocument,
+    recovered: bool,
+}
+
+#[derive(Debug)]
+pub(crate) enum LayoutApiError {
+    Unauthorized,
+    InvalidRequest(&'static str),
+    InvalidLayout(String),
+    NotFound,
+    Conflict(Box<LayoutDocument>),
+    Internal,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ErrorBody {
+    code: &'static str,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    current: Option<LayoutEnvelope>,
+}
+
+impl IntoResponse for LayoutApiError {
+    fn into_response(self) -> Response {
+        let (status, code, message, current) = match self {
+            Self::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "device_session_required",
+                "a valid paired-device session is required".to_owned(),
+                None,
+            ),
+            Self::InvalidRequest(message) => (
+                StatusCode::BAD_REQUEST,
+                "invalid_request",
+                message.to_owned(),
+                None,
+            ),
+            Self::InvalidLayout(message) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_layout",
+                message,
+                None,
+            ),
+            Self::NotFound => (
+                StatusCode::NOT_FOUND,
+                "layout_not_found",
+                "the requested layout does not exist".to_owned(),
+                None,
+            ),
+            Self::Conflict(document) => (
+                StatusCode::CONFLICT,
+                "revision_conflict",
+                "the layout changed on another device".to_owned(),
+                Some(LayoutEnvelope {
+                    document: *document,
+                    recovered: false,
+                }),
+            ),
+            Self::Internal => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal",
+                "the Host could not complete the layout operation".to_owned(),
+                None,
+            ),
+        };
+        (
+            status,
+            Json(ErrorBody {
+                code,
+                message,
+                current,
+            }),
+        )
+            .into_response()
+    }
+}
+
+pub(crate) async fn get_layout(
+    State(state): State<HttpState>,
+    Path(raw_id): Path<String>,
+    headers: HeaderMap,
+) -> Result<Json<LayoutEnvelope>, LayoutApiError> {
+    authorize(&state, &headers).await?;
+    let id =
+        LayoutId::new(raw_id).map_err(|_| LayoutApiError::InvalidRequest("invalid layout id"))?;
+    let repository = Arc::clone(&state.layouts);
+    let loaded = tokio::task::spawn_blocking(move || load_or_create(&repository, &id))
+        .await
+        .map_err(|_| LayoutApiError::Internal)?
+        .map_err(map_config_error)?;
+    loaded.map(Json).ok_or(LayoutApiError::NotFound)
+}
+
+pub(crate) async fn put_layout(
+    State(state): State<HttpState>,
+    Path(raw_id): Path<String>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<LayoutEnvelope>, LayoutApiError> {
+    authorize(&state, &headers).await?;
+    require_json_content_type(&headers)?;
+    if body.len() > MAX_LAYOUT_BYTES {
+        return Err(LayoutApiError::InvalidRequest(
+            "layout document is too large",
+        ));
+    }
+    let id =
+        LayoutId::new(raw_id).map_err(|_| LayoutApiError::InvalidRequest("invalid layout id"))?;
+    let document: LayoutDocument = serde_json::from_slice(&body)
+        .map_err(|_| LayoutApiError::InvalidRequest("layout body is not valid versioned JSON"))?;
+    document
+        .validate()
+        .map_err(|error| LayoutApiError::InvalidLayout(error.to_string()))?;
+    if document.id() != &id {
+        return Err(LayoutApiError::InvalidRequest(
+            "layout path and document id do not match",
+        ));
+    }
+    validate_builtin_widgets(&document)?;
+
+    let expected_revision = document.revision();
+    let repository = Arc::clone(&state.layouts);
+    let outcome =
+        tokio::task::spawn_blocking(
+            move || match repository.save(&document, expected_revision) {
+                Ok(saved) => Ok(SaveOutcome::Saved(saved)),
+                Err(ConfigError::Conflict { .. }) => repository
+                    .load_required(&id)
+                    .map(|loaded| SaveOutcome::Conflict(loaded.document)),
+                Err(error) => Err(error),
+            },
+        )
+        .await
+        .map_err(|_| LayoutApiError::Internal)?
+        .map_err(map_config_error)?;
+
+    match outcome {
+        SaveOutcome::Saved(document) => Ok(Json(LayoutEnvelope {
+            document,
+            recovered: false,
+        })),
+        SaveOutcome::Conflict(current) => Err(LayoutApiError::Conflict(Box::new(current))),
+    }
+}
+
+enum SaveOutcome {
+    Saved(LayoutDocument),
+    Conflict(LayoutDocument),
+}
+
+async fn authorize(state: &HttpState, headers: &HeaderMap) -> Result<(), LayoutApiError> {
+    let value = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .filter(|value| !value.is_empty())
+        .ok_or(LayoutApiError::Unauthorized)?;
+    state
+        .pairing
+        .authorize_device_session(value)
+        .await
+        .map_err(|_| LayoutApiError::Unauthorized)
+}
+
+fn require_json_content_type(headers: &HeaderMap) -> Result<(), LayoutApiError> {
+    let content_type = headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    if content_type
+        .split(';')
+        .next()
+        .is_some_and(|value| value.trim().eq_ignore_ascii_case("application/json"))
+    {
+        Ok(())
+    } else {
+        Err(LayoutApiError::InvalidRequest(
+            "layout requests require application/json",
+        ))
+    }
+}
+
+fn load_or_create(
+    repository: &LayoutRepository,
+    id: &LayoutId,
+) -> Result<Option<LayoutEnvelope>, ConfigError> {
+    if let Some(loaded) = repository.load(id)? {
+        return Ok(Some(LayoutEnvelope {
+            document: loaded.document,
+            recovered: loaded.recovered,
+        }));
+    }
+    if id.as_str() != DEFAULT_LAYOUT_ID {
+        return Ok(None);
+    }
+
+    let default = default_layout().map_err(ConfigError::Validation)?;
+    match repository.save(&default, 0) {
+        Ok(document) => Ok(Some(LayoutEnvelope {
+            document,
+            recovered: false,
+        })),
+        Err(ConfigError::Conflict { .. }) => repository.load(id).map(|loaded| {
+            loaded.map(|loaded| LayoutEnvelope {
+                document: loaded.document,
+                recovered: loaded.recovered,
+            })
+        }),
+        Err(error) => Err(error),
+    }
+}
+
+fn default_layout() -> Result<LayoutDocument, ValidationError> {
+    let mut document = LayoutDocument::empty(LayoutId::new(DEFAULT_LAYOUT_ID)?, "F1 24 Default")?;
+    document.set_theme(ThemeSettings {
+        background: "#07090c".into(),
+        foreground: "#f2f0e9".into(),
+        accent: "#d9ff43".into(),
+        warning: "#ff4b3e".into(),
+    });
+    document.set_widgets(vec![
+        widget(
+            "tachometer",
+            "core.tachometer",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 0, 12, 3)),
+                (BreakpointName::PhoneLandscape, placement(0, 0, 12, 3)),
+                (BreakpointName::Tablet, placement(0, 0, 12, 3)),
+                (BreakpointName::Desktop, placement(0, 0, 12, 3)),
+            ],
+            json!({"fallbackRpmMax": 12_000}),
+        )?,
+        widget(
+            "gear",
+            "core.gear",
+            [
+                (BreakpointName::PhonePortrait, placement(2, 3, 8, 9)),
+                (BreakpointName::PhoneLandscape, placement(4, 3, 4, 5)),
+                (BreakpointName::Tablet, placement(4, 3, 4, 6)),
+                (BreakpointName::Desktop, placement(4, 3, 4, 6)),
+            ],
+            json!({}),
+        )?,
+        widget(
+            "speed",
+            "core.speed",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 12, 5, 3)),
+                (BreakpointName::PhoneLandscape, placement(0, 3, 4, 5)),
+                (BreakpointName::Tablet, placement(0, 3, 4, 6)),
+                (BreakpointName::Desktop, placement(0, 3, 4, 6)),
+            ],
+            json!({"unit": "km/h"}),
+        )?,
+        widget(
+            "status",
+            "core.status",
+            [
+                (BreakpointName::PhonePortrait, placement(6, 12, 6, 3)),
+                (BreakpointName::PhoneLandscape, placement(8, 3, 4, 5)),
+                (BreakpointName::Tablet, placement(8, 3, 4, 6)),
+                (BreakpointName::Desktop, placement(8, 3, 4, 6)),
+            ],
+            json!({}),
+        )?,
+    ]);
+    document.validate()?;
+    Ok(document)
+}
+
+fn widget(
+    instance_id: &str,
+    component_type: &str,
+    placements: [(BreakpointName, GridPlacement); 4],
+    settings: Value,
+) -> Result<WidgetInstance, ValidationError> {
+    Ok(WidgetInstance {
+        instance_id: InstanceId::new(instance_id)?,
+        component_type: ComponentType::new(component_type)?,
+        placements: BTreeMap::from(placements),
+        settings,
+    })
+}
+
+const fn placement(x: u16, y: u16, width: u16, height: u16) -> GridPlacement {
+    GridPlacement {
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
+fn validate_builtin_widgets(document: &LayoutDocument) -> Result<(), LayoutApiError> {
+    for widget in document.widgets() {
+        let settings = widget.settings.as_object().ok_or_else(|| {
+            LayoutApiError::InvalidLayout("widget settings must be a JSON object".into())
+        })?;
+        let valid = match widget.component_type.as_str() {
+            "core.gear" | "core.status" => settings.is_empty(),
+            "core.speed" => {
+                settings.keys().all(|key| key == "unit")
+                    && settings
+                        .get("unit")
+                        .is_none_or(|value| value.as_str() == Some("km/h"))
+            }
+            "core.tachometer" => {
+                settings.keys().all(|key| key == "fallbackRpmMax")
+                    && settings.get("fallbackRpmMax").is_none_or(|value| {
+                        value
+                            .as_u64()
+                            .is_some_and(|rpm| (1_000..=30_000).contains(&rpm))
+                    })
+            }
+            _ => false,
+        };
+        if !valid {
+            return Err(LayoutApiError::InvalidLayout(format!(
+                "unsupported component or settings for {}",
+                widget.component_type.as_str()
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn map_config_error(error: ConfigError) -> LayoutApiError {
+    match error {
+        ConfigError::Validation(error) => LayoutApiError::InvalidLayout(error.to_string()),
+        ConfigError::DocumentTooLarge { .. } => {
+            LayoutApiError::InvalidRequest("layout document is too large")
+        }
+        ConfigError::Json(_) | ConfigError::InvalidSchemaVersion => {
+            LayoutApiError::InvalidRequest("layout body is invalid")
+        }
+        ConfigError::UnsupportedSchema { .. } | ConfigError::Migration(_) => {
+            LayoutApiError::InvalidLayout("layout schema is not supported".into())
+        }
+        _ => LayoutApiError::Internal,
+    }
+}
