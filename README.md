@@ -17,6 +17,7 @@ OpenCarpanel 是一个本地运行、跨平台、跨游戏的驾驶遥测仪表�
 
 - [架构设计](docs/plans/2026-08-11-opencarpanel-architecture-design.md)
 - [F1 24 MVP 实施计划](docs/plans/2026-08-11-f1-24-mvp-implementation.md)
+- [F1 仪表盘视觉与动效设计](docs/plans/2026-08-11-f1-dashboard-visual-design.md)
 - [架构决策记录](docs/adr/README.md)
 - [F1 24 协议资料入口](docs/protocols/f1-24.md)
 
