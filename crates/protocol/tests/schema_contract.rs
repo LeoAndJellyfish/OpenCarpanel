@@ -34,6 +34,19 @@ fn generated_schema_bundle_has_stable_paths_and_valid_json() -> Result<(), Box<d
 }
 
 #[test]
+fn wire_schemas_pin_the_supported_protocol_version() -> Result<(), Box<dyn Error>> {
+    for document in generate_schema_documents()?
+        .into_iter()
+        .filter(|document| document.relative_path().starts_with("protocol/"))
+    {
+        let value: serde_json::Value = serde_json::from_str(document.json())?;
+        assert_eq!(value["properties"]["v"]["const"], 1);
+    }
+
+    Ok(())
+}
+
+#[test]
 fn committed_schemas_match_the_generator() -> Result<(), Box<dyn Error>> {
     let schema_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../schemas");
 

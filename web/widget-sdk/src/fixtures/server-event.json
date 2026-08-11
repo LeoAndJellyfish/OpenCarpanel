@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "event",
+  "seq": 8,
+  "data": {
+    "name": "lap.completed",
+    "occurredAt": 41,
+    "data": {
+      "lap": 3
+    }
+  }
+}

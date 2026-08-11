@@ -2,7 +2,7 @@
 
 OpenCarpanel 是一个本地运行、跨平台、跨游戏的驾驶遥测仪表盘。电脑端 Host 接收游戏遥测，手机或 iPad 通过同一局域网打开仪表盘。
 
-当前仓库处于架构与工程骨架阶段，首个 MVP 面向 **F1 24**。
+当前仓库正在实现首个面向 **F1 24** 的 MVP；Rust Host、F1 24 关键车辆遥测、配对 WebSocket 与 Preact Web 客户端骨架已经落地。
 
 ## 已确认的方向
 
@@ -41,7 +41,7 @@ cargo test --workspace
 npm run check:web
 ```
 
-CI 当前在 Windows 和 macOS 上执行 Rust 格式化、Clippy 和 workspace 测试。Web 构建任务将在前端脚手架及锁文件落地后启用。
+CI 在 Windows 和 macOS 上执行 Rust 格式化、Clippy 和 workspace 测试，并在固定的 Node 22 环境执行 Schema 类型漂移检查、TypeScript 检查、Web 测试与生产构建。
 
 ## License
 

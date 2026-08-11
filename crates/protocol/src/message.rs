@@ -15,6 +15,7 @@ pub const PROTOCOL_VERSION: u16 = 1;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ClientMessage {
     /// Wire protocol major version.
+    #[schemars(schema_with = "protocol_version_schema")]
     pub v: u16,
     /// Versioned message body.
     #[serde(flatten)]
@@ -71,6 +72,7 @@ pub struct EventAckMessage {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ServerMessage {
     /// Wire protocol major version.
+    #[schemars(schema_with = "protocol_version_schema")]
     pub v: u16,
     /// Versioned message body.
     #[serde(flatten)]
@@ -301,4 +303,11 @@ fn invalid_message(error: &serde_json::Error) -> WireDecodeError {
     WireDecodeError::InvalidMessage {
         message: error.to_string(),
     }
+}
+
+fn protocol_version_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    schemars::json_schema!({
+        "type": "integer",
+        "const": PROTOCOL_VERSION
+    })
 }

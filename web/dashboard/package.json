@@ -2,5 +2,16 @@
   "name": "@opencarpanel/dashboard",
   "private": true,
   "version": "0.1.0",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "vite --host",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@opencarpanel/widget-sdk": "0.1.0",
+    "preact": "10.29.8"
+  }
 }

@@ -1,3 +1,5 @@
+use std::{error::Error, fs, io, path::Path};
+
 use opencarpanel_protocol::{
     CapabilitiesMessage, ClientHello, ClientMessage, ClientPayload, ErrorCode, ErrorMessage,
     EventAckMessage, EventMessage, ResyncRequiredMessage, ServerHello, ServerMessage,
@@ -160,4 +162,45 @@ fn malformed_input_returns_a_protocol_error_without_panicking() -> Result<(), Bo
     assert!(matches!(error, WireDecodeError::InvalidMessage { .. }));
     Ok(())
 }
-use std::{error::Error, io};
+
+#[test]
+fn committed_web_fixtures_are_serialized_rust_messages() -> Result<(), Box<dyn Error>> {
+    let fixture_root =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../web/widget-sdk/src/fixtures");
+    let cases = [
+        (
+            "server-hello.json",
+            ServerMessage::new(ServerPayload::Hello(ServerHello {
+                server_version: "0.1.0".into(),
+                protocol_version: 1,
+                device_session: Some("fixture-device-session".into()),
+            })),
+        ),
+        (
+            "server-snapshot.json",
+            ServerMessage::new(ServerPayload::Snapshot(SnapshotMessage {
+                seq: 7,
+                captured_at_us: 42,
+                data: TelemetrySnapshot::default(),
+            })),
+        ),
+        (
+            "server-event.json",
+            ServerMessage::new(ServerPayload::Event(EventMessage {
+                seq: 8,
+                data: TelemetryEvent {
+                    name: "lap.completed".into(),
+                    occurred_at: MonotonicTimestamp::from_micros(41),
+                    data: json!({"lap": 3}),
+                },
+            })),
+        ),
+    ];
+
+    for (file, message) in cases {
+        let committed: Value = serde_json::from_slice(&fs::read(fixture_root.join(file))?)?;
+        assert_eq!(committed, encoded(&message)?);
+    }
+
+    Ok(())
+}

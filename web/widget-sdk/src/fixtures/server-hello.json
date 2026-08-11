@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "type": "hello",
+  "serverVersion": "0.1.0",
+  "protocolVersion": 1,
+  "deviceSession": "fixture-device-session"
+}

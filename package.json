@@ -8,11 +8,20 @@
     "web/widget-sdk"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "scripts": {
-    "build:web": "npm run build --workspaces --if-present",
-    "check:web": "npm run check --workspaces --if-present",
+    "build:web": "npm run build --workspace @opencarpanel/dashboard",
+    "check:web": "npm run check:web-types && npm run check --workspaces --if-present",
+    "check:web-types": "node tools/check-web-types.mjs",
+    "generate:web-types": "node tools/generate-web-types.mjs",
     "test:web": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.6",
+    "json-schema-to-typescript": "15.0.4",
+    "typescript": "7.0.2",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
   }
 }

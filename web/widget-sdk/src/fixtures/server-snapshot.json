@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "type": "snapshot",
+  "seq": 7,
+  "capturedAtUs": 42,
+  "data": {
+    "meta": {
+      "schemaVersion": 1,
+      "sequence": 0
+    },
+    "vehicle": {},
+    "lap": {},
+    "session": {},
+    "tyres": {}
+  }
+}
