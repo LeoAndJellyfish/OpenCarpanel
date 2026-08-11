@@ -7,5 +7,27 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[dependencies]
+axum = "0.8.9"
+opencarpanel-adapter-api = { path = "../../crates/adapter-api" }
+opencarpanel-adapter-f1-24 = { path = "../../crates/adapter-f1-24" }
+opencarpanel-protocol = { path = "../../crates/protocol" }
+opencarpanel-telemetry-core = { path = "../../crates/telemetry-core" }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.1", features = [
+  "io-util",
+  "macros",
+  "net",
+  "rt-multi-thread",
+  "signal",
+  "sync",
+  "time",
+] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+serde_json = "1.0.151"
+
 [lints]
 workspace = true
