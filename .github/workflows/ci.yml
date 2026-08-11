@@ -33,8 +33,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install stable Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.91.1
+        uses: dtolnay/rust-toolchain@1.91.1
         with:
           components: clippy, rustfmt
 

@@ -35,8 +35,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - name: Install stable Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.91.1
+        uses: dtolnay/rust-toolchain@1.91.1
 
       - name: Install locked web dependencies
         run: npm ci
