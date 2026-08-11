@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelemetryUpdate",
+  "description": "Partial game-neutral state emitted after decoding one game datagram.",
+  "type": "object",
+  "properties": {
+    "extensions": {
+      "description": "Adapter-specific partial values.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "frameId": {
+      "description": "Game-provided frame identifier when known.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "lap": {
+      "description": "Partial lap update.",
+      "$ref": "#/$defs/LapUpdate",
+      "default": {}
+    },
+    "receivedAt": {
+      "description": "Host-monotonic time at which the datagram was received.",
+      "$ref": "#/$defs/MonotonicTimestamp",
+      "default": 0
+    },
+    "session": {
+      "description": "Partial session update.",
+      "$ref": "#/$defs/SessionUpdate",
+      "default": {}
+    },
+    "sessionId": {
+      "description": "New game session identifier when known.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tyres": {
+      "description": "Partial tyre update.",
+      "$ref": "#/$defs/TyreUpdate",
+      "default": {}
+    },
+    "vehicle": {
+      "description": "Partial player-vehicle update.",
+      "$ref": "#/$defs/VehicleUpdate",
+      "default": {}
+    }
+  },
+  "$defs": {
+    "DrsState": {
+      "description": "Driver-reduction-system state normalized across supported games.",
+      "oneOf": [
+        {
+          "description": "The game or vehicle does not support DRS in the current context.",
+          "type": "string",
+          "const": "unavailable"
+        },
+        {
+          "description": "DRS can be activated but is currently closed.",
+          "type": "string",
+          "const": "available"
+        },
+        {
+          "description": "DRS is currently active.",
+          "type": "string",
+          "const": "active"
+        },
+        {
+          "description": "The game has not supplied a meaningful DRS state.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "Gear": {
+      "description": "Gear selected by the game.",
+      "oneOf": [
+        {
+          "description": "Reverse gear.",
+          "type": "string",
+          "const": "reverse"
+        },
+        {
+          "description": "Neutral.",
+          "type": "string",
+          "const": "neutral"
+        },
+        {
+          "description": "A forward gear numbered from one.",
+          "type": "object",
+          "properties": {
+            "forward": {
+              "type": "integer",
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "forward"
+          ]
+        },
+        {
+          "description": "The game has not supplied a meaningful gear.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "LapUpdate": {
+      "description": "Partial lap state emitted by an adapter.",
+      "type": "object",
+      "properties": {
+        "current": {
+          "description": "New current lap number when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "currentTimeMs": {
+          "description": "New current-lap time when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "deltaToBestMs": {
+          "description": "New delta to the relevant best lap when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int32"
+        },
+        "invalid": {
+          "description": "New lap invalidation state when supplied.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "lastTimeMs": {
+          "description": "New previous-lap time when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "position": {
+          "description": "New race position when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        }
+      }
+    },
+    "MonotonicTimestamp": {
+      "description": "Microseconds elapsed from the Host's monotonic clock origin.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "Normalized": {
+      "description": "A finite value in the inclusive range `0.0..=1.0`.",
+      "type": "number",
+      "format": "float",
+      "maximum": 1.0,
+      "minimum": 0.0
+    },
+    "SessionUpdate": {
+      "description": "Partial session state emitted by an adapter.",
+      "type": "object",
+      "properties": {
+        "remainingTimeMs": {
+          "description": "New remaining session time when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "totalLaps": {
+          "description": "New scheduled total lap count when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "trackId": {
+          "description": "New track identifier when supplied.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TyreCornerState": {
+      "description": "State for one tyre corner.",
+      "type": "object",
+      "properties": {
+        "innerTemperatureC": {
+          "description": "Tyre inner temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "pressurePa": {
+          "description": "Tyre pressure in pascals.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "surfaceTemperatureC": {
+          "description": "Tyre surface temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "wear": {
+          "description": "Tyre wear in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TyreUpdate": {
+      "description": "Partial four-corner tyre state emitted by an adapter.",
+      "type": "object",
+      "properties": {
+        "frontLeft": {
+          "description": "New front-left state when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frontRight": {
+          "description": "New front-right state when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rearLeft": {
+          "description": "New rear-left state when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rearRight": {
+          "description": "New rear-right state when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "VehicleUpdate": {
+      "description": "Partial player-vehicle state emitted by an adapter.",
+      "type": "object",
+      "properties": {
+        "brake": {
+          "description": "New brake input when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "drs": {
+          "description": "New DRS state when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DrsState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ersEnergyJ": {
+          "description": "New electrical energy level when supplied.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelKg": {
+          "description": "New fuel mass when supplied.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "gear": {
+          "description": "New gear when this packet updates gear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Gear"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rpm": {
+          "description": "New engine speed when this packet updates engine speed.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "rpmMax": {
+          "description": "New maximum engine speed when supplied.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "speedMps": {
+          "description": "New speed when this packet updates speed.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "throttle": {
+          "description": "New accelerator input when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

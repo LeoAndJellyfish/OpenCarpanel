@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelemetryEvent",
+  "description": "A discrete telemetry fact that must not be treated as replaceable state.",
+  "type": "object",
+  "properties": {
+    "data": {
+      "description": "Event-specific structured data.",
+      "default": null
+    },
+    "name": {
+      "description": "Stable dotted event name, such as `lap.completed`.",
+      "type": "string"
+    },
+    "occurredAt": {
+      "description": "Host-monotonic time at which the event was observed.",
+      "$ref": "#/$defs/MonotonicTimestamp"
+    }
+  },
+  "required": [
+    "name",
+    "occurredAt"
+  ],
+  "$defs": {
+    "MonotonicTimestamp": {
+      "description": "Microseconds elapsed from the Host's monotonic clock origin.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    }
+  }
+}

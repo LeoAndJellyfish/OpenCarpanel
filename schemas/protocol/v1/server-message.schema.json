@@ -1,0 +1,877 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ServerMessage",
+  "description": "Message sent from the Host to a dashboard client.",
+  "type": "object",
+  "properties": {
+    "v": {
+      "description": "Wire protocol major version.",
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 0
+    }
+  },
+  "oneOf": [
+    {
+      "description": "Confirms pairing or session resumption.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "hello"
+        }
+      },
+      "$ref": "#/$defs/ServerHello",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Replaceable latest telemetry state.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "snapshot"
+        }
+      },
+      "$ref": "#/$defs/SnapshotMessage",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Ordered reliable telemetry event.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "event"
+        }
+      },
+      "$ref": "#/$defs/EventMessage",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Fields made available by the active adapter.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "capabilities"
+        }
+      },
+      "$ref": "#/$defs/CapabilitiesMessage",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Indicates that reliable events can no longer be replayed completely.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "resync_required"
+        }
+      },
+      "$ref": "#/$defs/ResyncRequiredMessage",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Indicates that the data source is temporarily stale.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "stale"
+        }
+      },
+      "$ref": "#/$defs/StaleMessage",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Structured failure safe to show or diagnose.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "error"
+        }
+      },
+      "$ref": "#/$defs/ErrorMessage",
+      "required": [
+        "type"
+      ]
+    }
+  ],
+  "required": [
+    "v"
+  ],
+  "$defs": {
+    "CapabilitiesMessage": {
+      "description": "Active adapter capabilities.",
+      "type": "object",
+      "properties": {
+        "extensions": {
+          "description": "Namespaced adapter extension paths.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fields": {
+          "description": "Stable canonical telemetry paths.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TelemetryField"
+          }
+        }
+      },
+      "required": [
+        "fields",
+        "extensions"
+      ]
+    },
+    "DrsState": {
+      "description": "Driver-reduction-system state normalized across supported games.",
+      "oneOf": [
+        {
+          "description": "The game or vehicle does not support DRS in the current context.",
+          "type": "string",
+          "const": "unavailable"
+        },
+        {
+          "description": "DRS can be activated but is currently closed.",
+          "type": "string",
+          "const": "available"
+        },
+        {
+          "description": "DRS is currently active.",
+          "type": "string",
+          "const": "active"
+        },
+        {
+          "description": "The game has not supplied a meaningful DRS state.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "ErrorCode": {
+      "description": "Stable machine-readable error categories.",
+      "oneOf": [
+        {
+          "description": "The client must pair or resume a device session.",
+          "type": "string",
+          "const": "pairing_required"
+        },
+        {
+          "description": "A one-time pairing token was invalid.",
+          "type": "string",
+          "const": "invalid_pairing_token"
+        },
+        {
+          "description": "A one-time pairing token was valid but expired.",
+          "type": "string",
+          "const": "pairing_token_expired"
+        },
+        {
+          "description": "The requested wire protocol version is unsupported.",
+          "type": "string",
+          "const": "unsupported_version"
+        },
+        {
+          "description": "The message shape or value was invalid.",
+          "type": "string",
+          "const": "invalid_message"
+        },
+        {
+          "description": "The incoming message exceeded a configured bound.",
+          "type": "string",
+          "const": "message_too_large"
+        },
+        {
+          "description": "The Host could not complete the operation.",
+          "type": "string",
+          "const": "internal"
+        }
+      ]
+    },
+    "ErrorMessage": {
+      "description": "Structured protocol error sent to a client.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Stable programmatic error code.",
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "description": "Sanitized human-readable explanation.",
+          "type": "string"
+        },
+        "retryable": {
+          "description": "Whether retrying without user intervention can succeed.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ]
+    },
+    "EventMessage": {
+      "description": "Ordered reliable event.",
+      "type": "object",
+      "properties": {
+        "data": {
+          "description": "Canonical event data.",
+          "$ref": "#/$defs/TelemetryEvent"
+        },
+        "seq": {
+          "description": "Reliable event sequence.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "seq",
+        "data"
+      ]
+    },
+    "Gear": {
+      "description": "Gear selected by the game.",
+      "oneOf": [
+        {
+          "description": "Reverse gear.",
+          "type": "string",
+          "const": "reverse"
+        },
+        {
+          "description": "Neutral.",
+          "type": "string",
+          "const": "neutral"
+        },
+        {
+          "description": "A forward gear numbered from one.",
+          "type": "object",
+          "properties": {
+            "forward": {
+              "type": "integer",
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "forward"
+          ]
+        },
+        {
+          "description": "The game has not supplied a meaningful gear.",
+          "type": "string",
+          "const": "unknown"
+        }
+      ]
+    },
+    "LapState": {
+      "description": "Current lap and race-position state.",
+      "type": "object",
+      "properties": {
+        "current": {
+          "description": "Current one-based lap number.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "currentTimeMs": {
+          "description": "Elapsed current-lap time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "deltaToBestMs": {
+          "description": "Signed delta to the relevant best lap in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int32"
+        },
+        "invalid": {
+          "description": "Whether the current lap has been invalidated.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "lastTimeMs": {
+          "description": "Previous completed-lap time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "position": {
+          "description": "Current one-based race position.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        }
+      }
+    },
+    "Meta": {
+      "description": "Metadata attached to every complete telemetry snapshot.",
+      "type": "object",
+      "properties": {
+        "capturedAt": {
+          "description": "Time at which the newest contributing datagram reached the Host.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MonotonicTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gameId": {
+          "description": "Stable adapter identifier, such as `f1-24`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schemaVersion": {
+          "description": "Schema version used by this snapshot.",
+          "type": "integer",
+          "format": "uint16",
+          "default": 1,
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "sequence": {
+          "description": "Monotonic snapshot sequence assigned by the core.",
+          "type": "integer",
+          "format": "uint64",
+          "default": 0,
+          "minimum": 0
+        },
+        "sessionId": {
+          "description": "Opaque identifier for the active game session.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "MonotonicTimestamp": {
+      "description": "Microseconds elapsed from the Host's monotonic clock origin.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "Normalized": {
+      "description": "A finite value in the inclusive range `0.0..=1.0`.",
+      "type": "number",
+      "format": "float",
+      "maximum": 1.0,
+      "minimum": 0.0
+    },
+    "ResyncRequiredMessage": {
+      "description": "Reliable-event history can no longer satisfy the requested sequence.",
+      "type": "object",
+      "properties": {
+        "newestEventSeq": {
+          "description": "Newest event present when this message was built.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "oldestAvailableEventSeq": {
+          "description": "Oldest event still present in the bounded buffer.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "oldestAvailableEventSeq",
+        "newestEventSeq"
+      ]
+    },
+    "ServerHello": {
+      "description": "Host response to a successful hello.",
+      "type": "object",
+      "properties": {
+        "deviceSession": {
+          "description": "Device session issued after one-time pairing.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "protocolVersion": {
+          "description": "Protocol version selected by the Host.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "serverVersion": {
+          "description": "Host application version.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "serverVersion",
+        "protocolVersion"
+      ]
+    },
+    "SessionState": {
+      "description": "Current session state that is meaningful across games.",
+      "type": "object",
+      "properties": {
+        "remainingTimeMs": {
+          "description": "Remaining session time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "totalLaps": {
+          "description": "Scheduled total number of laps when known.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "trackId": {
+          "description": "Stable game-provided or mapped track identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "SnapshotMessage": {
+      "description": "Replaceable latest telemetry state.",
+      "type": "object",
+      "properties": {
+        "capturedAtUs": {
+          "description": "Host-monotonic capture time in microseconds.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "data": {
+          "description": "Complete canonical telemetry state.",
+          "$ref": "#/$defs/TelemetrySnapshot"
+        },
+        "seq": {
+          "description": "Snapshot publication sequence.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "seq",
+        "capturedAtUs",
+        "data"
+      ]
+    },
+    "StaleMessage": {
+      "description": "Explicit stale-state notification.",
+      "type": "object",
+      "properties": {
+        "reason": {
+          "description": "Why the state is stale.",
+          "$ref": "#/$defs/StaleReason"
+        },
+        "sinceUs": {
+          "description": "Host-monotonic time at which the state became stale.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "sinceUs",
+        "reason"
+      ]
+    },
+    "StaleReason": {
+      "description": "Reason that live telemetry is not currently advancing.",
+      "oneOf": [
+        {
+          "description": "The game has stopped producing UDP data.",
+          "type": "string",
+          "const": "game_data_timeout"
+        },
+        {
+          "description": "The adapter is not currently connected to a data source.",
+          "type": "string",
+          "const": "data_source_disconnected"
+        },
+        {
+          "description": "A new game session requires a fresh full snapshot.",
+          "type": "string",
+          "const": "session_changed"
+        }
+      ]
+    },
+    "TelemetryEvent": {
+      "description": "A discrete telemetry fact that must not be treated as replaceable state.",
+      "type": "object",
+      "properties": {
+        "data": {
+          "description": "Event-specific structured data.",
+          "default": null
+        },
+        "name": {
+          "description": "Stable dotted event name, such as `lap.completed`.",
+          "type": "string"
+        },
+        "occurredAt": {
+          "description": "Host-monotonic time at which the event was observed.",
+          "$ref": "#/$defs/MonotonicTimestamp"
+        }
+      },
+      "required": [
+        "name",
+        "occurredAt"
+      ]
+    },
+    "TelemetryField": {
+      "description": "Stable fields that an adapter can advertise to clients.",
+      "oneOf": [
+        {
+          "description": "Vehicle speed in metres per second.",
+          "type": "string",
+          "const": "vehicle.speedMps"
+        },
+        {
+          "description": "Selected gear.",
+          "type": "string",
+          "const": "vehicle.gear"
+        },
+        {
+          "description": "Current engine revolutions per minute.",
+          "type": "string",
+          "const": "vehicle.rpm"
+        },
+        {
+          "description": "Maximum engine revolutions per minute.",
+          "type": "string",
+          "const": "vehicle.rpmMax"
+        },
+        {
+          "description": "Accelerator input.",
+          "type": "string",
+          "const": "vehicle.throttle"
+        },
+        {
+          "description": "Brake input.",
+          "type": "string",
+          "const": "vehicle.brake"
+        },
+        {
+          "description": "Driver-reduction-system state.",
+          "type": "string",
+          "const": "vehicle.drs"
+        },
+        {
+          "description": "Current lap number.",
+          "type": "string",
+          "const": "lap.current"
+        },
+        {
+          "description": "Current race position.",
+          "type": "string",
+          "const": "lap.position"
+        },
+        {
+          "description": "Current-lap time.",
+          "type": "string",
+          "const": "lap.currentTimeMs"
+        },
+        {
+          "description": "Previous completed-lap time.",
+          "type": "string",
+          "const": "lap.lastTimeMs"
+        },
+        {
+          "description": "Delta to the relevant best lap.",
+          "type": "string",
+          "const": "lap.deltaToBestMs"
+        },
+        {
+          "description": "Current-lap invalidation state.",
+          "type": "string",
+          "const": "lap.invalid"
+        },
+        {
+          "description": "Track identifier.",
+          "type": "string",
+          "const": "session.trackId"
+        },
+        {
+          "description": "Remaining session time.",
+          "type": "string",
+          "const": "session.remainingTimeMs"
+        },
+        {
+          "description": "Scheduled total laps.",
+          "type": "string",
+          "const": "session.totalLaps"
+        },
+        {
+          "description": "Four-corner tyre state.",
+          "type": "string",
+          "const": "tyres"
+        }
+      ]
+    },
+    "TelemetrySnapshot": {
+      "description": "A complete, game-neutral view of the latest known telemetry state.",
+      "type": "object",
+      "properties": {
+        "extensions": {
+          "description": "Adapter-specific values that do not yet have stable cross-game semantics.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "lap": {
+          "description": "Lap and race-position state.",
+          "$ref": "#/$defs/LapState",
+          "default": {}
+        },
+        "meta": {
+          "description": "Snapshot metadata.",
+          "$ref": "#/$defs/Meta",
+          "default": {
+            "schemaVersion": 1,
+            "sequence": 0
+          }
+        },
+        "session": {
+          "description": "Session state.",
+          "$ref": "#/$defs/SessionState",
+          "default": {}
+        },
+        "tyres": {
+          "description": "Four-corner tyre state.",
+          "$ref": "#/$defs/TyreState",
+          "default": {}
+        },
+        "vehicle": {
+          "description": "Player-vehicle state.",
+          "$ref": "#/$defs/VehicleState",
+          "default": {}
+        }
+      }
+    },
+    "TyreCornerState": {
+      "description": "State for one tyre corner.",
+      "type": "object",
+      "properties": {
+        "innerTemperatureC": {
+          "description": "Tyre inner temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "pressurePa": {
+          "description": "Tyre pressure in pascals.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "surfaceTemperatureC": {
+          "description": "Tyre surface temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "wear": {
+          "description": "Tyre wear in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TyreState": {
+      "description": "State for all four tyre corners.",
+      "type": "object",
+      "properties": {
+        "frontLeft": {
+          "description": "Front-left tyre.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frontRight": {
+          "description": "Front-right tyre.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rearLeft": {
+          "description": "Rear-left tyre.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rearRight": {
+          "description": "Rear-right tyre.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TyreCornerState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "VehicleState": {
+      "description": "Current player-vehicle state in standard units.",
+      "type": "object",
+      "properties": {
+        "brake": {
+          "description": "Brake input in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "drs": {
+          "description": "Driver-reduction-system state.",
+          "$ref": "#/$defs/DrsState"
+        },
+        "ersEnergyJ": {
+          "description": "Available electrical energy in joules.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelKg": {
+          "description": "Remaining fuel mass in kilograms.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "gear": {
+          "description": "Selected gear.",
+          "$ref": "#/$defs/Gear"
+        },
+        "rpm": {
+          "description": "Current engine revolutions per minute.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "rpmMax": {
+          "description": "Maximum engine revolutions per minute used for display scaling.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "speedMps": {
+          "description": "Vehicle speed in metres per second.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "throttle": {
+          "description": "Accelerator input in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClientMessage",
+  "description": "Message sent from a dashboard client to the Host.",
+  "type": "object",
+  "properties": {
+    "v": {
+      "description": "Wire protocol major version.",
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 0
+    }
+  },
+  "oneOf": [
+    {
+      "description": "Opens or resumes a paired device session.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "hello"
+        }
+      },
+      "$ref": "#/$defs/ClientHello",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Confirms that a reliable event was consumed.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "event_ack"
+        }
+      },
+      "$ref": "#/$defs/EventAckMessage",
+      "required": [
+        "type"
+      ]
+    }
+  ],
+  "required": [
+    "v"
+  ],
+  "$defs": {
+    "ClientHello": {
+      "description": "First message sent by a dashboard client.",
+      "type": "object",
+      "properties": {
+        "deviceSession": {
+          "description": "Previously issued device session used for reconnects.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastEventSeq": {
+          "description": "Last reliable event sequence consumed by the client.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "pairingToken": {
+          "description": "One-time token copied from the QR-code fragment.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snapshotHz": {
+          "description": "Requested snapshot publication frequency.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 120,
+          "minimum": 1
+        }
+      },
+      "required": [
+        "snapshotHz"
+      ]
+    },
+    "EventAckMessage": {
+      "description": "Acknowledges one reliable event sequence.",
+      "type": "object",
+      "properties": {
+        "seq": {
+          "description": "Highest contiguous event sequence consumed by the client.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "seq"
+      ]
+    }
+  }
+}
