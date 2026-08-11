@@ -18,3 +18,4 @@ pub use events::EVENT_BUFFER_CAPACITY;
 pub use onboarding::{pairing_url, terminal_qr};
 pub use pairing::PairingError;
 pub use telemetry::{HostMetrics, HostState};
+pub use websocket::MAX_WEBSOCKET_CONNECTIONS;

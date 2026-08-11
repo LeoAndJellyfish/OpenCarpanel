@@ -7,7 +7,12 @@ use serde_json::{Value, json};
 use tokio::net::{TcpListener, UdpSocket};
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream, connect_async,
-    tungstenite::{Message, protocol::CloseFrame},
+    tungstenite::{
+        Error as WebSocketError, Message,
+        client::IntoClientRequest,
+        http::{HeaderValue, StatusCode, header},
+        protocol::CloseFrame,
+    },
 };
 
 type ClientSocket = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
@@ -22,6 +27,18 @@ async fn host() -> Result<RunningHost, Box<dyn Error>> {
 async fn connect(host: &RunningHost) -> Result<ClientSocket, Box<dyn Error>> {
     let (socket, _response) =
         connect_async(format!("ws://{}/api/v1/ws", host.http_address())).await?;
+    Ok(socket)
+}
+
+async fn connect_with_origin(
+    host: &RunningHost,
+    origin: &str,
+) -> Result<ClientSocket, Box<dyn Error>> {
+    let mut request = format!("ws://{}/api/v1/ws", host.http_address()).into_client_request()?;
+    request
+        .headers_mut()
+        .insert(header::ORIGIN, HeaderValue::from_str(origin)?);
+    let (socket, _response) = connect_async(request).await?;
     Ok(socket)
 }
 
@@ -121,6 +138,57 @@ async fn pairing_token_is_one_time_and_expired_tokens_are_typed_errors()
 
     drop(reused);
     drop(expired_socket);
+    host.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn browser_origin_must_match_the_requested_host() -> Result<(), Box<dyn Error>> {
+    let host = host().await?;
+    let token = host.issue_pairing_token(Duration::from_secs(30)).await?;
+
+    let mut malicious = format!("ws://{}/api/v1/ws", host.http_address()).into_client_request()?;
+    malicious.headers_mut().insert(
+        header::ORIGIN,
+        HeaderValue::from_static("http://attacker.invalid"),
+    );
+    let failure = connect_async(malicious).await;
+    let Err(WebSocketError::Http(response)) = failure else {
+        return Err(io::Error::other("cross-origin WebSocket handshake was not rejected").into());
+    };
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    // A rejected HTTP upgrade must not consume the one-time token.
+    let origin = format!("http://{}", host.http_address());
+    let mut socket = connect_with_origin(&host, &origin).await?;
+    send_json(
+        &mut socket,
+        json!({"v":1,"type":"hello","pairingToken":token,"snapshotHz":60}),
+    )
+    .await?;
+    let hello = next_type(&mut socket, "hello").await?;
+    assert!(hello["deviceSession"].is_string());
+
+    socket.close(None).await?;
+    host.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn websocket_connections_are_bounded() -> Result<(), Box<dyn Error>> {
+    let host = host().await?;
+    let mut sockets = Vec::with_capacity(opencarpanel_host::MAX_WEBSOCKET_CONNECTIONS);
+    for _ in 0..opencarpanel_host::MAX_WEBSOCKET_CONNECTIONS {
+        sockets.push(connect(&host).await?);
+    }
+
+    let overflow = connect_async(format!("ws://{}/api/v1/ws", host.http_address())).await;
+    let Err(WebSocketError::Http(response)) = overflow else {
+        return Err(io::Error::other("connection above the Host limit was not rejected").into());
+    };
+    assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+
+    drop(sockets);
     host.shutdown().await?;
     Ok(())
 }

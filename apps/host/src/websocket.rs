@@ -5,7 +5,8 @@ use axum::{
         State,
         ws::{CloseFrame, Message, WebSocket, WebSocketUpgrade, close_code},
     },
-    response::Response,
+    http::{HeaderMap, StatusCode, Uri, header},
+    response::{IntoResponse, Response},
 };
 use futures_util::StreamExt;
 use opencarpanel_protocol::{
@@ -25,17 +26,56 @@ use crate::{
 const APPLICATION_MESSAGE_LIMIT: usize = 16 * 1024;
 const TRANSPORT_MESSAGE_LIMIT: usize = 64 * 1024;
 const FIRST_MESSAGE_TIMEOUT: Duration = Duration::from_secs(5);
+/// Maximum number of concurrent dashboard WebSocket sessions.
+pub const MAX_WEBSOCKET_CONNECTIONS: usize = 8;
 
 pub(crate) async fn upgrade(
-    websocket: WebSocketUpgrade,
     State(state): State<HttpState>,
+    headers: HeaderMap,
+    websocket: WebSocketUpgrade,
 ) -> Response {
+    if !origin_matches_host(&headers) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    let Ok(connection_permit) = Arc::clone(&state.websocket_connections).try_acquire_owned() else {
+        return StatusCode::TOO_MANY_REQUESTS.into_response();
+    };
     websocket
         .write_buffer_size(8 * 1024)
         .max_write_buffer_size(64 * 1024)
         .max_message_size(TRANSPORT_MESSAGE_LIMIT)
         .max_frame_size(TRANSPORT_MESSAGE_LIMIT)
-        .on_upgrade(move |socket| handle_socket(socket, state.host, state.pairing))
+        .on_upgrade(move |socket| async move {
+            handle_socket(socket, state.host, state.pairing).await;
+            drop(connection_permit);
+        })
+}
+
+fn origin_matches_host(headers: &HeaderMap) -> bool {
+    let mut origins = headers.get_all(header::ORIGIN).iter();
+    let Some(origin) = origins.next() else {
+        // Non-browser local clients do not have to synthesize an Origin header.
+        return true;
+    };
+    if origins.next().is_some() {
+        return false;
+    }
+    let Some(host) = headers.get(header::HOST) else {
+        return false;
+    };
+    let (Ok(origin), Ok(host)) = (origin.to_str(), host.to_str()) else {
+        return false;
+    };
+    let Ok(origin) = origin.parse::<Uri>() else {
+        return false;
+    };
+    let valid_scheme = origin
+        .scheme_str()
+        .is_some_and(|scheme| matches!(scheme, "http" | "https"));
+    valid_scheme
+        && origin
+            .authority()
+            .is_some_and(|authority| authority.as_str().eq_ignore_ascii_case(host))
 }
 
 async fn handle_socket(mut socket: WebSocket, host: Arc<HostState>, pairing: Arc<PairingService>) {

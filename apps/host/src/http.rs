@@ -4,6 +4,7 @@ use axum::{Json, Router, extract::State, routing::get};
 use opencarpanel_config::{LayoutRepository, MAX_LAYOUT_BYTES};
 use opencarpanel_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
+use tokio::sync::Semaphore;
 
 use crate::{HostState, layout_api, pairing::PairingService, static_assets, websocket};
 
@@ -12,6 +13,7 @@ pub(crate) struct HttpState {
     pub(crate) host: Arc<HostState>,
     pub(crate) pairing: Arc<PairingService>,
     pub(crate) layouts: Arc<LayoutRepository>,
+    pub(crate) websocket_connections: Arc<Semaphore>,
 }
 
 #[derive(Debug, Serialize)]
@@ -41,6 +43,7 @@ pub(crate) fn router(
             host,
             pairing,
             layouts,
+            websocket_connections: Arc::new(Semaphore::new(websocket::MAX_WEBSOCKET_CONNECTIONS)),
         })
 }
 
