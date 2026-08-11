@@ -6,7 +6,7 @@ import {
   type LayoutDocument,
   type WidgetManifest,
 } from "@opencarpanel/widget-sdk";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import {
   LayoutApiError,
@@ -35,6 +35,12 @@ import {
   redoHistory,
   undoHistory,
 } from "../editor/history";
+import {
+  createLayoutExport,
+  importLayoutText,
+  LayoutTransferError,
+  MAX_LAYOUT_TRANSFER_BYTES,
+} from "../editor/layout-transfer";
 import { useTelemetryRuntime } from "../telemetry/use-runtime";
 import { BUILTIN_WIDGET_MANIFESTS, builtinWidgetManifest } from "../widgets/catalog";
 import "../styles/editor.css";
@@ -58,6 +64,7 @@ export function EditRoute() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("正在读取 Host 布局…");
   const [conflict, setConflict] = useState<LayoutDocument>();
+  const fileInput = useRef<HTMLInputElement>(null);
   const demoMode = import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
   const layout = history.present;
   const selected = layout.widgets.find((widget) => widget.instanceId === selectedId);
@@ -214,6 +221,45 @@ export function EditRoute() {
     }
   };
 
+  const exportLayout = () => {
+    const exported = createLayoutExport(layout);
+    const url = URL.createObjectURL(
+      new Blob([exported.content], { type: "application/json;charset=utf-8" }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = exported.filename;
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setNotice(`已导出 ${exported.filename}。`);
+  };
+
+  const importLayout = async (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+    try {
+      if (file.size > MAX_LAYOUT_TRANSFER_BYTES) {
+        throw new LayoutTransferError("布局文件超过 256 KB 限制。");
+      }
+      const imported = importLayoutText(await file.text(), layout);
+      commit(imported);
+      setSelectedId(undefined);
+      setNotice(`已导入 ${file.name}；确认预览后请保存到 Host。`);
+    } catch (error: unknown) {
+      setNotice(
+        error instanceof Error ? `导入失败：${error.message}` : "导入失败：布局文件无效。",
+      );
+    } finally {
+      if (fileInput.current) {
+        fileInput.current.value = "";
+      }
+    }
+  };
+
   if (!runtime.hasConnected) {
     return <ConnectionScreen view={runtime.connection} />;
   }
@@ -252,6 +298,20 @@ export function EditRoute() {
             onClick={() => setHistory((current) => redoHistory(current))}
           >
             重做
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            aria-label="选择要导入的布局 JSON"
+            onChange={(event) => void importLayout(event.currentTarget.files?.[0])}
+          />
+          <button type="button" onClick={() => fileInput.current?.click()}>
+            导入
+          </button>
+          <button type="button" onClick={exportLayout}>
+            导出
           </button>
           <button
             class="editor-save"
