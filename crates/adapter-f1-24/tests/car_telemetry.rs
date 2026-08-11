@@ -46,6 +46,7 @@ fn synthetic_packet() -> Vec<u8> {
     packet[player + 15] = 7_i8.to_le_bytes()[0];
     write_u16(&mut packet, player + 16, 11_800);
     packet[player + 18] = 1;
+    packet[player + 19] = 84;
     packet
 }
 
@@ -74,6 +75,7 @@ fn selects_player_and_maps_verified_vehicle_fields() -> Result<(), Box<dyn Error
         Some(Gear::forward(7).ok_or_else(|| io::Error::other("gear"))?)
     );
     assert_eq!(update.vehicle.rpm, Some(11_800));
+    assert_eq!(update.vehicle.rev_lights.map(Normalized::get), Some(0.84));
     assert_eq!(update.vehicle.throttle.map(Normalized::get), Some(0.75));
     assert_eq!(update.vehicle.brake.map(Normalized::get), Some(0.25));
     assert_eq!(update.vehicle.drs, Some(DrsState::Active));
@@ -156,6 +158,17 @@ fn corrupt_normalized_inputs_are_rejected_without_clamping() -> Result<(), Box<d
             DecodeError::InvalidNormalizedValue { field, .. } if field == expected_field
         ));
     }
+
+    let mut packet = synthetic_packet();
+    packet[player + 19] = 101;
+    let error = rejected(decoded(&packet))?;
+    assert!(matches!(
+        error,
+        DecodeError::InvalidNormalizedValue {
+            field: "rev_lights",
+            ..
+        }
+    ));
 
     Ok(())
 }

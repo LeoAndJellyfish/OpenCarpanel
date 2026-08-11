@@ -53,6 +53,7 @@ export type TelemetryField =
   | "vehicle.gear"
   | "vehicle.rpm"
   | "vehicle.rpmMax"
+  | "vehicle.revLights"
   | "vehicle.throttle"
   | "vehicle.brake"
   | "vehicle.drs"
@@ -88,13 +89,6 @@ export type ErrorCode =
   | "message_too_large"
   | "internal";
 /**
- * Microseconds elapsed from the Host's monotonic clock origin.
- *
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "MonotonicTimestamp".
- */
-export type MonotonicTimestamp = number;
-/**
  * Gear selected by the game.
  *
  * This interface was referenced by `undefined`'s JSON-Schema
@@ -107,6 +101,13 @@ export type Gear =
       forward: number;
     }
   | "unknown";
+/**
+ * Microseconds elapsed from the Host's monotonic clock origin.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "MonotonicTimestamp".
+ */
+export type MonotonicTimestamp = number;
 /**
  * A finite value in the inclusive range `0.0..=1.0`.
  *
@@ -146,9 +147,17 @@ export interface CapabilitiesMessage {
  * via the `definition` "ErrorMessage".
  */
 export interface ErrorMessage {
-  code: ErrorCode & {
-    [k: string]: unknown;
-  };
+  /**
+   * Stable programmatic error code.
+   */
+  code:
+    | "pairing_required"
+    | "invalid_pairing_token"
+    | "pairing_token_expired"
+    | "unsupported_version"
+    | "invalid_message"
+    | "message_too_large"
+    | "internal";
   /**
    * Sanitized human-readable explanation.
    */
@@ -166,9 +175,7 @@ export interface ErrorMessage {
  * via the `definition` "EventMessage".
  */
 export interface EventMessage {
-  data: TelemetryEvent & {
-    [k: string]: unknown;
-  };
+  data: TelemetryEvent;
   /**
    * Reliable event sequence.
    */
@@ -176,10 +183,7 @@ export interface EventMessage {
   [k: string]: unknown;
 }
 /**
- * A discrete telemetry fact that must not be treated as replaceable state.
- *
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "TelemetryEvent".
+ * Canonical event data.
  */
 export interface TelemetryEvent {
   /**
@@ -192,9 +196,10 @@ export interface TelemetryEvent {
    * Stable dotted event name, such as `lap.completed`.
    */
   name: string;
-  occurredAt: MonotonicTimestamp & {
-    [k: string]: unknown;
-  };
+  /**
+   * Microseconds elapsed from the Host's monotonic clock origin.
+   */
+  occurredAt: number;
   [k: string]: unknown;
 }
 /**
@@ -329,9 +334,7 @@ export interface SnapshotMessage {
    * Host-monotonic capture time in microseconds.
    */
   capturedAtUs: number;
-  data: TelemetrySnapshot & {
-    [k: string]: unknown;
-  };
+  data: TelemetrySnapshot;
   /**
    * Snapshot publication sequence.
    */
@@ -339,10 +342,7 @@ export interface SnapshotMessage {
   [k: string]: unknown;
 }
 /**
- * A complete, game-neutral view of the latest known telemetry state.
- *
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "TelemetrySnapshot".
+ * Complete canonical telemetry state.
  */
 export interface TelemetrySnapshot {
   /**
@@ -351,28 +351,89 @@ export interface TelemetrySnapshot {
   extensions?: {
     [k: string]: unknown;
   };
-  lap?: LapState & {
-    [k: string]: unknown;
-  };
-  meta?: Meta & {
-    [k: string]: unknown;
-  };
-  session?: SessionState & {
-    [k: string]: unknown;
-  };
-  tyres?: TyreState & {
-    [k: string]: unknown;
-  };
-  vehicle?: VehicleState & {
-    [k: string]: unknown;
-  };
+  lap?: LapState1;
+  meta?: Meta1;
+  session?: SessionState1;
+  tyres?: TyreState;
+  vehicle?: VehicleState;
   [k: string]: unknown;
 }
 /**
- * State for all four tyre corners.
- *
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "TyreState".
+ * Lap and race-position state.
+ */
+export interface LapState1 {
+  /**
+   * Current one-based lap number.
+   */
+  current?: number | null;
+  /**
+   * Elapsed current-lap time in milliseconds.
+   */
+  currentTimeMs?: number | null;
+  /**
+   * Signed delta to the relevant best lap in milliseconds.
+   */
+  deltaToBestMs?: number | null;
+  /**
+   * Whether the current lap has been invalidated.
+   */
+  invalid?: boolean | null;
+  /**
+   * Previous completed-lap time in milliseconds.
+   */
+  lastTimeMs?: number | null;
+  /**
+   * Current one-based race position.
+   */
+  position?: number | null;
+  [k: string]: unknown;
+}
+/**
+ * Snapshot metadata.
+ */
+export interface Meta1 {
+  /**
+   * Time at which the newest contributing datagram reached the Host.
+   */
+  capturedAt?: MonotonicTimestamp | null;
+  /**
+   * Stable adapter identifier, such as `f1-24`.
+   */
+  gameId?: string | null;
+  /**
+   * Schema version used by this snapshot.
+   */
+  schemaVersion?: number;
+  /**
+   * Monotonic snapshot sequence assigned by the core.
+   */
+  sequence?: number;
+  /**
+   * Opaque identifier for the active game session.
+   */
+  sessionId?: string | null;
+  [k: string]: unknown;
+}
+/**
+ * Session state.
+ */
+export interface SessionState1 {
+  /**
+   * Remaining session time in milliseconds.
+   */
+  remainingTimeMs?: number | null;
+  /**
+   * Scheduled total number of laps when known.
+   */
+  totalLaps?: number | null;
+  /**
+   * Stable game-provided or mapped track identifier.
+   */
+  trackId?: string | null;
+  [k: string]: unknown;
+}
+/**
+ * Four-corner tyre state.
  */
 export interface TyreState {
   /**
@@ -419,19 +480,17 @@ export interface TyreCornerState {
   [k: string]: unknown;
 }
 /**
- * Current player-vehicle state in standard units.
- *
- * This interface was referenced by `undefined`'s JSON-Schema
- * via the `definition` "VehicleState".
+ * Player-vehicle state.
  */
 export interface VehicleState {
   /**
    * Brake input in the inclusive unit interval.
    */
   brake?: Normalized | null;
-  drs?: DrsState & {
-    [k: string]: unknown;
-  };
+  /**
+   * Driver-reduction-system state.
+   */
+  drs?: "unavailable" | "available" | "active" | "unknown";
   /**
    * Available electrical energy in joules.
    */
@@ -440,9 +499,20 @@ export interface VehicleState {
    * Remaining fuel mass in kilograms.
    */
   fuelKg?: number | null;
-  gear?: Gear & {
-    [k: string]: unknown;
-  };
+  /**
+   * Selected gear.
+   */
+  gear?:
+    | "reverse"
+    | "neutral"
+    | {
+        forward: number;
+      }
+    | "unknown";
+  /**
+   * Game-provided shift-light progression in the inclusive unit interval.
+   */
+  revLights?: Normalized | null;
   /**
    * Current engine revolutions per minute.
    */
@@ -468,12 +538,136 @@ export interface VehicleState {
  * via the `definition` "StaleMessage".
  */
 export interface StaleMessage {
-  reason: StaleReason & {
-    [k: string]: unknown;
-  };
+  /**
+   * Why the state is stale.
+   */
+  reason: "game_data_timeout" | "data_source_disconnected" | "session_changed";
   /**
    * Host-monotonic time at which the state became stale.
    */
   sinceUs: number;
+  [k: string]: unknown;
+}
+/**
+ * A discrete telemetry fact that must not be treated as replaceable state.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "TelemetryEvent".
+ */
+export interface TelemetryEvent1 {
+  /**
+   * Event-specific structured data.
+   */
+  data?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Stable dotted event name, such as `lap.completed`.
+   */
+  name: string;
+  /**
+   * Microseconds elapsed from the Host's monotonic clock origin.
+   */
+  occurredAt: number;
+  [k: string]: unknown;
+}
+/**
+ * A complete, game-neutral view of the latest known telemetry state.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "TelemetrySnapshot".
+ */
+export interface TelemetrySnapshot1 {
+  /**
+   * Adapter-specific values that do not yet have stable cross-game semantics.
+   */
+  extensions?: {
+    [k: string]: unknown;
+  };
+  lap?: LapState1;
+  meta?: Meta1;
+  session?: SessionState1;
+  tyres?: TyreState;
+  vehicle?: VehicleState;
+  [k: string]: unknown;
+}
+/**
+ * State for all four tyre corners.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "TyreState".
+ */
+export interface TyreState1 {
+  /**
+   * Front-left tyre.
+   */
+  frontLeft?: TyreCornerState | null;
+  /**
+   * Front-right tyre.
+   */
+  frontRight?: TyreCornerState | null;
+  /**
+   * Rear-left tyre.
+   */
+  rearLeft?: TyreCornerState | null;
+  /**
+   * Rear-right tyre.
+   */
+  rearRight?: TyreCornerState | null;
+  [k: string]: unknown;
+}
+/**
+ * Current player-vehicle state in standard units.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "VehicleState".
+ */
+export interface VehicleState1 {
+  /**
+   * Brake input in the inclusive unit interval.
+   */
+  brake?: Normalized | null;
+  /**
+   * Driver-reduction-system state.
+   */
+  drs?: "unavailable" | "available" | "active" | "unknown";
+  /**
+   * Available electrical energy in joules.
+   */
+  ersEnergyJ?: number | null;
+  /**
+   * Remaining fuel mass in kilograms.
+   */
+  fuelKg?: number | null;
+  /**
+   * Selected gear.
+   */
+  gear?:
+    | "reverse"
+    | "neutral"
+    | {
+        forward: number;
+      }
+    | "unknown";
+  /**
+   * Game-provided shift-light progression in the inclusive unit interval.
+   */
+  revLights?: Normalized | null;
+  /**
+   * Current engine revolutions per minute.
+   */
+  rpm?: number | null;
+  /**
+   * Maximum engine revolutions per minute used for display scaling.
+   */
+  rpmMax?: number | null;
+  /**
+   * Vehicle speed in metres per second.
+   */
+  speedMps?: number | null;
+  /**
+   * Accelerator input in the inclusive unit interval.
+   */
+  throttle?: Normalized | null;
   [k: string]: unknown;
 }

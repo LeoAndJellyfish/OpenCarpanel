@@ -195,6 +195,9 @@ pub struct VehicleState {
     /// Maximum engine revolutions per minute used for display scaling.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rpm_max: Option<u16>,
+    /// Game-provided shift-light progression in the inclusive unit interval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rev_lights: Option<Normalized>,
     /// Accelerator input in the inclusive unit interval.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub throttle: Option<Normalized>,
@@ -336,6 +339,9 @@ pub enum TelemetryField {
     /// Maximum engine revolutions per minute.
     #[serde(rename = "vehicle.rpmMax")]
     VehicleRpmMax,
+    /// Game-provided shift-light progression.
+    #[serde(rename = "vehicle.revLights")]
+    VehicleRevLights,
     /// Accelerator input.
     #[serde(rename = "vehicle.throttle")]
     VehicleThrottle,
@@ -386,6 +392,7 @@ impl TelemetryField {
             Self::VehicleGear => "vehicle.gear",
             Self::VehicleRpm => "vehicle.rpm",
             Self::VehicleRpmMax => "vehicle.rpmMax",
+            Self::VehicleRevLights => "vehicle.revLights",
             Self::VehicleThrottle => "vehicle.throttle",
             Self::VehicleBrake => "vehicle.brake",
             Self::VehicleDrs => "vehicle.drs",
@@ -419,6 +426,9 @@ pub struct VehicleUpdate {
     /// New maximum engine speed when supplied.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rpm_max: Option<u16>,
+    /// New shift-light progression when supplied.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rev_lights: Option<Normalized>,
     /// New accelerator input when supplied.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub throttle: Option<Normalized>,

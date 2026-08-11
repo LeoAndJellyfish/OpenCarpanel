@@ -1,0 +1,54 @@
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.tachometer-widget,
+.gear-widget,
+.speed-widget,
+.status-rail {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: dashboard-enter 220ms var(--ease-out) forwards;
+}
+
+.gear-widget {
+  animation-delay: 50ms;
+}
+
+.speed-widget,
+.status-rail {
+  animation-delay: 100ms;
+}
+
+.status-line strong,
+.status-line output,
+.rpm-value {
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+@keyframes dashboard-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tachometer-widget,
+  .gear-widget,
+  .speed-widget,
+  .status-rail {
+    transform: none;
+    animation: dashboard-fade 150ms var(--ease-out) forwards;
+    animation-delay: 0ms;
+  }
+
+  @keyframes dashboard-fade {
+    to {
+      opacity: 1;
+    }
+  }
+}

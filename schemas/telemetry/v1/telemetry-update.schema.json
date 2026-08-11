@@ -361,6 +361,17 @@
             }
           ]
         },
+        "revLights": {
+          "description": "New shift-light progression when supplied.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "rpm": {
           "description": "New engine speed when this packet updates engine speed.",
           "type": [

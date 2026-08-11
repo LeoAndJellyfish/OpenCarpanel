@@ -5,7 +5,7 @@ use super::{
     CAR_TELEMETRY_PACKET_VERSION, F1_24_CAR_COUNT,
 };
 
-const UNMAPPED_PLAYER_FIELDS_LEN: usize = 41;
+const UNMAPPED_PLAYER_FIELDS_LEN: usize = 40;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct CarTelemetrySample {
@@ -15,6 +15,7 @@ pub(crate) struct CarTelemetrySample {
     pub(crate) gear: i8,
     pub(crate) engine_rpm: u16,
     pub(crate) drs: u8,
+    pub(crate) rev_lights_percent: u8,
 }
 
 pub(crate) fn decode_player_sample(
@@ -42,6 +43,7 @@ pub(crate) fn decode_player_sample(
     let gear = cursor.read_i8()?;
     let engine_rpm = cursor.read_u16_le()?;
     let drs = cursor.read_u8()?;
+    let rev_lights_percent = cursor.read_u8()?;
     cursor.skip(UNMAPPED_PLAYER_FIELDS_LEN)?;
 
     Ok(CarTelemetrySample {
@@ -51,6 +53,7 @@ pub(crate) fn decode_player_sample(
         gear,
         engine_rpm,
         drs,
+        rev_lights_percent,
     })
 }
 

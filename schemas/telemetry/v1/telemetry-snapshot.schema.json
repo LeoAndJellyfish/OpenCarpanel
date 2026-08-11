@@ -380,6 +380,17 @@
           "description": "Selected gear.",
           "$ref": "#/$defs/Gear"
         },
+        "revLights": {
+          "description": "Game-provided shift-light progression in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "rpm": {
           "description": "Current engine revolutions per minute.",
           "type": [

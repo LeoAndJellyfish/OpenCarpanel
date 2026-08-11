@@ -595,6 +595,11 @@
           "const": "vehicle.rpmMax"
         },
         {
+          "description": "Game-provided shift-light progression.",
+          "type": "string",
+          "const": "vehicle.revLights"
+        },
+        {
           "description": "Accelerator input.",
           "type": "string",
           "const": "vehicle.throttle"
@@ -829,6 +834,17 @@
         "gear": {
           "description": "Selected gear.",
           "$ref": "#/$defs/Gear"
+        },
+        "revLights": {
+          "description": "Game-provided shift-light progression in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "rpm": {
           "description": "Current engine revolutions per minute.",

@@ -78,7 +78,26 @@ function normalizeRefSiblings(value) {
   }
 
   const { $ref, ...siblings } = normalized;
-  return { allOf: [{ $ref }, siblings] };
+  const annotationKeys = new Set([
+    "$comment",
+    "default",
+    "deprecated",
+    "description",
+    "examples",
+    "readOnly",
+    "title",
+    "writeOnly",
+  ]);
+  const annotations = Object.fromEntries(
+    Object.entries(siblings).filter(([key]) => annotationKeys.has(key)),
+  );
+  const constraints = Object.fromEntries(
+    Object.entries(siblings).filter(([key]) => !annotationKeys.has(key)),
+  );
+  if (Object.keys(constraints).length === 0) {
+    return { $ref, ...annotations };
+  }
+  return { ...annotations, allOf: [{ $ref }, constraints] };
 }
 
 export async function generateWebTypes(outputDirectory = defaultOutput) {

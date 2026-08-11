@@ -21,6 +21,9 @@ export interface ConnectionView {
 }
 
 type ViewObserver = (view: ConnectionView) => void;
+type MessageObserver = (message: ServerMessage) => void;
+
+const RETRY_DELAYS_MS = [250, 500, 1_000, 2_000, 5_000] as const;
 
 function websocketUrl(location: Location): string {
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
@@ -64,21 +67,26 @@ function helloMessage(
 
 export class TelemetryConnection {
   readonly #observe: ViewObserver;
+  readonly #observeMessage: MessageObserver;
   #socket: WebSocket | undefined;
+  #pairingToken: string | undefined;
+  #deviceSession: string | undefined;
+  #retryTimer: number | undefined;
+  #retryAttempt = 0;
   #stopped = false;
   #terminalError = false;
 
-  constructor(observe: ViewObserver) {
+  constructor(observe: ViewObserver, observeMessage: MessageObserver = () => undefined) {
     this.#observe = observe;
+    this.#observeMessage = observeMessage;
   }
 
   start(pairingToken?: string): void {
-    const deviceSession = window.localStorage.getItem(DEVICE_SESSION_KEY) ?? undefined;
-    const hello = helloMessage(
-      pairingToken,
-      deviceSession,
-      lastEventSequence(window.localStorage),
-    );
+    this.#stopped = false;
+    this.#terminalError = false;
+    this.#pairingToken = pairingToken;
+    this.#deviceSession = window.localStorage.getItem(DEVICE_SESSION_KEY) ?? undefined;
+    const hello = this.#helloMessage();
     if (!hello) {
       this.#observe({
         phase: "pairing_required",
@@ -87,34 +95,85 @@ export class TelemetryConnection {
       return;
     }
 
-    this.#observe({ phase: "connecting", detail: "正在建立低延迟遥测连接…" });
-    const socket = new WebSocket(websocketUrl(window.location));
-    this.#socket = socket;
-    socket.addEventListener("open", () => {
-      socket.send(JSON.stringify(hello));
-    });
-    socket.addEventListener("message", (event) => this.#handleMessage(event));
-    socket.addEventListener("error", () => {
-      this.#terminalError = true;
-      this.#observe({
-        phase: "error",
-        detail: "连接发生错误，请确认手机与电脑位于同一局域网。",
-      });
-    });
-    socket.addEventListener("close", () => {
-      if (!this.#stopped && !this.#terminalError) {
-        this.#observe({ phase: "disconnected", detail: "遥测连接已断开。" });
-      }
-    });
+    this.#connect(hello);
+  }
+
+  requestSnapshot(): void {
+    const request = {
+      v: PROTOCOL_VERSION,
+      type: "snapshot_request",
+    } satisfies ClientMessage;
+    this.#send(request);
   }
 
   stop(): void {
     this.#stopped = true;
+    if (this.#retryTimer !== undefined) {
+      window.clearTimeout(this.#retryTimer);
+      this.#retryTimer = undefined;
+    }
     this.#socket?.close(1000, "view_closed");
     this.#socket = undefined;
   }
 
-  #handleMessage(event: MessageEvent<unknown>): void {
+  #helloMessage(): ClientMessage | undefined {
+    return helloMessage(
+      this.#pairingToken,
+      this.#deviceSession,
+      lastEventSequence(window.localStorage),
+    );
+  }
+
+  #connect(hello: ClientMessage): void {
+    this.#observe({
+      phase: "connecting",
+      detail: this.#retryAttempt === 0 ? "正在建立低延迟遥测连接…" : "正在重新连接 Host…",
+    });
+    const socket = new WebSocket(websocketUrl(window.location));
+    this.#socket = socket;
+    socket.addEventListener("open", () => {
+      if (this.#socket === socket) {
+        socket.send(JSON.stringify(hello));
+      }
+    });
+    socket.addEventListener("message", (event) => this.#handleMessage(event, socket));
+    socket.addEventListener("error", () => {
+      if (this.#socket === socket && !this.#terminalError) {
+        this.#observe({ phase: "disconnected", detail: "连接受阻，正在准备重试…" });
+      }
+    });
+    socket.addEventListener("close", () => {
+      if (this.#socket !== socket) {
+        return;
+      }
+      this.#socket = undefined;
+      if (!this.#stopped && !this.#terminalError) {
+        this.#scheduleReconnect();
+      }
+    });
+  }
+
+  #scheduleReconnect(): void {
+    const delayIndex = Math.min(this.#retryAttempt, RETRY_DELAYS_MS.length - 1);
+    const delayMs = RETRY_DELAYS_MS[delayIndex] ?? 5_000;
+    this.#retryAttempt += 1;
+    this.#observe({
+      phase: "disconnected",
+      detail: `连接已断开，${(delayMs / 1_000).toFixed(delayMs < 1_000 ? 2 : 0)} 秒后重试。`,
+    });
+    this.#retryTimer = window.setTimeout(() => {
+      this.#retryTimer = undefined;
+      const hello = this.#helloMessage();
+      if (hello && !this.#stopped) {
+        this.#connect(hello);
+      }
+    }, delayMs);
+  }
+
+  #handleMessage(event: MessageEvent<unknown>, socket: WebSocket): void {
+    if (this.#socket !== socket) {
+      return;
+    }
     if (typeof event.data !== "string") {
       this.#terminalError = true;
       this.#observe({ phase: "error", detail: "Host 返回了不支持的二进制消息。" });
@@ -132,6 +191,7 @@ export class TelemetryConnection {
       return;
     }
     this.#applyMessage(message);
+    this.#observeMessage(message);
   }
 
   #applyMessage(message: ServerMessage): void {
@@ -139,7 +199,10 @@ export class TelemetryConnection {
       case "hello":
         if (message.deviceSession) {
           window.localStorage.setItem(DEVICE_SESSION_KEY, message.deviceSession);
+          this.#deviceSession = message.deviceSession;
         }
+        this.#pairingToken = undefined;
+        this.#retryAttempt = 0;
         this.#observe({ phase: "connected", detail: `Host ${message.serverVersion} 已就绪。` });
         break;
       case "event": {
@@ -153,8 +216,11 @@ export class TelemetryConnection {
         break;
       }
       case "error":
-        this.#terminalError = true;
+        this.#terminalError = !message.retryable;
         this.#observe({ phase: "error", detail: message.message });
+        if (this.#terminalError) {
+          this.#socket?.close(1008, "terminal_error");
+        }
         break;
       case "resync_required":
         window.localStorage.setItem(LAST_EVENT_SEQUENCE_KEY, String(message.newestEventSeq));
@@ -163,6 +229,13 @@ export class TelemetryConnection {
       case "snapshot":
       case "stale":
         break;
+    }
+  }
+
+  #send(message: ClientMessage): void {
+    const socket = this.#socket;
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
     }
   }
 }

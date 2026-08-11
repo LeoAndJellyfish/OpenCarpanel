@@ -41,6 +41,8 @@ pub enum ClientPayload {
     Hello(ClientHello),
     /// Confirms that a reliable event was consumed.
     EventAck(EventAckMessage),
+    /// Requests the newest complete snapshot after a visibility or state reset.
+    SnapshotRequest(SnapshotRequestMessage),
 }
 
 /// First message sent by a dashboard client.
@@ -67,6 +69,10 @@ pub struct EventAckMessage {
     /// Highest contiguous event sequence consumed by the client.
     pub seq: u64,
 }
+
+/// Requests an immediate copy of the Host's latest snapshot.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct SnapshotRequestMessage {}
 
 /// Message sent from the Host to a dashboard client.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]

@@ -1,0 +1,313 @@
+:root {
+  --surface-0: #07090c;
+  --surface-1: #0d1115;
+  --surface-2: #14191d;
+  --line: #2a3033;
+  --ink: #f2f0e9;
+  --ink-muted: #899195;
+  --signal: #d9ff43;
+  --signal-dim: #617024;
+  --redline: #ff4b3e;
+  --warning: #ffb23f;
+}
+
+body {
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+.drive-dashboard {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(110px, 22vh) 1fr auto;
+  min-height: 100dvh;
+  padding: max(18px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 42%, rgb(217 255 67 / 7%), transparent 31%),
+    linear-gradient(135deg, #0c1013 0%, var(--surface-0) 56%, #0b0e12 100%);
+  isolation: isolate;
+}
+
+.drive-dashboard::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 2.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 2.5%) 1px, transparent 1px);
+  background-size: 48px 48px;
+  content: "";
+  mask-image: linear-gradient(to bottom, transparent, black 30%, black 75%, transparent);
+}
+
+.drive-dashboard::after {
+  position: absolute;
+  z-index: -1;
+  top: -18%;
+  right: 8%;
+  width: 18%;
+  height: 130%;
+  background: linear-gradient(to bottom, transparent, rgb(217 255 67 / 6%), transparent);
+  content: "";
+  transform: skewX(-18deg);
+}
+
+.dashboard-frame {
+  position: absolute;
+  z-index: 3;
+  inset: 10px;
+  border: 1px solid rgb(255 255 255 / 7%);
+  pointer-events: none;
+}
+
+.dashboard-frame::before,
+.dashboard-frame::after {
+  position: absolute;
+  width: 72px;
+  height: 4px;
+  background: var(--signal);
+  content: "";
+}
+
+.dashboard-frame::before {
+  top: -1px;
+  left: 12%;
+}
+
+.dashboard-frame::after {
+  right: 6%;
+  bottom: -1px;
+  width: 38px;
+  background: var(--redline);
+}
+
+.dashboard-widget {
+  min-width: 0;
+}
+
+.widget-kicker {
+  color: var(--ink-muted);
+  font-size: clamp(0.62rem, 1.1vw, 0.8rem);
+  font-weight: 650;
+  letter-spacing: 0.18em;
+}
+
+.tachometer-widget {
+  display: grid;
+  align-content: center;
+  min-height: 0;
+  padding-inline: clamp(8px, 2vw, 28px);
+  contain: layout paint;
+}
+
+.tachometer-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-inline: 6px;
+}
+
+.rpm-value {
+  color: var(--ink-muted);
+  font-size: clamp(0.68rem, 1.2vw, 0.9rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+.rev-horizon {
+  display: block;
+  width: 100%;
+  max-height: 96px;
+  overflow: visible;
+}
+
+.rev-segment {
+  fill: var(--signal);
+  opacity: 0.16;
+  transform: scaleY(0.42);
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.rev-segment-redline {
+  fill: var(--redline);
+}
+
+.rev-segment-active {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.tachometer-widget[data-shift="ready"] .rpm-value {
+  color: var(--redline);
+}
+
+.primary-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.85fr) minmax(240px, 1.3fr) minmax(180px, 0.85fr);
+  align-items: end;
+  gap: clamp(18px, 4vw, 70px);
+  min-height: 0;
+  padding: 0 clamp(12px, 4vw, 70px) 1vh;
+}
+
+.gear-widget {
+  display: grid;
+  align-self: stretch;
+  place-items: center;
+  position: relative;
+}
+
+.gear-widget .widget-kicker {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.gear-value {
+  color: var(--ink);
+  font-size: clamp(10rem, 31vh, 23rem);
+  font-stretch: condensed;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.075em;
+  line-height: 0.72;
+  text-indent: -0.075em;
+}
+
+.speed-widget {
+  align-self: end;
+  padding-bottom: clamp(12px, 4vh, 42px);
+}
+
+.speed-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.speed-value {
+  font-size: clamp(3.5rem, 11vw, 8.5rem);
+  font-stretch: condensed;
+  font-variant-numeric: tabular-nums;
+  font-weight: 540;
+  letter-spacing: -0.055em;
+  line-height: 0.8;
+}
+
+.speed-unit {
+  color: var(--signal);
+  font-size: clamp(0.62rem, 1.2vw, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  writing-mode: vertical-rl;
+}
+
+.status-rail {
+  display: grid;
+  align-self: end;
+  gap: 9px;
+  padding: 0 0 clamp(12px, 4vh, 42px) clamp(14px, 2vw, 28px);
+  border-left: 1px solid var(--line);
+}
+
+.status-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--ink-muted);
+  font-size: clamp(0.61rem, 1vw, 0.78rem);
+  letter-spacing: 0.1em;
+}
+
+.status-line strong,
+.status-line output {
+  color: var(--ink);
+  font-weight: 650;
+  text-align: right;
+}
+
+.status-line [data-active="true"],
+.status-line [data-phase="connected"] {
+  color: var(--signal);
+}
+
+.status-line [data-phase="error"] {
+  color: var(--redline);
+}
+
+.drive-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 4px 0;
+  border-top: 1px solid var(--line);
+  color: #626a6e;
+  font-size: 0.57rem;
+  letter-spacing: 0.17em;
+}
+
+.drive-dashboard[data-stale="true"] .rev-segment,
+.drive-dashboard[data-stale="true"] .speed-unit {
+  opacity: 0.3 !important;
+}
+
+@media (orientation: portrait), (max-width: 680px) {
+  .drive-dashboard {
+    grid-template-rows: minmax(100px, 17vh) 1fr auto;
+  }
+
+  .primary-grid {
+    grid-template: minmax(0, 1fr) auto / 1fr 1fr;
+    gap: 16px 22px;
+    padding: 0 8px 1vh;
+  }
+
+  .gear-widget {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .gear-value {
+    font-size: clamp(11rem, 43vh, 22rem);
+  }
+
+  .speed-widget {
+    grid-column: 1;
+    grid-row: 2;
+    padding-bottom: 14px;
+  }
+
+  .status-rail {
+    grid-column: 2;
+    grid-row: 2;
+    padding-bottom: 14px;
+  }
+
+  .status-line:first-child {
+    display: none;
+  }
+
+  .drive-footer span:last-child {
+    display: none;
+  }
+}
+
+@media (max-height: 460px) and (orientation: landscape) {
+  .drive-dashboard {
+    grid-template-rows: minmax(82px, 23vh) 1fr auto;
+  }
+
+  .gear-value {
+    font-size: clamp(7.5rem, 42vh, 13rem);
+  }
+
+  .speed-value {
+    font-size: clamp(3rem, 18vh, 5.5rem);
+  }
+}

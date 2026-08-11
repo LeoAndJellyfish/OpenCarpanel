@@ -142,6 +142,13 @@ fn apply_vehicle(
     );
     changed |= apply_optional(
         frames,
+        &mut snapshot.vehicle.rev_lights,
+        update.rev_lights,
+        "vehicle.revLights",
+        frame,
+    );
+    changed |= apply_optional(
+        frames,
         &mut snapshot.vehicle.throttle,
         update.throttle,
         "vehicle.throttle",

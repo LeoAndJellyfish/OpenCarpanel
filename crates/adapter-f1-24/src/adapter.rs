@@ -26,6 +26,7 @@ impl F1_24Adapter {
             TelemetryField::VehicleSpeed,
             TelemetryField::VehicleGear,
             TelemetryField::VehicleRpm,
+            TelemetryField::VehicleRevLights,
             TelemetryField::VehicleThrottle,
             TelemetryField::VehicleBrake,
             TelemetryField::VehicleDrs,

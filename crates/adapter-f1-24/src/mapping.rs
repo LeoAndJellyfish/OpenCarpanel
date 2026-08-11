@@ -30,6 +30,13 @@ pub(crate) fn map_player_sample(
             });
         }
     };
+    let rev_lights =
+        Normalized::new(f32::from(sample.rev_lights_percent) / 100.0).map_err(|_| {
+            DecodeError::InvalidNormalizedValue {
+                field: "rev_lights",
+                value: f32::from(sample.rev_lights_percent) / 100.0,
+            }
+        })?;
 
     Ok(TelemetryUpdate {
         received_at,
@@ -39,6 +46,7 @@ pub(crate) fn map_player_sample(
             speed_mps: Some(f32::from(sample.speed_kph) / KILOMETRES_PER_HOUR_PER_METRE_PER_SECOND),
             gear: Some(map_gear(sample.gear)),
             rpm: Some(sample.engine_rpm),
+            rev_lights: Some(rev_lights),
             throttle: Some(throttle),
             brake: Some(brake),
             drs: Some(drs),

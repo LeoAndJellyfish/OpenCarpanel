@@ -21,6 +21,10 @@ export type ClientMessage = {
       type: "event_ack";
       [k: string]: unknown;
     })
+  | (SnapshotRequestMessage & {
+      type: "snapshot_request";
+      [k: string]: unknown;
+    })
 );
 
 /**
@@ -59,5 +63,14 @@ export interface EventAckMessage {
    * Highest contiguous event sequence consumed by the client.
    */
   seq: number;
+  [k: string]: unknown;
+}
+/**
+ * Requests an immediate copy of the Host's latest snapshot.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "SnapshotRequestMessage".
+ */
+export interface SnapshotRequestMessage {
   [k: string]: unknown;
 }

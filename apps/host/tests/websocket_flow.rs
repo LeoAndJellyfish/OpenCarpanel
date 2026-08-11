@@ -141,6 +141,10 @@ async fn snapshot_lane_collapses_bursts_to_the_newest_sequence() -> Result<(), B
 
     let newest = next_type(&mut socket, "snapshot").await?;
     assert_eq!(newest["seq"], 100);
+
+    send_json(&mut socket, json!({"v":1,"type":"snapshot_request"})).await?;
+    let requested = next_type(&mut socket, "snapshot").await?;
+    assert_eq!(requested["seq"], 100);
     socket.close(None).await?;
     host.shutdown().await?;
     Ok(())

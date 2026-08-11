@@ -1,4 +1,6 @@
-use opencarpanel_telemetry_core::{Gear, MonotonicTimestamp, TelemetryReducer, TelemetryUpdate};
+use opencarpanel_telemetry_core::{
+    Gear, MonotonicTimestamp, Normalized, TelemetryReducer, TelemetryUpdate,
+};
 
 fn vehicle_update(session: &str, frame: u32) -> TelemetryUpdate {
     TelemetryUpdate {
@@ -18,12 +20,14 @@ fn partial_updates_merge_into_one_snapshot() {
 
     let mut rpm = vehicle_update("session-a", 11);
     rpm.vehicle.rpm = Some(11_000);
+    rpm.vehicle.rev_lights = Normalized::new(0.92).ok();
     rpm.vehicle.gear = Gear::forward(7);
     reducer.apply(rpm);
 
     let snapshot = reducer.snapshot();
     assert_eq!(snapshot.vehicle.speed_mps, Some(50.0));
     assert_eq!(snapshot.vehicle.rpm, Some(11_000));
+    assert_eq!(snapshot.vehicle.rev_lights.map(Normalized::get), Some(0.92));
     assert_eq!(
         snapshot.vehicle.gear,
         Gear::forward(7).unwrap_or(Gear::Unknown)

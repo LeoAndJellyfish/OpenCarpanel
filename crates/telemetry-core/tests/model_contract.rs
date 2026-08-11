@@ -50,6 +50,10 @@ fn normalized_schema_documents_its_range() -> Result<(), Box<dyn Error>> {
 fn public_field_paths_match_the_wire_model() {
     assert_eq!(TelemetryField::VehicleSpeed.as_path(), "vehicle.speedMps");
     assert_eq!(TelemetryField::VehicleRpm.as_path(), "vehicle.rpm");
+    assert_eq!(
+        TelemetryField::VehicleRevLights.as_path(),
+        "vehicle.revLights"
+    );
 }
 
 #[test]

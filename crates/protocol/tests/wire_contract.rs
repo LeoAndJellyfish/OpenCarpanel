@@ -3,8 +3,8 @@ use std::{error::Error, fs, io, path::Path};
 use opencarpanel_protocol::{
     CapabilitiesMessage, ClientHello, ClientMessage, ClientPayload, ErrorCode, ErrorMessage,
     EventAckMessage, EventMessage, ResyncRequiredMessage, ServerHello, ServerMessage,
-    ServerPayload, SnapshotMessage, StaleMessage, StaleReason, WireDecodeError,
-    decode_client_message, decode_server_message,
+    ServerPayload, SnapshotMessage, SnapshotRequestMessage, StaleMessage, StaleReason,
+    WireDecodeError, decode_client_message, decode_server_message,
 };
 use opencarpanel_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetrySnapshot,
@@ -109,6 +109,11 @@ fn client_hello_and_event_ack_keep_stable_external_tags() -> serde_json::Result<
     )))?;
     assert_eq!(ack["type"], "event_ack");
     assert_eq!(ack["seq"], 11);
+
+    let snapshot_request = encoded(&ClientMessage::new(ClientPayload::SnapshotRequest(
+        SnapshotRequestMessage {},
+    )))?;
+    assert_eq!(snapshot_request["type"], "snapshot_request");
 
     Ok(())
 }

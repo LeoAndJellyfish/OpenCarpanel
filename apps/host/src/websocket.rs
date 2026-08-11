@@ -104,7 +104,7 @@ async fn handle_socket(mut socket: WebSocket, host: Arc<HostState>, pairing: Arc
     loop {
         tokio::select! {
             incoming = socket.next() => {
-                if !handle_client_message(&mut socket, incoming).await {
+                if !handle_client_message(&mut socket, incoming, &snapshot_receiver).await {
                     return;
                 }
             }
@@ -186,6 +186,9 @@ async fn read_hello(socket: &mut WebSocket) -> Result<ClientHello, ConnectionFai
 async fn handle_client_message(
     socket: &mut WebSocket,
     incoming: Option<Result<Message, axum::Error>>,
+    snapshot_receiver: &tokio::sync::watch::Receiver<
+        Arc<opencarpanel_telemetry_core::TelemetrySnapshot>,
+    >,
 ) -> bool {
     let Some(incoming) = incoming else {
         return false;
@@ -203,15 +206,21 @@ async fn handle_client_message(
             false
         }
         Message::Text(text) => match decode_client_message(text.as_bytes()) {
-            Ok(message) if matches!(message.payload, ClientPayload::EventAck(_)) => true,
-            Ok(_message) => {
-                send_failure_and_close(
-                    socket,
-                    ConnectionFailure::invalid_message("hello may only be sent once"),
-                )
-                .await;
-                false
-            }
+            Ok(message) => match message.payload {
+                ClientPayload::EventAck(_acknowledgement) => true,
+                ClientPayload::SnapshotRequest(_request) => {
+                    let snapshot = snapshot_receiver.borrow().as_ref().clone();
+                    send_snapshot(socket, snapshot).await.is_ok()
+                }
+                ClientPayload::Hello(_hello) => {
+                    send_failure_and_close(
+                        socket,
+                        ConnectionFailure::invalid_message("hello may only be sent once"),
+                    )
+                    .await;
+                    false
+                }
+            },
             Err(error) => {
                 send_failure_and_close(socket, ConnectionFailure::from(error)).await;
                 false
