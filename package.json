@@ -1,0 +1,17 @@
+{
+  "name": "opencarpanel",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "web/dashboard",
+    "web/widget-sdk"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:web": "npm run build --workspaces --if-present",
+    "check:web": "npm run check --workspaces --if-present",
+    "test:web": "npm run test --workspaces --if-present"
+  }
+}

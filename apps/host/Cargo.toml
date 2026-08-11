@@ -1,0 +1,10 @@
+[package]
+name = "opencarpanel-host"
+description = "Local OpenCarpanel host process"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true

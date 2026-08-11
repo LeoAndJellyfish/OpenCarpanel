@@ -1,0 +1,10 @@
+[package]
+name = "opencarpanel-telemetry-core"
+description = "Game-neutral telemetry state and event processing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
