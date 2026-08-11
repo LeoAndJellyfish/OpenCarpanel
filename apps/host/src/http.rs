@@ -5,7 +5,7 @@ use opencarpanel_config::{LayoutRepository, MAX_LAYOUT_BYTES};
 use opencarpanel_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 
-use crate::{HostState, layout_api, pairing::PairingService, websocket};
+use crate::{HostState, layout_api, pairing::PairingService, static_assets, websocket};
 
 #[derive(Debug, Clone)]
 pub(crate) struct HttpState {
@@ -28,12 +28,14 @@ pub(crate) fn router(
     layouts: Arc<LayoutRepository>,
 ) -> Router {
     Router::new()
+        .route("/", get(static_assets::root))
         .route("/api/v1/health", get(health))
         .route("/api/v1/ws", get(websocket::upgrade))
         .route(
             "/api/v1/layouts/{layout_id}",
             get(layout_api::get_layout).put(layout_api::put_layout),
         )
+        .route("/{*path}", get(static_assets::path))
         .layer(axum::extract::DefaultBodyLimit::max(MAX_LAYOUT_BYTES))
         .with_state(HttpState {
             host,
