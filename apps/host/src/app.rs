@@ -15,7 +15,10 @@ use tokio::{
     task::{JoinError, JoinHandle},
 };
 
-use crate::{HostState, http, shutdown::wait_for_shutdown, telemetry::run_udp_ingestion};
+use crate::{
+    HostState, PairingError, http, pairing::PairingService, shutdown::wait_for_shutdown,
+    telemetry::run_udp_ingestion,
+};
 
 /// Network endpoints used when binding the Host.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,6 +103,7 @@ pub struct RunningHost {
     http_address: SocketAddr,
     udp_address: SocketAddr,
     state: Arc<HostState>,
+    pairing: Arc<PairingService>,
     shutdown_sender: watch::Sender<bool>,
     supervisor: Option<JoinHandle<Result<(), HostError>>>,
 }
@@ -121,6 +125,19 @@ impl RunningHost {
     #[must_use]
     pub const fn state(&self) -> &Arc<HostState> {
         &self.state
+    }
+
+    /// Issues a URL-safe one-time pairing token with the requested lifetime.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PairingError`] if the operating system cannot provide secure
+    /// random bytes.
+    pub async fn issue_pairing_token(
+        &self,
+        ttl: std::time::Duration,
+    ) -> Result<String, PairingError> {
+        self.pairing.issue_token(ttl).await
     }
 
     /// Signals every service and waits for the owned supervisor to exit.
@@ -195,17 +212,22 @@ pub async fn spawn_host(
         })?;
     let adapter = F1_24Adapter::new().map_err(HostError::Adapter)?;
     let reducer = TelemetryReducer::with_game_id(ADAPTER_ID);
+    let descriptor = adapter.descriptor();
     let state = Arc::new(HostState::new(
-        adapter.descriptor().id.as_str(),
+        descriptor.id.as_str(),
+        descriptor.capabilities.iter().copied().collect(),
         reducer.snapshot().clone(),
     ));
+    let pairing = Arc::new(PairingService::new());
     let (shutdown_sender, shutdown_receiver) = watch::channel(false);
     let supervisor_state = Arc::clone(&state);
+    let supervisor_pairing = Arc::clone(&pairing);
     let supervisor = tokio::spawn(run_supervised(
         http_listener,
         udp_socket,
         shutdown_receiver,
         supervisor_state,
+        supervisor_pairing,
         adapter,
         reducer,
     ));
@@ -214,6 +236,7 @@ pub async fn spawn_host(
         http_address,
         udp_address,
         state,
+        pairing,
         shutdown_sender,
         supervisor: Some(supervisor),
     })
@@ -224,6 +247,7 @@ async fn run_supervised(
     udp_socket: UdpSocket,
     shutdown: watch::Receiver<bool>,
     state: Arc<HostState>,
+    pairing: Arc<PairingService>,
     adapter: F1_24Adapter,
     reducer: TelemetryReducer,
 ) -> Result<(), HostError> {
@@ -231,7 +255,7 @@ async fn run_supervised(
     let udp_shutdown = shutdown;
     let http_state = Arc::clone(&state);
     let http_service = async move {
-        axum::serve(http_listener, http::router(http_state))
+        axum::serve(http_listener, http::router(http_state, pairing))
             .with_graceful_shutdown(wait_for_shutdown(http_shutdown))
             .await
             .map_err(|source| HostError::Runtime {

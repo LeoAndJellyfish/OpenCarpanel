@@ -9,8 +9,16 @@ use std::{
 
 use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
 use opencarpanel_adapter_f1_24::F1_24Adapter;
-use opencarpanel_telemetry_core::{MonotonicTimestamp, TelemetryReducer, TelemetrySnapshot};
-use tokio::{net::UdpSocket, sync::watch};
+use opencarpanel_protocol::EventMessage;
+use opencarpanel_telemetry_core::{
+    MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetryReducer, TelemetrySnapshot,
+};
+use tokio::{
+    net::UdpSocket,
+    sync::{broadcast, watch},
+};
+
+use crate::events::{EventHub, ReplayBatch};
 
 const MAX_UDP_DATAGRAM_LEN: usize = 65_507;
 
@@ -29,21 +37,29 @@ pub struct HostMetrics {
 #[derive(Debug)]
 pub struct HostState {
     adapter_id: String,
+    capabilities: Vec<TelemetryField>,
     packets_received: AtomicU64,
     packet_errors: AtomicU64,
     last_packet_at_us: AtomicU64,
     snapshot_sender: watch::Sender<Arc<TelemetrySnapshot>>,
+    event_hub: EventHub,
 }
 
 impl HostState {
-    pub(crate) fn new(adapter_id: impl Into<String>, snapshot: TelemetrySnapshot) -> Self {
+    pub(crate) fn new(
+        adapter_id: impl Into<String>,
+        capabilities: Vec<TelemetryField>,
+        snapshot: TelemetrySnapshot,
+    ) -> Self {
         let (snapshot_sender, _snapshot_receiver) = watch::channel(Arc::new(snapshot));
         Self {
             adapter_id: adapter_id.into(),
+            capabilities,
             packets_received: AtomicU64::new(0),
             packet_errors: AtomicU64::new(0),
             last_packet_at_us: AtomicU64::new(0),
             snapshot_sender,
+            event_hub: EventHub::new(),
         }
     }
 
@@ -53,10 +69,34 @@ impl HostState {
         &self.adapter_id
     }
 
+    /// Returns the active adapter's stable canonical capabilities.
+    #[must_use]
+    pub fn capabilities(&self) -> &[TelemetryField] {
+        &self.capabilities
+    }
+
     /// Subscribes to replaceable latest snapshots without building a backlog.
     #[must_use]
     pub fn subscribe_snapshots(&self) -> watch::Receiver<Arc<TelemetrySnapshot>> {
         self.snapshot_sender.subscribe()
+    }
+
+    /// Replaces the latest snapshot without retaining intermediate values.
+    pub fn replace_snapshot(&self, snapshot: TelemetrySnapshot) {
+        self.snapshot_sender.send_replace(Arc::new(snapshot));
+    }
+
+    /// Publishes and retains one ordered reliable telemetry event.
+    pub async fn publish_event(&self, event: TelemetryEvent) -> EventMessage {
+        self.event_hub.publish(event).await
+    }
+
+    pub(crate) fn subscribe_events(&self) -> broadcast::Receiver<EventMessage> {
+        self.event_hub.subscribe()
+    }
+
+    pub(crate) async fn replay_events_after(&self, sequence: u64) -> ReplayBatch {
+        self.event_hub.replay_after(sequence).await
     }
 
     /// Returns a point-in-time local metrics view.
@@ -113,9 +153,10 @@ pub(crate) async fn run_udp_ingestion(
                     changed |= reducer.apply(update);
                 }
                 if changed {
-                    state
-                        .snapshot_sender
-                        .send_replace(Arc::new(reducer.snapshot().clone()));
+                    state.replace_snapshot(reducer.snapshot().clone());
+                }
+                for event in output.events.drain(..) {
+                    let _published = state.publish_event(event).await;
                 }
             }
         }
