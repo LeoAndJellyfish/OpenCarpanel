@@ -59,7 +59,7 @@ jobs:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
@@ -71,7 +71,7 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -82,7 +82,7 @@ jobs:
       - run: npm run build:web
 ```
 
-Do not enable `npm ci` until `package-lock.json` exists in Task 10. Initially guard the web job with a documented temporary condition or land it together with Task 10.
+Do not enable `npm ci` until `package-lock.json` exists in Task 11. The first CI commit contains only the Rust job; land the web job together with Task 11.
 
 **Step 3: Re-run local gates**
 

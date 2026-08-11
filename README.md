@@ -41,6 +41,8 @@ cargo test --workspace
 npm run check:web
 ```
 
+CI 当前在 Windows 和 macOS 上执行 Rust 格式化、Clippy 和 workspace 测试。Web 构建任务将在前端脚手架及锁文件落地后启用。
+
 ## License
 
 OpenCarpanel 使用 [Apache License 2.0](LICENSE) 开源。该许可证允许使用、修改、分发和商业使用，同时要求保留许可证与相关声明，并提供明确的专利授权与专利诉讼终止条款。
