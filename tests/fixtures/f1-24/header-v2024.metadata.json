@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "fixture": "synthetic-header-built-in-test",
+  "source": {
+    "kind": "synthetic",
+    "specification": "Data Output from F1 24 v27.2x.docx",
+    "retrievedAt": "2026-08-11",
+    "sha256": "7487B636DA7B15C57D8CE1E2EAD2FB9361D47C4F21D8D3C2EF3AAB2AAB3F2DD1",
+    "url": "https://forums.ea.com/t5/s/tghpe58374/attachments/tghpe58374/f1-24-general-discussion-en/4624/1/Data%20Output%20from%20F1%2024%20v27.2x.docx"
+  },
+  "redistribution": "No vendor bytes included; tests construct synthetic bytes field-by-field.",
+  "packetFormat": 2024,
+  "packetHeaderLength": 29,
+  "endianness": "little",
+  "offsets": {
+    "packetFormat": 0,
+    "gameYear": 2,
+    "gameMajorVersion": 3,
+    "gameMinorVersion": 4,
+    "packetVersion": 5,
+    "packetId": 6,
+    "sessionUid": 7,
+    "sessionTime": 15,
+    "frameIdentifier": 19,
+    "overallFrameIdentifier": 23,
+    "playerCarIndex": 27,
+    "secondaryPlayerCarIndex": 28
+  }
+}
