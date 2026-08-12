@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by [ADR-0008](0008-tauri-desktop-embedded-host.md). Rust 模块化单体与单 Host 核心继续保留；“不提供常驻桌面 WebView”不再适用于 v0.2.0 的默认桌面入口。
 
 ## Context
 
