@@ -151,28 +151,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          $release = gh api "repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" | ConvertFrom-Json
-          if (-not $release.draft) { throw 'Release was published before aggregate verification.' }
-          $assetNames = @($release.assets | ForEach-Object name)
-          $requiredPatterns = @(
-            '^latest\.json$',
-            'windows.*x64.*nsis.*\.exe$',
-            'macos.*aarch64.*dmg.*\.dmg$',
-            'macos.*x86_64.*dmg.*\.dmg$',
-            '\.sig$'
-          )
-          foreach ($pattern in $requiredPatterns) {
-            if (-not ($assetNames | Where-Object { $_ -match $pattern })) {
-              throw "Missing required release asset matching $pattern. Found: $($assetNames -join ', ')"
-            }
-          }
-          $manifestAsset = $release.assets | Where-Object name -eq 'latest.json' | Select-Object -First 1
-          gh api -H 'Accept: application/octet-stream' $manifestAsset.url > latest.json
-          $manifest = Get-Content latest.json -Raw | ConvertFrom-Json
-          $platformNames = @($manifest.platforms.PSObject.Properties.Name)
-          foreach ($platform in @('windows-x86_64', 'darwin-aarch64', 'darwin-x86_64')) {
-            if ($platform -notin $platformNames) {
-              throw "Updater manifest is missing $platform."
-            }
-          }
-          gh release edit '${{ github.ref_name }}' --repo '${{ github.repository }}' --draft=false --latest
+          ./tools/verify-desktop-release.ps1 `
+            -Repository '${{ github.repository }}' `
+            -Tag '${{ github.ref_name }}' `
+            -ExpectedCommit '${{ github.sha }}' `
+            -Publish
