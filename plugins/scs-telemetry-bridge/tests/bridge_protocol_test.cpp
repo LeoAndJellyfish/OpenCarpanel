@@ -1,7 +1,6 @@
 #include "bridge_protocol.hpp"
 
 #include <array>
-#include <cassert>
 #include <cstdint>
 
 int main() {
@@ -32,9 +31,13 @@ int main() {
         0x00, 0x00, 0x80, 0x3e,
     };
 
-    assert(encode(frame) == expected);
+    if (encode(frame) != expected) {
+        return 1;
+    }
 
     const auto ets2 = encode(TelemetryFrame{Game::kEts2, 0, 0, 0, 0, 0, 0, 0, 0});
-    assert(ets2[5] == 1);
+    if (ets2[5] != 1) {
+        return 2;
+    }
     return 0;
 }
