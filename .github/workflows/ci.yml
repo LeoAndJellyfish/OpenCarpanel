@@ -42,9 +42,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
+          cache: npm
 
-      - name: Stage real desktop sidecar and game bridge
-        run: npm run prepare:desktop-native
+      - name: Install locked web dependencies
+        run: npm ci
+
+      - name: Stage production dashboard, desktop sidecar, and game bridge
+        run: npm run prepare:desktop
 
       - name: Check formatting
         run: cargo fmt --all -- --check

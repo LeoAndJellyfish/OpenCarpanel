@@ -52,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Stage real desktop sidecar and game bridge
-        run: npm run prepare:desktop-native
+        run: npm run prepare:desktop
 
       - name: Check formatting, types, tests, and release Host
         shell: pwsh
