@@ -12,8 +12,9 @@
 - [x] 1240×800、860×800 production UI 视觉检查：总览、配对和游戏向导无水平溢出（2026-08-12）
 - [x] 共享实例锁进程测试：CLI↔CLI 拒绝重复启动；GUI 与 CLI 使用同一 guard（2026-08-12）
 - [x] 设置文件原子保存、三份备份/损坏隔离、设备凭据只存 SHA-256 摘要的测试（2026-08-12）
-- [ ] GitHub Actions：Windows x64、macOS Apple Silicon、macOS Intel 安装包全部成功
-- [ ] Release `latest.json` 同时包含 `windows-x86_64`、`darwin-aarch64`、`darwin-x86_64` 且各有 `.sig`
+- [x] GitHub Actions：Windows x64、macOS Apple Silicon、macOS Intel 安装包全部成功（Release run `31584105321`，2026-08-12）
+- [x] Release `latest.json` 同时包含 `windows-x86_64`、`darwin-aarch64`、`darwin-x86_64`，并逐项匹配对应 updater `.sig`（2026-08-12）
+- [x] 从公开 Release 下载 Windows NSIS updater，使用应用编译内的 Minisign 公钥完成独立密码学验签；SHA-256 与 GitHub asset digest 一致（2026-08-12）
 - [ ] `npm run test:host-soak`：两小时、四客户端、60 Hz，无崩溃、解析错误或超过 16 MiB 的首末 RSS 增长
 
 ## 桌面与更新实机
