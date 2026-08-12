@@ -1,0 +1,15 @@
+[package]
+name = "opencarpanel-adapter-scs"
+description = "ETS2 and ATS adapters for the OpenCarpanel SCS bridge protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+opencarpanel-adapter-api = { path = "../adapter-api" }
+opencarpanel-telemetry-core = { path = "../telemetry-core" }
+
+[lints]
+workspace = true

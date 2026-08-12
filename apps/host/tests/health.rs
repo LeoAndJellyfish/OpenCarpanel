@@ -25,7 +25,10 @@ async fn health_endpoint_reports_protocol_and_adapter_then_shuts_down() -> Resul
         serde_json::json!({
             "status": "ok",
             "protocolVersion": 1,
-            "adapter": "f1-24"
+            "adapter": "auto",
+            "adapterSelection": "auto",
+            "activeAdapter": null,
+            "supportedAdapters": ["f1-24", "f1-25", "ets2", "ats"]
         })
     );
 

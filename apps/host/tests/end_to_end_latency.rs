@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures_util::{SinkExt, StreamExt};
-use opencarpanel_adapter_f1_24::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
+use opencarpanel_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
 use opencarpanel_host::spawn_host;
 use serde_json::{Value, json};
 use tokio::net::{TcpListener, UdpSocket};

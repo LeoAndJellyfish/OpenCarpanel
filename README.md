@@ -1,21 +1,53 @@
-# OpenCarpanel
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="OpenCarpanel 把 F1 24、F1 25、ETS2 与 ATS 的本地遥测送到手机或 iPad 仪表盘">
+</p>
 
-OpenCarpanel 是本地运行的跨平台驾驶遥测仪表盘：Windows/macOS Host 接收游戏数据，手机或 iPad 通过同一局域网显示高帧率 Dashboard。运行时不依赖远程服务器。
+<p align="center">
+  <strong>Windows / macOS 本地 Host → 同一局域网中的手机或 iPad。</strong><br>
+  无云端运行依赖，无 CDN，无账户；启动、扫码、驾驶。
+</p>
 
-当前 `0.1.x` 是面向 **F1 24** 的首个可用预览版，已经打通：
+<p align="center">
+  <a href="https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest">下载预览版</a>
+  · <a href="./docs/quickstart-multi-game.md">快速开始</a>
+  · <a href="./docs/data-paths-and-scs-packet.md">数据链路与 44 字节图解</a>
+  · <a href="./docs/README.md">文档</a>
+  · <a href="./LICENSE">Apache-2.0</a>
+</p>
 
-- Rust UDP Host → F1 24 安全解析 → 统一遥测状态 → 有界 WebSocket。
-- 15 分钟一次性二维码配对、设备 session、自动重连与 stale 状态。
-- Preact 驾驶视图，速度、档位、RPM/转速灯、油门、刹车和 DRS 以单一 rAF 循环更新。
-- 手机竖屏/横屏、iPad 与桌面断点；编辑器支持拖动、缩放、撤销重做、主题、原子保存和安全 JSON 导入导出。
-- Dashboard 内嵌 Rust 二进制，严格 CSP，无 CDN、云端账户或远程遥测。
-- 本地诊断、合成延迟门禁、四客户端 60 Hz soak 工具，以及 Windows/macOS CI。
+<p align="center">
+  <a href="https://github.com/LeoAndJellyfish/OpenCarpanel/actions/workflows/ci.yml"><img src="https://github.com/LeoAndJellyfish/OpenCarpanel/actions/workflows/ci.yml/badge.svg" alt="OpenCarpanel CI status"></a>
+</p>
 
-当前 F1 adapter 只实现官方 packet id 6 的玩家车辆核心字段；圈速、比赛状态、轮胎、损伤和处罚/事件尚未完成。因此它是可驾驶使用的预览版，不是功能完整的稳定版。
+## 现在支持什么
 
-## 快速运行
+| 游戏 | 电脑端输入 | 首版字段 | 需要注意 |
+| --- | --- | --- | --- |
+| **F1 24** | 游戏原生 UDP，format `2024` | 速度、档位、RPM、转速灯、油门、刹车、DRS | 当前只解析玩家车辆 packet id 6 |
+| **F1 25** | 游戏原生 UDP，原始 format `2025` | 与 F1 24 相同 | 必须选择 **F1 25 / 2025** mode；暂不支持 2026 Season Pack UDP |
+| **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 速度、档位、RPM/RPM 上限、油门、刹车 | 首次使用需复制插件并接受游戏 SDK 提示 |
+| **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | 插件只向 `127.0.0.1:20777` 非阻塞发送 |
 
-前置条件：Node.js 22+ 与 Rust stable。
+四种输入共用一个 Rust Host、一个 Dashboard 和同一套可定制布局。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
+
+> [!IMPORTANT]
+> `v0.1.0` 是 unsigned preview。协议、自动化和 Windows 包内四输入冒烟已通过，但真实 F1 25、ETS2、ATS 与多种手机/iPad 的完整验收仍会如实保留在[发布检查清单](./docs/release-checklist.md)中。
+
+## 从下载到第一块仪表盘
+
+1. 从 [Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载与你系统匹配的 `.tar.gz` 并解压。
+2. Windows 运行 `OpenCarpanel.exe`；macOS 运行 `OpenCarpanel`。
+3. 让手机/iPad 与电脑连接同一局域网，扫描终端的一次性二维码。
+4. 按游戏配置数据源：
+   - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 选择原始 **F1 25 / 2025**。
+   - **ETS2/ATS：** 把发布包 `plugins/scs/` 中的插件复制到游戏 64 位 `plugins` 目录，重启并接受 SDK 提示。
+
+精确目录、防火墙、异机配置和分段排障见[多游戏快速开始](./docs/quickstart-multi-game.md)。
+
+<details>
+<summary><strong>从源码构建</strong></summary>
+
+前置条件：Node.js 22+、仓库指定的 Rust stable；构建 ETS2/ATS 插件还需要 CMake 3.20+ 与 64 位 C++17 编译器。
 
 ```powershell
 npm ci
@@ -29,69 +61,96 @@ macOS 最后一行改为：
 ./target/release/opencarpanel-host
 ```
 
-启动后扫描终端二维码。F1 24 使用 UDP Format `2024`、端口 `20777`、发送率 `60Hz`；游戏和 Host 在同一电脑时 IP 填 `127.0.0.1`。
+</details>
 
-完整步骤、防火墙、异机游戏配置和排障见 [F1 24 快速开始](docs/quickstart-f1-24.md)。
+## 数据如何到达手机
 
-## 常用命令
+<p align="center">
+  <a href="./docs/data-paths-and-scs-packet.md"><img src="./docs/assets/supported-game-data-paths.svg" width="100%" alt="F1 24、F1 25、ETS2、ATS 经本地 Host 到手机或 iPad 的完整数据链路"></a>
+</p>
+
+F1 直接发送官方 UDP；ETS2/ATS 由游戏加载最小 SCS 插件，把 callback 编码为固定 44 字节的本机数据报。Host 逐字段安全解析，并交给每游戏独立 reducer；连续状态只保留最新值，离散事件进入有界 ring，最终通过已配对的本地 WebSocket 发布。
+
+[打开教材式图解：四游戏链路、44 字节逐 byte 阵列、字段表与 ETS2LA 方案对照 →](./docs/data-paths-and-scs-packet.md)
+
+## 为驾驶场景做的取舍
+
+| 目标 | 实现 |
+| --- | --- |
+| **低延迟** | 有界 latest-state 路径；Windows release 合成 UDP→WebSocket p95 `26.65 ms`，门槛 `<100 ms` |
+| **高帧率** | 前端只有一个 `requestAnimationFrame` 调度器；遥测包不会触发整棵 Preact 树重渲染 |
+| **稳定** | Rust 安全解析、精确长度/版本校验、无 `unsafe` adapter；SCS 帧回调不锁、不等待、不解析网络输入 |
+| **本地与隐私** | 遥测不离开电脑/局域网；一次性配对、设备 session、Origin/Host 校验、严格 CSP |
+| **可维护** | 游戏协议 → `GameAdapter` → 统一遥测模型 → Dashboard；前端不堆积游戏特判 |
+| **可定制** | 响应式网格、拖动/缩放、撤销重做、主题、原子保存与安全 JSON 导入导出 |
+
+视觉采用项目自己的 **Trackside Signal System**：石墨黑表面、暖白数字、荧光转速灯地平线和克制的红线提示。动画只更新 `transform`/`opacity`，并尊重 `prefers-reduced-motion`。
+
+## 诊断：先判断断在哪一段
+
+Host 运行时提供两个仅含脱敏状态的端点：
+
+- `http://127.0.0.1:20778/api/v1/health`
+- `http://127.0.0.1:20778/api/v1/diagnostics`
+
+| 看到的状态 | 含义 |
+| --- | --- |
+| `packetsReceived = 0` | Host 尚未收到游戏 UDP；检查游戏设置、插件路径、端口或进程 |
+| received 增长、`packetsRecognized = 0` | 已到 Host，但 format/version/固定游戏选择不匹配 |
+| `activeAdapter` 正确 | 游戏读取与 adapter 已成功，继续检查配对/WebSocket/页面状态 |
+| 页面 `DATA STALE` | 游戏暂停、进菜单或数据源停止；恢复驾驶后自动更新 |
+
+诊断不会导出配对令牌、设备 session、源 IP、玩家名、游戏路径或原始数据报。
+
+## 开发与验证
 
 ```powershell
-# 全量质量门禁
 cargo fmt --all -- --check
 cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo test --locked --workspace
 npm run check:web
 npm run test:web
 npm run build:web
-
-# 生成当前平台 unsigned preview 目录
+npm run build:scs-plugin
 npm run package:host
-
-# 本机 UDP → WebSocket p95 门禁
+npm run test:package-smoke
 npm run test:host-latency
-
-# 默认两小时、四客户端、60 Hz Host soak
-npm run test:host-soak
 ```
 
-Host 运行时可访问：
+`test:package-smoke` 会启动包内 Host，并依次验证 `f1-24 → f1-25 → ets2 → ats`。另有默认两小时、四客户端、60 Hz 的 `npm run test:host-soak`，不把短测试冒充长期稳定性结果。
 
-- `http://127.0.0.1:20778/api/v1/health`
-- `http://127.0.0.1:20778/api/v1/diagnostics`
-
-## 架构
+## 项目地图
 
 ```text
-F1 24 UDP
-    ↓
-adapter-f1-24 → telemetry-core → latest snapshot / event ring
-                                      ↓
-                          paired HTTP + WebSocket Host
-                                      ↓
-                     phone / iPad Preact Dashboard + Editor
-```
-
-仓库按稳定边界组织：
-
-```text
-apps/       可执行 Host
-crates/     Adapter API、F1 24、telemetry、protocol、config
-web/        Dashboard 与 Widget SDK
+apps/       Rust Host 可执行程序
+crates/     Adapter API、F1/SCS adapters、telemetry、protocol、config
+plugins/    最小 SCS Telemetry SDK 原生桥接插件
+web/        Preact Dashboard、Editor 与 Widget SDK
 schemas/    版本化 JSON Schema 和生成类型
-tests/      fixture、集成与性能门禁
-tools/      回放、类型生成、包体和发布工具
-docs/       架构、ADR、协议、首启和发布清单
+tests/      集成、fixture 与性能门禁
+tools/      回放、类型生成、打包和发布冒烟
+docs/       架构、ADR、协议、首启、图解与发布清单
 ```
 
-详细资料：
+推荐阅读：
 
-- [系统架构设计](docs/plans/2026-08-11-opencarpanel-architecture-design.md)
-- [F1 24 MVP 实施计划](docs/plans/2026-08-11-f1-24-mvp-implementation.md)
-- [视觉与动效设计](docs/plans/2026-08-11-f1-dashboard-visual-design.md)
-- [架构决策记录](docs/adr/README.md)
-- [F1 24 协议基线](docs/protocols/f1-24.md)
-- [发布检查清单](docs/release-checklist.md)
+- [游戏数据链路与 SCS 44 字节协议图解](./docs/data-paths-and-scs-packet.md)
+- [多游戏输入与适配器设计](./docs/plans/2026-08-12-multi-game-adapters-design.md)
+- [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)
+- [视觉与动效设计](./docs/plans/2026-08-11-f1-dashboard-visual-design.md)
+- [ADR：为什么采用版本化本机桥接](./docs/adr/0007-versioned-local-game-input-bridges.md)
+- [F1 24](./docs/protocols/f1-24.md)、[F1 25](./docs/protocols/f1-25.md) 与 [SCS bridge v1](./docs/protocols/scs-bridge-v1.md) 协议边界
+- [发布检查清单](./docs/release-checklist.md)
+
+## 当前边界
+
+- F1 首版没有圈速、比赛状态、轮胎、损伤、天气、处罚与赛事事件。
+- F1 25 只支持原始 2025 UDP，不会猜测兼容 2026 Season Pack。
+- ETS2/ATS 尚无导航、灯光、油量、任务等卡车专属字段，也不会伪造 F1 转速灯。
+- Windows 正式代码签名、macOS 签名/notarization 与自动更新器尚未完成。
 
 ## License
 
-OpenCarpanel 使用 [Apache License 2.0](LICENSE)。允许使用、修改、分发和商业使用，但须保留许可证与声明；许可证同时提供明确的专利授权与专利诉讼终止条款。
+OpenCarpanel 使用 [Apache License 2.0](./LICENSE)：允许使用、修改、分发和商业使用，并提供明确专利授权；分发时须保留许可证与声明。
+
+原生 SCS bridge 使用的官方 SCS SDK 1.14 头文件保留 SCS Software 的独立宽松许可。来源、归档哈希和许可位于 [`plugins/scs-telemetry-bridge/vendor/scs-sdk-1.14/`](./plugins/scs-telemetry-bridge/vendor/scs-sdk-1.14/)，并随包含插件的发布包分发；归属说明见 [NOTICE](./NOTICE)。

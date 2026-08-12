@@ -24,6 +24,9 @@ struct HealthResponse {
     status: &'static str,
     protocol_version: u16,
     adapter: String,
+    adapter_selection: String,
+    active_adapter: Option<String>,
+    supported_adapters: Vec<String>,
 }
 
 pub(crate) fn router(
@@ -55,5 +58,13 @@ async fn health(State(state): State<HttpState>) -> Json<HealthResponse> {
         status: "ok",
         protocol_version: PROTOCOL_VERSION,
         adapter: state.host.adapter_id().to_owned(),
+        adapter_selection: state.host.adapter_selection().as_str().to_owned(),
+        active_adapter: state.host.active_adapter_id().map(str::to_owned),
+        supported_adapters: state
+            .host
+            .supported_adapters()
+            .iter()
+            .map(|adapter| adapter.id().to_owned())
+            .collect(),
     })
 }

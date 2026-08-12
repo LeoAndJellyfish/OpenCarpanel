@@ -1,5 +1,6 @@
 # Rust build output (Cargo.lock is intentionally committed for this application)
 /target/
+/plugins/scs-telemetry-bridge/build/
 **/*.rs.bk
 *.profraw
 lcov.info

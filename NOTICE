@@ -1,0 +1,7 @@
+OpenCarpanel
+Copyright 2026 OpenCarpanel contributors
+
+The OpenCarpanel SCS telemetry bridge is built with selected unmodified headers
+from SCS SDK 1.14, Copyright (C) 2016 SCS Software. The SCS SDK license is
+included at plugins/scs-telemetry-bridge/vendor/scs-sdk-1.14/sdk_license.txt and
+is redistributed with release packages containing the bridge plugin.

@@ -2,7 +2,7 @@ use crate::{Cursor, DecodeError, PacketHeader};
 
 use super::{
     CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_ID, CAR_TELEMETRY_PACKET_LEN,
-    CAR_TELEMETRY_PACKET_VERSION, F1_24_CAR_COUNT,
+    CAR_TELEMETRY_PACKET_VERSION, F1_CAR_COUNT,
 };
 
 const UNMAPPED_PLAYER_FIELDS_LEN: usize = 40;
@@ -26,10 +26,10 @@ pub(crate) fn decode_player_sample(
     validate_header_and_length(header, datagram_len)?;
 
     let player_index = usize::from(header.player_car_index);
-    if player_index >= F1_24_CAR_COUNT {
+    if player_index >= F1_CAR_COUNT {
         return Err(DecodeError::InvalidPlayerIndex {
             index: header.player_car_index,
-            car_count: F1_24_CAR_COUNT,
+            car_count: F1_CAR_COUNT,
         });
     }
 

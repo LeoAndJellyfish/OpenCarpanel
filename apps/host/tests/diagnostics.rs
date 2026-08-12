@@ -20,8 +20,22 @@ async fn diagnostics_are_local_bounded_and_sanitized() -> Result<(), Box<dyn Err
     assert_eq!(body["status"], "ok");
     assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(body["protocolVersion"], 1);
-    assert_eq!(body["adapter"], "f1-24");
+    assert_eq!(body["adapter"], "auto");
+    assert_eq!(body["adapterSelection"], "auto");
+    assert!(body["activeAdapter"].is_null());
+    let supported = body["supportedAdapters"]
+        .as_array()
+        .ok_or_else(|| io::Error::other("supportedAdapters is not an array"))?;
+    assert_eq!(supported.len(), 4);
+    assert_eq!(supported[0]["id"], "f1-24");
+    assert_eq!(supported[1]["id"], "f1-25");
+    assert_eq!(supported[2]["id"], "ets2");
+    assert_eq!(supported[3]["id"], "ats");
+    assert!(supported.iter().all(|adapter| {
+        adapter["packetsRecognized"] == 0 && adapter["lastPacketAgeMs"].is_null()
+    }));
     assert_eq!(body["telemetry"]["packetsReceived"], 1);
+    assert_eq!(body["telemetry"]["packetsRecognized"], 0);
     assert_eq!(body["telemetry"]["packetErrors"], 1);
     assert!(body["telemetry"]["lastPacketAgeMs"].is_u64());
     assert_eq!(body["telemetry"]["snapshotsPublished"], 0);

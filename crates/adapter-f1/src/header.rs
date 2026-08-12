@@ -1,15 +1,12 @@
 use crate::{Cursor, DecodeError};
 
-/// F1 24 game-year value stored in every UDP packet header.
-pub const F1_24_PACKET_FORMAT: u16 = 2024;
-
-/// Packed byte length of the F1 24 packet header in specification v27.2x.
+/// Packed byte length of the F1 24/25 packet header.
 pub const PACKET_HEADER_LEN: usize = 29;
 
-/// Common header at the start of every F1 24 UDP datagram.
+/// Common header at the start of every supported F1 UDP datagram.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PacketHeader {
-    /// F1 game-year packet format; must be 2024 for this adapter.
+    /// F1 game-year packet format.
     pub packet_format: u16,
     /// Last two digits of the game year.
     pub game_year: u8,
@@ -36,18 +33,21 @@ pub struct PacketHeader {
 }
 
 impl PacketHeader {
-    /// Decodes the common header and returns untouched packet-specific bytes.
+    /// Decodes the common header for one exact packet format.
     ///
     /// # Errors
     ///
-    /// Returns [`DecodeError::UnexpectedEnd`] for any truncated header and
-    /// [`DecodeError::UnsupportedPacketFormat`] for a non-F1-24 datagram.
-    pub fn decode(datagram: &[u8]) -> Result<(Self, &[u8]), DecodeError> {
+    /// Returns [`DecodeError::UnexpectedEnd`] for a truncated header and
+    /// [`DecodeError::UnsupportedPacketFormat`] for another game-year format.
+    pub fn decode(
+        datagram: &[u8],
+        expected_packet_format: u16,
+    ) -> Result<(Self, &[u8]), DecodeError> {
         let mut cursor = Cursor::new(datagram);
         let packet_format = cursor.read_u16_le()?;
-        if packet_format != F1_24_PACKET_FORMAT {
+        if packet_format != expected_packet_format {
             return Err(DecodeError::UnsupportedPacketFormat {
-                expected: F1_24_PACKET_FORMAT,
+                expected: expected_packet_format,
                 actual: packet_format,
             });
         }

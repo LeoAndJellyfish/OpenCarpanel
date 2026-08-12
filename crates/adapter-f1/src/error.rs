@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-/// Failure while decoding an F1 24 UDP datagram.
+/// Failure while decoding an F1 UDP datagram.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum DecodeError {

@@ -1,6 +1,6 @@
 use std::{error::Error, time::Duration};
 
-use opencarpanel_host::{HostConfig, bind_host};
+use opencarpanel_host::{AdapterSelection, HostConfig, bind_host};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -12,10 +12,15 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         )
         .try_init()?;
 
-    let running = bind_host(HostConfig::default()).await?;
+    let mut config = HostConfig::default();
+    if let Ok(selection) = std::env::var("OPENCARPANEL_GAME") {
+        config.adapter_selection = selection.parse::<AdapterSelection>()?;
+    }
+    let running = bind_host(config).await?;
     info!(
         http_address = %running.http_address(),
         udp_address = %running.udp_address(),
+        adapter_selection = %running.state().adapter_selection(),
         "OpenCarpanel Host is ready"
     );
     let pairing_token = running
@@ -35,8 +40,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     println!("\n配对后可打开编辑器：{dashboard_url}/edit");
     println!("本机诊断：{dashboard_url}/api/v1/diagnostics\n");
     println!(
-        "F1 24 UDP 目标端口：{}\n按 Ctrl+C 退出。\n",
-        running.udp_address().port()
+        "游戏遥测 UDP 目标端口：{}\n选择游戏可设置 OPENCARPANEL_GAME=auto|f1-24|f1-25|ets2|ats（当前：{}）。\n按 Ctrl+C 退出。\n",
+        running.udp_address().port(),
+        running.state().adapter_selection(),
     );
     tokio::signal::ctrl_c().await?;
     info!("shutdown requested");

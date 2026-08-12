@@ -44,10 +44,21 @@ jobs:
       - name: Build and stage release directory
         run: npm run package:host
 
+      - name: Smoke test packaged Host and all game inputs
+        run: npm run test:package-smoke
+
+      - name: Archive preview with executable permissions
+        shell: pwsh
+        run: |
+          $packageDirectory = Get-ChildItem dist/release -Directory -Filter 'OpenCarpanel-*' | Select-Object -First 1
+          if ($null -eq $packageDirectory) { throw 'Release directory was not created.' }
+          $archive = "dist/release/opencarpanel-${{ runner.os }}-${{ runner.arch }}.tar.gz"
+          tar -czf $archive -C dist/release $packageDirectory.Name
+
       - name: Upload unsigned preview artifact
         uses: actions/upload-artifact@v7
         with:
           name: opencarpanel-${{ runner.os }}-${{ runner.arch }}
-          path: dist/release/OpenCarpanel-*
+          path: dist/release/opencarpanel-*.tar.gz
           if-no-files-found: error
           retention-days: 14

@@ -2,7 +2,8 @@
 members = [
   "apps/host",
   "crates/adapter-api",
-  "crates/adapter-f1-24",
+  "crates/adapter-f1",
+  "crates/adapter-scs",
   "crates/config",
   "crates/protocol",
   "crates/telemetry-core",

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
+  <title id="title">OpenCarpanel supported game data paths</title>
+  <desc id="desc">F1 24 and F1 25 send native UDP directly to the Host. ETS2 and ATS invoke the SCS SDK bridge plugin, which sends a fixed loopback datagram to the same Host ingress. Every source becomes canonical telemetry and is published over a paired local WebSocket to a phone or iPad.</desc>
+  <defs>
+    <marker id="green-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#d9ff43"/>
+    </marker>
+    <marker id="gray-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#899195"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="690" rx="28" fill="#07090c"/>
+  <text x="58" y="66" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="42" font-weight="750">支持游戏的数据链路</text>
+  <text x="58" y="101" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" letter-spacing="1">GAME PROCESS → LOCAL HOST → PAIRED DASHBOARD</text>
+
+  <rect x="42" y="132" width="340" height="480" rx="22" fill="#0d1115" stroke="#2a3033" stroke-width="2"/>
+  <text x="66" y="169" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">GAME PROCESS</text>
+
+  <text x="66" y="216" fill="#d9ff43" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="21" font-weight="700">Native UDP lane</text>
+  <rect x="66" y="239" width="126" height="54" rx="12" fill="#14191d" stroke="#3a4246"/>
+  <text x="129" y="273" fill="#f2f0e9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">F1 24</text>
+  <rect x="218" y="239" width="126" height="54" rx="12" fill="#14191d" stroke="#3a4246"/>
+  <text x="281" y="273" fill="#f2f0e9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">F1 25</text>
+  <path d="M129 293V328H382M281 293V328" fill="none" stroke="#d9ff43" stroke-width="3" marker-end="url(#green-arrow)"/>
+  <text x="66" y="352" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">formats 2024 / 2025</text>
+
+  <path d="M66 384H344" stroke="#2a3033" stroke-width="2"/>
+  <text x="66" y="426" fill="#ffbd45" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="21" font-weight="700">SCS SDK bridge lane</text>
+  <rect x="66" y="449" width="126" height="54" rx="12" fill="#14191d" stroke="#3a4246"/>
+  <text x="129" y="483" fill="#f2f0e9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">ETS2</text>
+  <rect x="218" y="449" width="126" height="54" rx="12" fill="#14191d" stroke="#3a4246"/>
+  <text x="281" y="483" fill="#f2f0e9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">ATS</text>
+  <path d="M129 503V527H205M281 503V527H205" fill="none" stroke="#ffbd45" stroke-width="3"/>
+  <rect x="84" y="527" width="242" height="58" rx="12" fill="#18130b" stroke="#7b5d25"/>
+  <text x="205" y="551" fill="#ffcf73" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="700" text-anchor="middle">OpenCarpanel SCS plugin</text>
+  <text x="205" y="575" fill="#c7ac79" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" text-anchor="middle">FRAME_END / 44 bytes</text>
+
+  <rect x="430" y="132" width="484" height="480" rx="22" fill="#0d1115" stroke="#2a3033" stroke-width="2"/>
+  <text x="454" y="169" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">RUST HOST / ONE PROCESS</text>
+
+  <path d="M382 328H458" fill="none" stroke="#d9ff43" stroke-width="3" marker-end="url(#green-arrow)"/>
+  <path d="M326 556H402V444H458" fill="none" stroke="#ffbd45" stroke-width="3" marker-end="url(#green-arrow)"/>
+  <text x="350" y="533" fill="#ffcf73" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" text-anchor="middle">127.0.0.1</text>
+
+  <rect x="458" y="231" width="140" height="258" rx="17" fill="#10150d" stroke="#d9ff43" stroke-width="2"/>
+  <text x="528" y="276" fill="#d9ff43" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">UDP 20777</text>
+  <text x="528" y="315" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20" text-anchor="middle">bounded</text>
+  <text x="528" y="344" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20" text-anchor="middle">latest-state</text>
+  <path d="M484 377H572" stroke="#3a4246" stroke-width="2"/>
+  <text x="528" y="411" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" text-anchor="middle">strict decode</text>
+  <text x="528" y="443" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" text-anchor="middle">no raw retain</text>
+
+  <path d="M598 360H636" fill="none" stroke="#d9ff43" stroke-width="3" marker-end="url(#green-arrow)"/>
+  <rect x="642" y="215" width="240" height="290" rx="17" fill="#14191d" stroke="#3a4246" stroke-width="2"/>
+  <text x="762" y="255" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="23" font-weight="700" text-anchor="middle">AdapterRegistry</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
+    <rect x="668" y="282" width="80" height="40" rx="9" fill="#0d1115" stroke="#3a4246"/>
+    <text x="708" y="308" fill="#f2f0e9" text-anchor="middle">f1-24</text>
+    <rect x="776" y="282" width="80" height="40" rx="9" fill="#0d1115" stroke="#3a4246"/>
+    <text x="816" y="308" fill="#f2f0e9" text-anchor="middle">f1-25</text>
+    <rect x="668" y="334" width="80" height="40" rx="9" fill="#0d1115" stroke="#3a4246"/>
+    <text x="708" y="360" fill="#f2f0e9" text-anchor="middle">ets2</text>
+    <rect x="776" y="334" width="80" height="40" rx="9" fill="#0d1115" stroke="#3a4246"/>
+    <text x="816" y="360" fill="#f2f0e9" text-anchor="middle">ats</text>
+  </g>
+  <path d="M668 408H856" stroke="#3a4246" stroke-width="2"/>
+  <text x="762" y="442" fill="#d9ff43" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20" font-weight="700" text-anchor="middle">per-game reducer</text>
+  <text x="762" y="473" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" text-anchor="middle">sticky active source / 2 s</text>
+
+  <rect x="962" y="132" width="196" height="480" rx="22" fill="#0d1115" stroke="#2a3033" stroke-width="2"/>
+  <text x="1060" y="169" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700" text-anchor="middle">LOCAL CLIENT</text>
+  <path d="M882 360H956" fill="none" stroke="#899195" stroke-width="3" marker-end="url(#gray-arrow)"/>
+  <text x="920" y="338" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" text-anchor="middle">paired WS</text>
+  <rect x="1004" y="226" width="112" height="210" rx="25" fill="#14191d" stroke="#3a4246" stroke-width="2"/>
+  <rect x="1021" y="249" width="78" height="127" rx="10" fill="#07090c" stroke="#899195"/>
+  <g aria-hidden="true">
+    <rect x="1031" y="263" width="12" height="5" rx="2" fill="#617024"/>
+    <rect x="1047" y="263" width="12" height="5" rx="2" fill="#d9ff43"/>
+    <rect x="1063" y="263" width="12" height="5" rx="2" fill="#d9ff43"/>
+    <rect x="1079" y="263" width="12" height="5" rx="2" fill="#ff4b3e"/>
+  </g>
+  <text x="1060" y="324" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="38" font-weight="750" text-anchor="middle">7</text>
+  <text x="1060" y="358" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" text-anchor="middle">184 km/h</text>
+  <circle cx="1060" cy="407" r="6" fill="#617024"/>
+  <text x="1060" y="478" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="700" text-anchor="middle">Phone / iPad</text>
+  <text x="1060" y="513" fill="#899195" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" text-anchor="middle">Dashboard + Editor</text>
+  <text x="1060" y="548" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" text-anchor="middle">HTTP 20778</text>
+
+  <g transform="translate(58 650)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">
+    <circle cx="0" cy="-6" r="5" fill="#d9ff43"/>
+    <text x="16" y="0" fill="#899195">F1 native UDP</text>
+    <circle cx="210" cy="-6" r="5" fill="#ffbd45"/>
+    <text x="226" y="0" fill="#899195">SCS callback bridge</text>
+    <circle cx="476" cy="-6" r="5" fill="#899195"/>
+    <text x="492" y="0" fill="#899195">paired LAN only</text>
+    <text x="1084" y="0" fill="#617024" text-anchor="end">NO CLOUD RUNTIME</text>
+  </g>
+</svg>

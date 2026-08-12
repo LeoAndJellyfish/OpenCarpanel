@@ -1,6 +1,6 @@
 use std::{error::Error, time::Duration};
 
-use opencarpanel_adapter_f1_24::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
+use opencarpanel_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
 use opencarpanel_host::spawn_host;
 use opencarpanel_telemetry_core::Gear;
 use tokio::net::{TcpListener, UdpSocket};

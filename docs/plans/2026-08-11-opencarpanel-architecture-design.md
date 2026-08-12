@@ -5,6 +5,8 @@
 - **首个交付目标：** F1 24 + 局域网手机/iPad 仪表盘
 - **运行边界：** 除软件更新外，运行时不依赖远程服务
 
+> 本文保留最初 F1 24 基线及其决策背景。已实现的 F1 24/25、ETS2/ATS 输入注册表、SCS 原生桥接、当前目录结构与交付方式，以[多游戏输入与适配器设计](2026-08-12-multi-game-adapters-design.md)和 [ADR-0007](../adr/0007-versioned-local-game-input-bridges.md)为准。
+
 ## 1. 摘要
 
 OpenCarpanel 采用 **Rust 模块化单体 Host + PWA-ready Web App**。电脑端 Host 接收游戏遥测，将每个游戏的专属协议转换成统一语义模型，再通过局域网 WebSocket 推送给手机或 iPad。Host 同时托管前端静态文件、布局配置 API、配对流程和本地诊断信息。

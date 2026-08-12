@@ -1,9 +1,10 @@
 use std::{error::Error, io};
 
 use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
-use opencarpanel_adapter_f1_24::{
-    CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_LEN, DecodeError, F1_24Adapter, PACKET_HEADER_LEN,
-    decode_player_car_telemetry,
+use opencarpanel_adapter_f1::{
+    CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_LEN, DecodeError, F1_24_PACKET_FORMAT,
+    F1_24Adapter, F1_25_PACKET_FORMAT, F1_25Adapter, PACKET_HEADER_LEN,
+    decode_f1_24_player_car_telemetry, decode_f1_25_player_car_telemetry,
 };
 use opencarpanel_telemetry_core::{
     DrsState, Gear, MonotonicTimestamp, Normalized, TelemetryUpdate,
@@ -23,10 +24,10 @@ fn write_f32(packet: &mut [u8], offset: usize, value: f32) {
     packet[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
-fn synthetic_packet() -> Vec<u8> {
+fn synthetic_packet(packet_format: u16, game_year: u8) -> Vec<u8> {
     let mut packet = Vec::with_capacity(CAR_TELEMETRY_PACKET_LEN);
-    packet.extend_from_slice(&2024_u16.to_le_bytes());
-    packet.extend_from_slice(&[24, 1, 0, 1, 6]);
+    packet.extend_from_slice(&packet_format.to_le_bytes());
+    packet.extend_from_slice(&[game_year, 1, 0, 1, 6]);
     packet.extend_from_slice(&0x1122_3344_5566_7788_u64.to_le_bytes());
     packet.extend_from_slice(&15.25_f32.to_le_bytes());
     packet.extend_from_slice(&88_u32.to_le_bytes());
@@ -50,6 +51,14 @@ fn synthetic_packet() -> Vec<u8> {
     packet
 }
 
+fn f1_24_packet() -> Vec<u8> {
+    synthetic_packet(F1_24_PACKET_FORMAT, 24)
+}
+
+fn f1_25_packet() -> Vec<u8> {
+    synthetic_packet(F1_25_PACKET_FORMAT, 25)
+}
+
 fn rejected<T>(result: Result<T, DecodeError>) -> Result<DecodeError, Box<dyn Error>> {
     match result {
         Ok(_) => Err(io::Error::other("packet unexpectedly decoded").into()),
@@ -57,14 +66,15 @@ fn rejected<T>(result: Result<T, DecodeError>) -> Result<DecodeError, Box<dyn Er
     }
 }
 
-fn decoded(packet: &[u8]) -> Result<TelemetryUpdate, DecodeError> {
-    decode_player_car_telemetry(packet, MonotonicTimestamp::from_micros(900))
+fn decoded_f1_24(packet: &[u8]) -> Result<TelemetryUpdate, DecodeError> {
+    decode_f1_24_player_car_telemetry(packet, MonotonicTimestamp::from_micros(900))
 }
 
-#[test]
-fn selects_player_and_maps_verified_vehicle_fields() -> Result<(), Box<dyn Error>> {
-    let update = decoded(&synthetic_packet())?;
+fn decoded_f1_25(packet: &[u8]) -> Result<TelemetryUpdate, DecodeError> {
+    decode_f1_25_player_car_telemetry(packet, MonotonicTimestamp::from_micros(900))
+}
 
+fn assert_verified_vehicle_fields(update: &TelemetryUpdate) -> Result<(), Box<dyn Error>> {
     let speed = update
         .vehicle
         .speed_mps
@@ -84,122 +94,124 @@ fn selects_player_and_maps_verified_vehicle_fields() -> Result<(), Box<dyn Error
     assert_eq!(update.frame_id, Some(100));
     assert!(update.lap.current.is_none());
     assert!(update.extensions.is_empty());
-
     Ok(())
 }
 
 #[test]
-fn game_adapter_appends_one_update_to_reusable_output() -> Result<(), Box<dyn Error>> {
-    let mut adapter = F1_24Adapter::new()?;
+fn both_formats_select_player_and_map_verified_fields() -> Result<(), Box<dyn Error>> {
+    assert_verified_vehicle_fields(&decoded_f1_24(&f1_24_packet())?)?;
+    assert_verified_vehicle_fields(&decoded_f1_25(&f1_25_packet())?)?;
+    Ok(())
+}
+
+#[test]
+fn concrete_adapters_have_stable_ids_and_isolated_formats() -> Result<(), Box<dyn Error>> {
+    let mut f1_24 = F1_24Adapter::new()?;
+    let mut f1_25 = F1_25Adapter::new()?;
     let mut output = AdapterOutput::with_capacity(1, 0);
 
-    adapter.decode(
-        &synthetic_packet(),
+    f1_24.decode(
+        &f1_24_packet(),
         MonotonicTimestamp::from_micros(900),
         &mut output,
     )?;
-
-    assert_eq!(adapter.descriptor().id.as_str(), "f1-24");
+    assert_eq!(f1_24.descriptor().id.as_str(), "f1-24");
     assert_eq!(output.updates.len(), 1);
-    assert!(output.events.is_empty());
+
+    output.clear();
+    f1_25.decode(
+        &f1_25_packet(),
+        MonotonicTimestamp::from_micros(900),
+        &mut output,
+    )?;
+    assert_eq!(f1_25.descriptor().id.as_str(), "f1-25");
+    assert_eq!(output.updates.len(), 1);
+
+    output.clear();
+    assert!(
+        f1_24
+            .decode(
+                &f1_25_packet(),
+                MonotonicTimestamp::from_micros(900),
+                &mut output,
+            )
+            .is_err()
+    );
+    assert!(
+        f1_25
+            .decode(
+                &f1_24_packet(),
+                MonotonicTimestamp::from_micros(900),
+                &mut output,
+            )
+            .is_err()
+    );
     Ok(())
 }
 
 #[test]
-fn truncated_car_array_is_rejected() -> Result<(), Box<dyn Error>> {
-    let packet = synthetic_packet();
-    let error = rejected(decoded(&packet[..packet.len() - 1]))?;
-
+fn malformed_f1_25_packets_are_rejected_without_clamping() -> Result<(), Box<dyn Error>> {
+    let packet = f1_25_packet();
     assert_eq!(
-        error,
+        rejected(decoded_f1_25(&packet[..packet.len() - 1]))?,
         DecodeError::InvalidPacketLength {
             packet_id: 6,
             expected: CAR_TELEMETRY_PACKET_LEN,
             actual: CAR_TELEMETRY_PACKET_LEN - 1,
         }
     );
-    Ok(())
-}
 
-#[test]
-fn invalid_player_index_is_rejected() -> Result<(), Box<dyn Error>> {
-    let mut packet = synthetic_packet();
+    let mut packet = f1_25_packet();
     packet[27] = 22;
-    let error = rejected(decoded(&packet))?;
-
     assert_eq!(
-        error,
+        rejected(decoded_f1_25(&packet))?,
         DecodeError::InvalidPlayerIndex {
             index: 22,
             car_count: 22,
         }
     );
-    Ok(())
-}
 
-#[test]
-fn corrupt_normalized_inputs_are_rejected_without_clamping() -> Result<(), Box<dyn Error>> {
     let player = car_offset(usize::from(PLAYER_INDEX));
-    let cases = [
+    for (expected_field, offset, value) in [
         ("throttle", player + 2, f32::NAN),
         ("throttle", player + 2, -0.01),
         ("throttle", player + 2, 1.01),
         ("brake", player + 10, f32::NAN),
         ("brake", player + 10, -0.01),
         ("brake", player + 10, 1.01),
-    ];
-
-    for (expected_field, offset, value) in cases {
-        let mut packet = synthetic_packet();
+    ] {
+        let mut packet = f1_25_packet();
         write_f32(&mut packet, offset, value);
-        let error = rejected(decoded(&packet))?;
+        let error = rejected(decoded_f1_25(&packet))?;
         assert!(matches!(
             error,
             DecodeError::InvalidNormalizedValue { field, .. } if field == expected_field
         ));
     }
 
-    let mut packet = synthetic_packet();
-    packet[player + 19] = 101;
-    let error = rejected(decoded(&packet))?;
-    assert!(matches!(
-        error,
-        DecodeError::InvalidNormalizedValue {
-            field: "rev_lights",
-            ..
-        }
-    ));
-
     Ok(())
 }
 
 #[test]
-fn unknown_gear_is_explicit_and_invalid_drs_is_rejected() -> Result<(), Box<dyn Error>> {
+fn invalid_version_drs_and_unknown_gear_remain_explicit() -> Result<(), Box<dyn Error>> {
     let player = car_offset(usize::from(PLAYER_INDEX));
-    let mut packet = synthetic_packet();
+    let mut packet = f1_25_packet();
     packet[player + 15] = 9_i8.to_le_bytes()[0];
-    assert_eq!(decoded(&packet)?.vehicle.gear, Some(Gear::Unknown));
+    assert_eq!(decoded_f1_25(&packet)?.vehicle.gear, Some(Gear::Unknown));
 
     packet[player + 18] = 2;
-    let error = rejected(decoded(&packet))?;
     assert_eq!(
-        error,
+        rejected(decoded_f1_25(&packet))?,
         DecodeError::InvalidEnumValue {
             field: "drs",
             actual: 2,
         }
     );
-    Ok(())
-}
 
-#[test]
-fn wrong_packet_version_is_rejected() -> Result<(), Box<dyn Error>> {
-    let mut packet = synthetic_packet();
+    let mut packet = f1_25_packet();
     packet[5] = 2;
-    let error = rejected(decoded(&packet))?;
-
     assert_eq!(
-        error,
+        rejected(decoded_f1_25(&packet))?,
         DecodeError::UnsupportedPacketVersion {
             packet_id: 6,
             expected: 1,

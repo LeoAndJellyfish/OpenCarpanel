@@ -7,10 +7,9 @@ use std::{
     sync::Arc,
 };
 
-use opencarpanel_adapter_api::{AdapterError, GameAdapter};
-use opencarpanel_adapter_f1_24::{ADAPTER_ID, F1_24Adapter};
+use opencarpanel_adapter_api::AdapterError;
 use opencarpanel_config::LayoutRepository;
-use opencarpanel_telemetry_core::TelemetryReducer;
+use opencarpanel_telemetry_core::TelemetrySnapshot;
 use tokio::{
     net::{TcpListener, UdpSocket},
     sync::watch,
@@ -18,7 +17,11 @@ use tokio::{
 };
 
 use crate::{
-    HostState, PairingError, http, pairing::PairingService, shutdown::wait_for_shutdown,
+    HostState, PairingError,
+    adapters::{AdapterRegistry, AdapterSelection},
+    http,
+    pairing::PairingService,
+    shutdown::wait_for_shutdown,
     telemetry::run_udp_ingestion,
 };
 
@@ -27,8 +30,10 @@ use crate::{
 pub struct HostConfig {
     /// HTTP/WebSocket listen address.
     pub http_address: SocketAddr,
-    /// F1 UDP telemetry listen address.
+    /// Shared game-telemetry UDP listen address.
     pub udp_address: SocketAddr,
+    /// Automatic detection or one fixed game adapter.
+    pub adapter_selection: AdapterSelection,
     /// Persistent layouts and settings directory.
     pub data_directory: PathBuf,
 }
@@ -39,6 +44,7 @@ impl Default for HostConfig {
         Self {
             http_address: SocketAddr::new(any_v4, 20_778),
             udp_address: SocketAddr::new(any_v4, 20_777),
+            adapter_selection: AdapterSelection::Auto,
             data_directory: default_data_directory(),
         }
     }
@@ -85,7 +91,7 @@ impl Display for HostError {
                 write!(formatter, "{service} runtime failed: {source}")
             }
             Self::Adapter(error) => {
-                write!(formatter, "failed to initialize F1 24 adapter: {error}")
+                write!(formatter, "failed to initialize game adapters: {error}")
             }
             Self::Join(error) => write!(formatter, "Host supervisor task failed: {error}"),
         }
@@ -121,7 +127,7 @@ impl RunningHost {
         self.http_address
     }
 
-    /// Returns the bound F1 UDP address.
+    /// Returns the bound shared game-telemetry UDP address.
     #[must_use]
     pub const fn udp_address(&self) -> SocketAddr {
         self.udp_address
@@ -179,6 +185,7 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
     let HostConfig {
         http_address,
         udp_address,
+        adapter_selection,
         data_directory,
     } = config;
     let http_listener =
@@ -192,7 +199,7 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
     let udp_socket = UdpSocket::bind(udp_address)
         .await
         .map_err(|source| HostError::Bind {
-            service: "F1 UDP",
+            service: "game telemetry UDP",
             address: udp_address,
             source,
         })?;
@@ -200,6 +207,7 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
         http_listener,
         udp_socket,
         LayoutRepository::new(data_directory),
+        adapter_selection,
         None,
     )
 }
@@ -220,7 +228,37 @@ pub fn spawn_host(
         source,
     })?;
     let layouts = LayoutRepository::new(temporary_data.path());
-    spawn_host_inner(http_listener, udp_socket, layouts, Some(temporary_data))
+    spawn_host_inner(
+        http_listener,
+        udp_socket,
+        layouts,
+        AdapterSelection::Auto,
+        Some(temporary_data),
+    )
+}
+
+/// Starts the Host from pre-bound sockets with an explicit game selection.
+///
+/// # Errors
+///
+/// Returns [`HostError`] if socket addresses or adapter initialization fail.
+pub fn spawn_host_with_adapter_selection(
+    http_listener: TcpListener,
+    udp_socket: UdpSocket,
+    adapter_selection: AdapterSelection,
+) -> Result<RunningHost, HostError> {
+    let temporary_data = tempfile::tempdir().map_err(|source| HostError::Runtime {
+        service: "temporary Host data directory",
+        source,
+    })?;
+    let layouts = LayoutRepository::new(temporary_data.path());
+    spawn_host_inner(
+        http_listener,
+        udp_socket,
+        layouts,
+        adapter_selection,
+        Some(temporary_data),
+    )
 }
 
 /// Starts the Host with an injected persistent layout repository.
@@ -233,13 +271,20 @@ pub fn spawn_host_with_layout_repository(
     udp_socket: UdpSocket,
     layouts: LayoutRepository,
 ) -> Result<RunningHost, HostError> {
-    spawn_host_inner(http_listener, udp_socket, layouts, None)
+    spawn_host_inner(
+        http_listener,
+        udp_socket,
+        layouts,
+        AdapterSelection::Auto,
+        None,
+    )
 }
 
 fn spawn_host_inner(
     http_listener: TcpListener,
     udp_socket: UdpSocket,
     layouts: LayoutRepository,
+    adapter_selection: AdapterSelection,
     temporary_data: Option<tempfile::TempDir>,
 ) -> Result<RunningHost, HostError> {
     let http_address = http_listener
@@ -251,16 +296,14 @@ fn spawn_host_inner(
     let udp_address = udp_socket
         .local_addr()
         .map_err(|source| HostError::Runtime {
-            service: "F1 UDP local address",
+            service: "game telemetry UDP local address",
             source,
         })?;
-    let adapter = F1_24Adapter::new().map_err(HostError::Adapter)?;
-    let reducer = TelemetryReducer::with_game_id(ADAPTER_ID);
-    let descriptor = adapter.descriptor();
+    let adapters = AdapterRegistry::new(adapter_selection).map_err(HostError::Adapter)?;
     let state = Arc::new(HostState::new(
-        descriptor.id.as_str(),
-        descriptor.capabilities.iter().copied().collect(),
-        reducer.snapshot().clone(),
+        adapter_selection,
+        adapters.supported_adapters(),
+        TelemetrySnapshot::default(),
     ));
     let pairing = Arc::new(PairingService::new());
     let layouts = Arc::new(layouts);
@@ -276,8 +319,7 @@ fn spawn_host_inner(
             state: supervisor_state,
             pairing: supervisor_pairing,
             layouts: supervisor_layouts,
-            adapter,
-            reducer,
+            adapters,
         },
     ));
 
@@ -296,8 +338,7 @@ struct RuntimeServices {
     state: Arc<HostState>,
     pairing: Arc<PairingService>,
     layouts: Arc<LayoutRepository>,
-    adapter: F1_24Adapter,
-    reducer: TelemetryReducer,
+    adapters: AdapterRegistry,
 }
 
 async fn run_supervised(
@@ -310,8 +351,7 @@ async fn run_supervised(
         state,
         pairing,
         layouts,
-        adapter,
-        reducer,
+        adapters,
     } = services;
     let http_shutdown = shutdown.clone();
     let udp_shutdown = shutdown;
@@ -326,10 +366,10 @@ async fn run_supervised(
             })
     };
     let udp_service = async move {
-        run_udp_ingestion(udp_socket, udp_shutdown, state, adapter, reducer)
+        run_udp_ingestion(udp_socket, udp_shutdown, state, adapters)
             .await
             .map_err(|source| HostError::Runtime {
-                service: "F1 UDP",
+                service: "game telemetry UDP",
                 source,
             })
     };

@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-adapter-f1-24"
-description = "F1 24 UDP telemetry adapter"
+name = "opencarpanel-adapter-f1"
+description = "Shared F1 24 and F1 25 UDP telemetry adapters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

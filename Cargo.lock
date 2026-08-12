@@ -533,7 +533,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-adapter-f1-24"
+name = "opencarpanel-adapter-f1"
+version = "0.1.0"
+dependencies = [
+ "opencarpanel-adapter-api",
+ "opencarpanel-telemetry-core",
+]
+
+[[package]]
+name = "opencarpanel-adapter-scs"
 version = "0.1.0"
 dependencies = [
  "opencarpanel-adapter-api",
@@ -561,7 +569,8 @@ dependencies = [
  "getrandom 0.3.4",
  "if-addrs",
  "opencarpanel-adapter-api",
- "opencarpanel-adapter-f1-24",
+ "opencarpanel-adapter-f1",
+ "opencarpanel-adapter-scs",
  "opencarpanel-config",
  "opencarpanel-protocol",
  "opencarpanel-telemetry-core",

@@ -15,7 +15,8 @@ futures-util = "0.3.34"
 getrandom = "0.3.4"
 if-addrs = "0.15.0"
 opencarpanel-adapter-api = { path = "../../crates/adapter-api" }
-opencarpanel-adapter-f1-24 = { path = "../../crates/adapter-f1-24" }
+opencarpanel-adapter-f1 = { path = "../../crates/adapter-f1" }
+opencarpanel-adapter-scs = { path = "../../crates/adapter-scs" }
 opencarpanel-config = { path = "../../crates/config" }
 opencarpanel-protocol = { path = "../../crates/protocol" }
 opencarpanel-telemetry-core = { path = "../../crates/telemetry-core" }
