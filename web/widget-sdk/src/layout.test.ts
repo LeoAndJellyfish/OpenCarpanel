@@ -3,31 +3,39 @@ import { describe, expect, it } from "vitest";
 import {
   BREAKPOINT_GRIDS,
   BREAKPOINT_NAMES,
+  BUILTIN_GAME_IDS,
   DEFAULT_LAYOUT,
+  GAME_DEFAULT_LAYOUTS,
   cloneLayout,
   parseLayoutDocument,
 } from "./layout";
 
 describe("layout contract", () => {
-  it("keeps every default widget inside every breakpoint grid without collisions", () => {
-    for (const breakpoint of BREAKPOINT_NAMES) {
-      const grid = BREAKPOINT_GRIDS[breakpoint];
-      const placements = DEFAULT_LAYOUT.widgets.map((widget) => widget.placements[breakpoint]);
-      for (const placement of placements) {
-        expect(placement).toBeDefined();
-        expect(placement!.x + placement!.width).toBeLessThanOrEqual(grid.columns);
-        expect(placement!.y + placement!.height).toBeLessThanOrEqual(grid.rows);
-      }
-      for (let leftIndex = 0; leftIndex < placements.length; leftIndex += 1) {
-        for (let rightIndex = leftIndex + 1; rightIndex < placements.length; rightIndex += 1) {
-          const left = placements[leftIndex]!;
-          const right = placements[rightIndex]!;
-          const overlaps =
-            left.x < right.x + right.width &&
-            left.x + left.width > right.x &&
-            left.y < right.y + right.height &&
-            left.y + left.height > right.y;
-          expect(overlaps).toBe(false);
+  it("keeps every built-in game layout inside every breakpoint grid without collisions", () => {
+    const layouts = [DEFAULT_LAYOUT, ...BUILTIN_GAME_IDS.map((id) => GAME_DEFAULT_LAYOUTS[id])];
+    expect(new Set(layouts.map((layout) => layout.id)).size).toBe(layouts.length);
+
+    for (const layout of layouts) {
+      expect(parseLayoutDocument(layout)).toEqual(layout);
+      for (const breakpoint of BREAKPOINT_NAMES) {
+        const grid = BREAKPOINT_GRIDS[breakpoint];
+        const placements = layout.widgets.map((widget) => widget.placements[breakpoint]);
+        for (const placement of placements) {
+          expect(placement).toBeDefined();
+          expect(placement!.x + placement!.width).toBeLessThanOrEqual(grid.columns);
+          expect(placement!.y + placement!.height).toBeLessThanOrEqual(grid.rows);
+        }
+        for (let leftIndex = 0; leftIndex < placements.length; leftIndex += 1) {
+          for (let rightIndex = leftIndex + 1; rightIndex < placements.length; rightIndex += 1) {
+            const left = placements[leftIndex]!;
+            const right = placements[rightIndex]!;
+            const overlaps =
+              left.x < right.x + right.width &&
+              left.x + left.width > right.x &&
+              left.y < right.y + right.height &&
+              left.y + left.height > right.y;
+            expect(overlaps).toBe(false);
+          }
         }
       }
     }

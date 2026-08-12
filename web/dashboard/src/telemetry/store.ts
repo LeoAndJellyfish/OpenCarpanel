@@ -16,6 +16,7 @@ export const ALL_DASHBOARD_FIELDS = [
   "vehicle.brake",
   "vehicle.gear",
   "vehicle.drs",
+  "meta.gameId",
   "meta.sessionId",
   "system.stale",
 ] as const;
@@ -29,6 +30,7 @@ export interface TelemetryValueMap {
   "vehicle.brake": number | undefined;
   "vehicle.gear": Gear | undefined;
   "vehicle.drs": DrsState | undefined;
+  "meta.gameId": string | undefined;
   "meta.sessionId": string | undefined;
   "system.stale": boolean;
 }
@@ -72,15 +74,19 @@ export class TelemetryStore {
 
   ingest(snapshot: SnapshotMessage, receivedAtMs: number): ReadonlySet<DashboardField> {
     const values = snapshotValues(snapshot.data);
+    const previousGame = this.#targets.get("meta.gameId");
+    const nextGame = values["meta.gameId"];
     const previousSession = this.#targets.get("meta.sessionId");
     const nextSession = values["meta.sessionId"];
-    const sessionChanged =
+    const contextChanged =
       this.#initialized &&
-      previousSession !== nextSession &&
-      (previousSession !== undefined || nextSession !== undefined);
+      ((previousGame !== nextGame &&
+        (previousGame !== undefined || nextGame !== undefined)) ||
+        (previousSession !== nextSession &&
+          (previousSession !== undefined || nextSession !== undefined)));
     const changed = new Set<DashboardField>();
 
-    if (sessionChanged) {
+    if (contextChanged) {
       this.#interpolations.clear();
       for (const field of ALL_DASHBOARD_FIELDS) {
         changed.add(field);
@@ -88,11 +94,12 @@ export class TelemetryStore {
     }
 
     for (const field of CONTINUOUS_FIELDS) {
-      this.#updateContinuous(field, values[field], receivedAtMs, sessionChanged, changed);
+      this.#updateContinuous(field, values[field], receivedAtMs, contextChanged, changed);
     }
     this.#updateDiscrete("vehicle.brake", values["vehicle.brake"], changed);
     this.#updateDiscrete("vehicle.gear", values["vehicle.gear"], changed);
     this.#updateDiscrete("vehicle.drs", values["vehicle.drs"], changed);
+    this.#updateDiscrete("meta.gameId", nextGame, changed);
     this.#updateDiscrete("meta.sessionId", nextSession, changed);
     this.#updateDiscrete("system.stale", values["system.stale"], changed);
 
@@ -234,6 +241,8 @@ function snapshotValues(snapshot: TelemetrySnapshot): TelemetryValueMap {
     "vehicle.brake": finiteNumber(vehicle?.brake),
     "vehicle.gear": validGear(vehicle?.gear),
     "vehicle.drs": validDrs(vehicle?.drs),
+    "meta.gameId":
+      typeof snapshot.meta?.gameId === "string" ? snapshot.meta.gameId : undefined,
     "meta.sessionId": typeof snapshot.meta?.sessionId === "string" ? snapshot.meta.sessionId : undefined,
     "system.stale": finiteNumber(snapshot.meta?.capturedAt) === undefined,
   };

@@ -13,6 +13,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .try_init()?;
 
     let mut config = HostConfig::default();
+    if let Ok(address) = std::env::var("OPENCARPANEL_HTTP_BIND") {
+        config.http_address = address.parse()?;
+    }
+    if let Ok(address) = std::env::var("OPENCARPANEL_UDP_BIND") {
+        config.udp_address = address.parse()?;
+    }
     if let Ok(selection) = std::env::var("OPENCARPANEL_GAME") {
         config.adapter_selection = selection.parse::<AdapterSelection>()?;
     }

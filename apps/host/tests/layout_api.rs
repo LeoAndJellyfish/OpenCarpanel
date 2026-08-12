@@ -1,7 +1,7 @@
 use std::{error::Error, fs, io, time::Duration};
 
 use futures_util::{SinkExt, StreamExt};
-use opencarpanel_config::{LayoutId, LayoutRepository, MAX_LAYOUT_BYTES};
+use opencarpanel_config::{LayoutDocument, LayoutId, LayoutRepository, MAX_LAYOUT_BYTES};
 use opencarpanel_host::{RunningHost, spawn_host_with_layout_repository};
 use serde_json::{Value, json};
 use tokio::{
@@ -81,6 +81,147 @@ impl HttpResponse {
     fn json(&self) -> Result<Value, serde_json::Error> {
         serde_json::from_slice(&self.body)
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn built_in_games_receive_independent_default_layouts() -> Result<(), Box<dyn Error>> {
+    let host = TestHost::start().await?;
+    let address = host.running.http_address();
+    let session = host.session().await?;
+    let authorization = format!("Bearer {session}");
+
+    for (id, name, accent, tachometer_x) in [
+        ("game-f1-24", "F1 24 Trackside", "#d9ff43", 0),
+        ("game-f1-25", "F1 25 Electric Grid", "#42e8ff", 0),
+        ("game-ets2", "ETS2 Long Haul", "#ffbd45", 5),
+        ("game-ats", "ATS Interstate", "#ff6a3d", 5),
+    ] {
+        let response = request(
+            address,
+            "GET",
+            &format!("/api/v1/layouts/{id}"),
+            &[("Authorization", authorization.as_str())],
+            &[],
+        )
+        .await?;
+        assert_eq!(response.status, 200);
+        let document = &response.json()?["document"];
+        assert_eq!(document["id"], id);
+        assert_eq!(document["name"], name);
+        assert_eq!(document["revision"], 1);
+        assert_eq!(document["theme"]["accent"], accent);
+        assert_eq!(
+            document["widgets"][0]["placements"]["phonePortrait"]["x"],
+            tachometer_x
+        );
+    }
+
+    let unknown = request(
+        address,
+        "GET",
+        "/api/v1/layouts/game-future",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?;
+    assert_eq!(unknown.status, 404);
+
+    host.running.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_saved_v0_1_0_default_is_copied_into_the_first_game_layout() -> Result<(), Box<dyn Error>>
+{
+    let host = TestHost::start().await?;
+    let address = host.running.http_address();
+    let session = host.session().await?;
+    let authorization = format!("Bearer {session}");
+    let initial = request(
+        address,
+        "GET",
+        "/api/v1/layouts/default",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?
+    .json()?["document"]
+        .clone();
+
+    let untouched_truck = request(
+        address,
+        "GET",
+        "/api/v1/layouts/game-ets2",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?
+    .json()?;
+    assert_eq!(untouched_truck["document"]["theme"]["accent"], "#ffbd45");
+
+    let mut legacy = initial;
+    legacy["name"] = json!("My v0.1.0 Layout");
+    legacy["theme"]["accent"] = json!("#123456");
+    let saved = request(
+        address,
+        "PUT",
+        "/api/v1/layouts/default",
+        &[
+            ("Authorization", authorization.as_str()),
+            ("Content-Type", "application/json"),
+        ],
+        &serde_json::to_vec(&legacy)?,
+    )
+    .await?;
+    assert_eq!(saved.status, 200);
+    assert_eq!(saved.json()?["document"]["revision"], 2);
+
+    let migrated = request(
+        address,
+        "GET",
+        "/api/v1/layouts/game-f1-24",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?;
+    assert_eq!(migrated.status, 200);
+    let migrated = migrated.json()?;
+    assert_eq!(migrated["document"]["id"], "game-f1-24");
+    assert_eq!(migrated["document"]["name"], "My v0.1.0 Layout");
+    assert_eq!(migrated["document"]["revision"], 1);
+    assert_eq!(migrated["document"]["theme"]["accent"], "#123456");
+
+    host.running.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_untouched_v0_1_0_named_default_is_also_migrated() -> Result<(), Box<dyn Error>> {
+    let host = TestHost::start().await?;
+    let legacy_id = LayoutId::new("default")?;
+    let legacy = LayoutDocument::empty(legacy_id, "F1 24 Default")?;
+    host.repository.save(&legacy, 0)?;
+    let session = host.session().await?;
+    let authorization = format!("Bearer {session}");
+
+    let migrated = request(
+        host.running.http_address(),
+        "GET",
+        "/api/v1/layouts/game-ats",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?;
+    assert_eq!(migrated.status, 200);
+    let migrated = migrated.json()?;
+    let document = &migrated["document"];
+    assert_eq!(document["id"], "game-ats");
+    assert_eq!(document["name"], "F1 24 Default");
+    assert_eq!(document["revision"], 1);
+    assert_eq!(document["widgets"].as_array().map(Vec::len), Some(0));
+
+    host.running.shutdown().await?;
+    Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

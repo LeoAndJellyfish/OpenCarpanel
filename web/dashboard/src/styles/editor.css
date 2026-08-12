@@ -37,6 +37,17 @@
   letter-spacing: 0.1em;
 }
 
+.editor-preview-controls {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.editor-preview-controls select {
+  min-width: 126px;
+  padding-inline: 8px;
+}
+
 .editor-breakpoint select,
 .editor-inspector input {
   min-height: 38px;
@@ -184,6 +195,7 @@
 .theme-swatch-cyan { background: #42e8ff; }
 .theme-swatch-amber { background: #ffbd45; }
 .theme-swatch-mono { background: #fff; }
+.theme-swatch-road { background: #ff6a3d; }
 
 .editor-inspector > p {
   display: grid;
@@ -438,6 +450,14 @@
   }
 
   .editor-header > div:first-child {
+    display: none;
+  }
+
+  .editor-preview-controls {
+    min-width: 0;
+  }
+
+  .editor-preview-controls label:first-child {
     display: none;
   }
 

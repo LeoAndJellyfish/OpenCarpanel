@@ -17,6 +17,7 @@ use serde_json::{Value, json};
 use crate::http::HttpState;
 
 const DEFAULT_LAYOUT_ID: &str = "default";
+const LEGACY_DEFAULT_LAYOUT_NAME: &str = "F1 24 Default";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -214,11 +215,10 @@ fn load_or_create(
             recovered: loaded.recovered,
         }));
     }
-    if id.as_str() != DEFAULT_LAYOUT_ID {
+    let Some(default) = layout_for_new_id(repository, id)? else {
         return Ok(None);
-    }
+    };
 
-    let default = default_layout().map_err(ConfigError::Validation)?;
     match repository.save(&default, 0) {
         Ok(document) => Ok(Some(LayoutEnvelope {
             document,
@@ -234,15 +234,124 @@ fn load_or_create(
     }
 }
 
-fn default_layout() -> Result<LayoutDocument, ValidationError> {
-    let mut document = LayoutDocument::empty(LayoutId::new(DEFAULT_LAYOUT_ID)?, "F1 24 Default")?;
+fn layout_for_new_id(
+    repository: &LayoutRepository,
+    id: &LayoutId,
+) -> Result<Option<LayoutDocument>, ConfigError> {
+    let built_in = built_in_layout(id).map_err(ConfigError::Validation)?;
+    if id.as_str() == DEFAULT_LAYOUT_ID || built_in.is_none() {
+        return Ok(built_in);
+    }
+
+    let legacy_id = LayoutId::new(DEFAULT_LAYOUT_ID).map_err(ConfigError::Validation)?;
+    let legacy = repository.load(&legacy_id)?.map(|loaded| loaded.document);
+    if let Some(document) = legacy.filter(is_legacy_default_layout) {
+        return clone_layout_with_id(&document, id)
+            .map(Some)
+            .map_err(ConfigError::Validation);
+    }
+    Ok(built_in)
+}
+
+fn is_legacy_default_layout(document: &LayoutDocument) -> bool {
+    document.name() == LEGACY_DEFAULT_LAYOUT_NAME || document.revision() > 1
+}
+
+fn clone_layout_with_id(
+    source: &LayoutDocument,
+    id: &LayoutId,
+) -> Result<LayoutDocument, ValidationError> {
+    let mut migrated = LayoutDocument::empty(id.clone(), source.name())?;
+    migrated.set_theme(source.theme().clone());
+    migrated.set_widgets(source.widgets().to_vec());
+    migrated.validate()?;
+    Ok(migrated)
+}
+
+#[derive(Clone, Copy)]
+enum BuiltInLayoutFamily {
+    Formula,
+    Truck,
+}
+
+struct BuiltInLayoutSpec {
+    name: &'static str,
+    family: BuiltInLayoutFamily,
+    background: &'static str,
+    foreground: &'static str,
+    accent: &'static str,
+    warning: &'static str,
+    fallback_rpm_max: u64,
+}
+
+fn built_in_layout(id: &LayoutId) -> Result<Option<LayoutDocument>, ValidationError> {
+    let spec = match id.as_str() {
+        DEFAULT_LAYOUT_ID => BuiltInLayoutSpec {
+            name: "OpenCarpanel Default",
+            family: BuiltInLayoutFamily::Formula,
+            background: "#07090c",
+            foreground: "#f2f0e9",
+            accent: "#d9ff43",
+            warning: "#ff4b3e",
+            fallback_rpm_max: 12_000,
+        },
+        "game-f1-24" => BuiltInLayoutSpec {
+            name: "F1 24 Trackside",
+            family: BuiltInLayoutFamily::Formula,
+            background: "#07090c",
+            foreground: "#f2f0e9",
+            accent: "#d9ff43",
+            warning: "#ff4b3e",
+            fallback_rpm_max: 12_000,
+        },
+        "game-f1-25" => BuiltInLayoutSpec {
+            name: "F1 25 Electric Grid",
+            family: BuiltInLayoutFamily::Formula,
+            background: "#061015",
+            foreground: "#eefcff",
+            accent: "#42e8ff",
+            warning: "#ff5e6c",
+            fallback_rpm_max: 12_000,
+        },
+        "game-ets2" => BuiltInLayoutSpec {
+            name: "ETS2 Long Haul",
+            family: BuiltInLayoutFamily::Truck,
+            background: "#0e0b08",
+            foreground: "#fff5e5",
+            accent: "#ffbd45",
+            warning: "#ff4b3e",
+            fallback_rpm_max: 2_500,
+        },
+        "game-ats" => BuiltInLayoutSpec {
+            name: "ATS Interstate",
+            family: BuiltInLayoutFamily::Truck,
+            background: "#080d10",
+            foreground: "#f5f0e6",
+            accent: "#ff6a3d",
+            warning: "#ffcf54",
+            fallback_rpm_max: 2_500,
+        },
+        _ => return Ok(None),
+    };
+
+    let mut document = LayoutDocument::empty(LayoutId::new(id.as_str())?, spec.name)?;
     document.set_theme(ThemeSettings {
-        background: "#07090c".into(),
-        foreground: "#f2f0e9".into(),
-        accent: "#d9ff43".into(),
-        warning: "#ff4b3e".into(),
+        background: spec.background.into(),
+        foreground: spec.foreground.into(),
+        accent: spec.accent.into(),
+        warning: spec.warning.into(),
     });
-    document.set_widgets(vec![
+    let widgets = match spec.family {
+        BuiltInLayoutFamily::Formula => formula_widgets(spec.fallback_rpm_max)?,
+        BuiltInLayoutFamily::Truck => truck_widgets(spec.fallback_rpm_max)?,
+    };
+    document.set_widgets(widgets);
+    document.validate()?;
+    Ok(Some(document))
+}
+
+fn formula_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, ValidationError> {
+    Ok(vec![
         widget(
             "tachometer",
             "core.tachometer",
@@ -252,7 +361,7 @@ fn default_layout() -> Result<LayoutDocument, ValidationError> {
                 (BreakpointName::Tablet, placement(0, 0, 12, 3)),
                 (BreakpointName::Desktop, placement(0, 0, 12, 3)),
             ],
-            json!({"fallbackRpmMax": 12_000}),
+            json!({"fallbackRpmMax": fallback_rpm_max}),
         )?,
         widget(
             "gear",
@@ -287,9 +396,56 @@ fn default_layout() -> Result<LayoutDocument, ValidationError> {
             ],
             json!({}),
         )?,
-    ]);
-    document.validate()?;
-    Ok(document)
+    ])
+}
+
+fn truck_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, ValidationError> {
+    Ok(vec![
+        widget(
+            "tachometer",
+            "core.tachometer",
+            [
+                (BreakpointName::PhonePortrait, placement(5, 8, 7, 3)),
+                (BreakpointName::PhoneLandscape, placement(0, 7, 7, 3)),
+                (BreakpointName::Tablet, placement(0, 8, 7, 4)),
+                (BreakpointName::Desktop, placement(0, 8, 7, 4)),
+            ],
+            json!({"fallbackRpmMax": fallback_rpm_max}),
+        )?,
+        widget(
+            "gear",
+            "core.gear",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 8, 5, 5)),
+                (BreakpointName::PhoneLandscape, placement(7, 0, 5, 5)),
+                (BreakpointName::Tablet, placement(7, 0, 5, 5)),
+                (BreakpointName::Desktop, placement(7, 0, 5, 5)),
+            ],
+            json!({}),
+        )?,
+        widget(
+            "speed",
+            "core.speed",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 0, 12, 8)),
+                (BreakpointName::PhoneLandscape, placement(0, 0, 7, 7)),
+                (BreakpointName::Tablet, placement(0, 0, 7, 8)),
+                (BreakpointName::Desktop, placement(0, 0, 7, 8)),
+            ],
+            json!({"unit": "km/h"}),
+        )?,
+        widget(
+            "status",
+            "core.status",
+            [
+                (BreakpointName::PhonePortrait, placement(5, 11, 7, 4)),
+                (BreakpointName::PhoneLandscape, placement(7, 5, 5, 5)),
+                (BreakpointName::Tablet, placement(7, 5, 5, 7)),
+                (BreakpointName::Desktop, placement(7, 5, 5, 7)),
+            ],
+            json!({}),
+        )?,
+    ])
 }
 
 fn widget(

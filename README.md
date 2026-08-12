@@ -24,14 +24,14 @@
 | 游戏 | 电脑端输入 | 首版字段 | 需要注意 |
 | --- | --- | --- | --- |
 | **F1 24** | 游戏原生 UDP，format `2024` | 速度、档位、RPM、转速灯、油门、刹车、DRS | 当前只解析玩家车辆 packet id 6 |
-| **F1 25** | 游戏原生 UDP，原始 format `2025` | 与 F1 24 相同 | 必须选择 **F1 25 / 2025** mode；暂不支持 2026 Season Pack UDP |
+| **F1 25 + 2026 Season Pack** | 游戏原生 UDP，format `2025` 或 `2026` | 与 F1 24 相同 | 两种 UDP mode 均严格按各自包长解析；2026 默认模式可直接使用 |
 | **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 速度、档位、RPM/RPM 上限、油门、刹车 | 首次使用需复制插件并接受游戏 SDK 提示 |
 | **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | 插件只向 `127.0.0.1:20777` 非阻塞发送 |
 
-四种输入共用一个 Rust Host、一个 Dashboard 和同一套可定制布局。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
+四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.1.0` 是 unsigned preview。协议、自动化和 Windows 包内四输入冒烟已通过，但真实 F1 25、ETS2、ATS 与多种手机/iPad 的完整验收仍会如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.1.1` 是 unsigned preview，已支持 F1 25 2026 Season Pack 与按游戏自动换页。真实 F1 25/2026、ETS2、ATS 与多种手机/iPad 的完整验收仍会如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
@@ -39,7 +39,7 @@
 2. Windows 运行 `OpenCarpanel.exe`；macOS 运行 `OpenCarpanel`。
 3. 让手机/iPad 与电脑连接同一局域网，扫描终端的一次性二维码。
 4. 按游戏配置数据源：
-   - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 选择原始 **F1 25 / 2025**。
+   - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 的原始 **2025** 与 **2026 Season Pack** mode 均可。
    - **ETS2/ATS：** 把发布包 `plugins/scs/` 中的插件复制到游戏 64 位 `plugins` 目录，重启并接受 SDK 提示。
 
 精确目录、防火墙、异机配置和分段排障见[多游戏快速开始](./docs/quickstart-multi-game.md)。
@@ -77,14 +77,14 @@ F1 直接发送官方 UDP；ETS2/ATS 由游戏加载最小 SCS 插件，把 call
 
 | 目标 | 实现 |
 | --- | --- |
-| **低延迟** | 有界 latest-state 路径；Windows release 合成 UDP→WebSocket p95 `26.65 ms`，门槛 `<100 ms` |
+| **低延迟** | 有界 latest-state 路径；Windows release 合成 UDP→WebSocket p95 `26.86 ms`，门槛 `<100 ms` |
 | **高帧率** | 前端只有一个 `requestAnimationFrame` 调度器；遥测包不会触发整棵 Preact 树重渲染 |
 | **稳定** | Rust 安全解析、精确长度/版本校验、无 `unsafe` adapter；SCS 帧回调不锁、不等待、不解析网络输入 |
 | **本地与隐私** | 遥测不离开电脑/局域网；一次性配对、设备 session、Origin/Host 校验、严格 CSP |
 | **可维护** | 游戏协议 → `GameAdapter` → 统一遥测模型 → Dashboard；前端不堆积游戏特判 |
-| **可定制** | 响应式网格、拖动/缩放、撤销重做、主题、原子保存与安全 JSON 导入导出 |
+| **可定制** | 每游戏独立响应式布局；拖动/缩放、撤销重做、主题、原子保存与安全 JSON 导入导出 |
 
-视觉采用项目自己的 **Trackside Signal System**：石墨黑表面、暖白数字、荧光转速灯地平线和克制的红线提示。动画只更新 `transform`/`opacity`，并尊重 `prefers-reduced-motion`。
+F1 采用项目自己的 **Trackside Signal System**：转速灯地平线、中央大档位和 DRS 状态；ETS2/ATS 自动切为速度优先的长途布局、低转速量程、道路色彩和 SCS bridge 状态。动画只更新合成友好的属性，并尊重 `prefers-reduced-motion`。
 
 ## 诊断：先判断断在哪一段
 
@@ -117,7 +117,7 @@ npm run test:package-smoke
 npm run test:host-latency
 ```
 
-`test:package-smoke` 会启动包内 Host，并依次验证 `f1-24 → f1-25 → ets2 → ats`。另有默认两小时、四客户端、60 Hz 的 `npm run test:host-soak`，不把短测试冒充长期稳定性结果。
+`test:package-smoke` 会启动包内 Host，并依次验证 `f1-24/2024 → f1-25/2025 → f1-25/2026 → ets2 → ats`。另有默认两小时、四客户端、60 Hz 的 `npm run test:host-soak`，不把短测试冒充长期稳定性结果。
 
 ## 项目地图
 
@@ -136,6 +136,7 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 
 - [游戏数据链路与 SCS 44 字节协议图解](./docs/data-paths-and-scs-packet.md)
 - [多游戏输入与适配器设计](./docs/plans/2026-08-12-multi-game-adapters-design.md)
+- [F1 25 2026 Season Pack 与按游戏前端设计](./docs/plans/2026-08-12-f1-25-2026-season-pack-design.md)
 - [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)
 - [视觉与动效设计](./docs/plans/2026-08-11-f1-dashboard-visual-design.md)
 - [ADR：为什么采用版本化本机桥接](./docs/adr/0007-versioned-local-game-input-bridges.md)
@@ -145,7 +146,7 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 ## 当前边界
 
 - F1 首版没有圈速、比赛状态、轮胎、损伤、天气、处罚与赛事事件。
-- F1 25 只支持原始 2025 UDP，不会猜测兼容 2026 Season Pack。
+- F1 25 的 2026 Car Telemetry 2（packet id `16`）、主动空气动力学等新增字段尚未映射；现有驾驶页字段来自 packet id `6`。
 - ETS2/ATS 尚无导航、灯光、油量、任务等卡车专属字段，也不会伪造 F1 转速灯。
 - Windows 正式代码签名、macOS 签名/notarization 与自动更新器尚未完成。
 

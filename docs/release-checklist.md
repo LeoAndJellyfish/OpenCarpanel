@@ -1,6 +1,6 @@
 # OpenCarpanel 发布检查清单
 
-本清单用于 F1 24、原始 F1 25/2025 UDP、ETS2 与 ATS 的 `0.1.x` 多游戏预览版。任何没有实测的项目必须保持未勾选，不能由合成协议 fixture 或自动化结果代替真实游戏验收。
+本清单用于 `v0.1.1` 多游戏预览：F1 24、F1 25 原始 2025/2026 Season Pack UDP、ETS2 与 ATS。`v0.1.0` 边界记录在独立发布说明中。任何没有实测的项目必须保持未勾选，不能由合成协议 fixture 或自动化结果代替真实游戏验收。
 
 ## 自动化门禁
 
@@ -13,8 +13,8 @@
 - [x] `npm run build:web`（Windows，2026-08-12）
 - [x] `npm run build:scs-plugin`，Windows x64 插件编译、native wire test 和安装 staging 通过（2026-08-12）
 - [x] `npm run package:host`，Windows x64 Host、插件、README 视觉资源、NOTICE、项目/SCS 许可和分游戏指南均在产物中（2026-08-12）
-- [x] `npm run test:package-smoke`，Windows 包内 Host 依次识别 `f1-24 → f1-25 → ets2 → ats`，4/4 recognized、0 errors（2026-08-12）
-- [x] `npm run test:host-latency`，Windows release 合成 UDP→WebSocket p95 `26.65 ms`（2026-08-12）
+- [x] `npm run test:package-smoke`，Windows 包内 Host 依次识别 `f1-24/2024 → f1-25/2025 → f1-25/2026 → ets2 → ats`，5/5 recognized、0 errors（2026-08-12）
+- [x] `npm run test:host-latency`，Windows release 合成 UDP→WebSocket p95 `26.86 ms`（2026-08-12）
 - [ ] `npm run test:host-soak`，两小时、四客户端、60 Hz，无崩溃、解析错误或超过 16 MiB 的首末 RSS 增长
 
 ## 实机功能
@@ -23,12 +23,13 @@
 - [ ] macOS 干净环境可以启动，入站网络权限清楚
 - [ ] F1 24 实机 packet format 2024 正确显示速度、档位、RPM、转速灯、油门、刹车与 DRS
 - [ ] F1 25 实机选择原始 `F1 25 / 2025` UDP 后正确显示速度、档位、RPM、转速灯、油门、刹车与 DRS
-- [ ] F1 25 新用户若默认为 2026 Season Pack，切换到原始 2025 UDP 后可用；预览版不宣称支持 2026 UDP
+- [ ] F1 25 实机使用默认 2026 Season Pack UDP 后正确显示同一字段，且诊断显示 `activeAdapter = f1-25`
 - [ ] ETS2 实机加载随包 SCS 插件、接受 SDK 提示并正确显示速度、档位、RPM/RPM 上限、油门和刹车
 - [ ] ATS 实机加载随包 SCS 插件、接受 SDK 提示并正确显示同一组字段
 - [ ] `auto` 在单游戏运行时选中正确来源；固定 `f1-24|f1-25|ets2|ats` 时不会被其他游戏抢占
 - [ ] 手机竖屏、手机横屏和 iPad 均可配对、重连并显示 stale/disconnected
-- [ ] 编辑器可拖动、缩放、切换断点、保存、处理 409、导入和导出
+- [ ] 游戏变化时驾驶页自动切换 F1/卡车视觉、正确状态语义与各游戏独立用户布局
+- [ ] 编辑器可选择游戏、拖动、缩放、切换断点、保存、处理 409、导入和导出，切换游戏不覆盖另一游戏配置
 - [ ] 损坏布局可从最近有效备份恢复，原损坏文件仍可诊断
 
 ## 真实性能
@@ -54,4 +55,4 @@
 - [ ] 保留上一稳定版配置读取/迁移测试
 - [ ] 从全新配置和既有 v1 配置各完成一次升级演练
 - [ ] 失败更新不会替换当前可运行版本
-- [ ] 发布说明准确列出四款游戏的字段范围、F1 25 仅支持原始 2025 UDP、卡车依赖随包插件，以及尚未完成的实机验证
+- [ ] 发布说明准确列出四款游戏的字段范围、F1 25 的 2025/2026 两套 UDP、自动页面切换、卡车依赖随包插件，以及尚未完成的实机验证

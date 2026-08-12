@@ -527,14 +527,14 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "opencarpanel-adapter-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "opencarpanel-telemetry-core",
 ]
 
 [[package]]
 name = "opencarpanel-adapter-f1"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "opencarpanel-adapter-api",
  "opencarpanel-telemetry-core",
@@ -542,7 +542,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-adapter-scs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "opencarpanel-adapter-api",
  "opencarpanel-telemetry-core",
@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-config"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "atomic-write-file",
  "schemars",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-host"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "base64",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "opencarpanel-telemetry-core",
  "schemars",
@@ -598,7 +598,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-telemetry-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "schemars",
  "serde",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "opencarpanel-telemetry-replay"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ctrlc",
  "opencarpanel-adapter-api",

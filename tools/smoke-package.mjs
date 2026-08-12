@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { createSocket } from "node:dgram";
 import { once } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createServer } from "node:net";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -30,12 +31,15 @@ if (!existsSync(executable)) {
 const targetDirectory = path.join(projectRoot, "target");
 mkdirSync(targetDirectory, { recursive: true });
 const dataDirectory = mkdtempSync(path.join(targetDirectory, "package-smoke-"));
+const [httpPort, udpPort] = await Promise.all([availableTcpPort(), availableUdpPort()]);
 const host = spawn(executable, [], {
   cwd: packageDirectory,
   env: {
     ...process.env,
     OPENCARPANEL_DATA_DIR: dataDirectory,
     OPENCARPANEL_GAME: "auto",
+    OPENCARPANEL_HTTP_BIND: `127.0.0.1:${httpPort}`,
+    OPENCARPANEL_UDP_BIND: `127.0.0.1:${udpPort}`,
   },
   stdio: ["ignore", "pipe", "pipe"],
   windowsHide: true,
@@ -66,29 +70,32 @@ try {
   }
 
   const activated = [];
-  for (const [index, [packet, adapter]] of [
-    [f1Packet(2024, 24), "f1-24"],
-    [f1Packet(2025, 25), "f1-25"],
-    [scsPacket(1), "ets2"],
-    [scsPacket(2), "ats"],
-  ].entries()) {
-    if (index > 0) {
+  const cases = [
+    { packet: f1Packet(2024, 24), adapter: "f1-24", label: "f1-24/2024" },
+    { packet: f1Packet(2025, 25), adapter: "f1-25", label: "f1-25/2025" },
+    { packet: f1Packet(2026, 26), adapter: "f1-25", label: "f1-25/2026" },
+    { packet: scsPacket(1), adapter: "ets2", label: "ets2" },
+    { packet: scsPacket(2), adapter: "ats", label: "ats" },
+  ];
+  for (const [index, { packet, adapter, label }] of cases.entries()) {
+    if (index > 0 && cases[index - 1].adapter !== adapter) {
       await delay(2_100);
     }
     await sendPacket(packet);
     const diagnostics = await waitForJson(
       "/api/v1/diagnostics",
-      (body) => body.activeAdapter === adapter,
+      (body) => body.activeAdapter === adapter
+        && body.telemetry.packetsReceived === index + 1,
       2_000,
     );
-    activated.push(diagnostics.activeAdapter);
+    activated.push(label);
   }
 
   const diagnostics = await requestJson("/api/v1/diagnostics");
   if (
     diagnostics.adapterSelection !== "auto"
-    || diagnostics.telemetry.packetsReceived !== 4
-    || diagnostics.telemetry.packetsRecognized !== 4
+    || diagnostics.telemetry.packetsReceived !== 5
+    || diagnostics.telemetry.packetsRecognized !== 5
     || diagnostics.telemetry.packetErrors !== 0
   ) {
     throw new Error(`Unexpected packaged Host diagnostics: ${JSON.stringify(diagnostics)}`);
@@ -96,7 +103,7 @@ try {
 
   process.stdout.write(
     `Package smoke passed: ${activated.join(" -> ")}; `
-      + `${diagnostics.telemetry.packetsRecognized}/4 packets recognized, 0 errors.\n`,
+      + `${diagnostics.telemetry.packetsRecognized}/5 packets recognized, 0 errors.\n`,
   );
   succeeded = true;
 } catch (error) {
@@ -126,7 +133,7 @@ try {
 }
 
 async function requestJson(route) {
-  const response = await fetch(`http://127.0.0.1:20778${route}`, {
+  const response = await fetch(`http://127.0.0.1:${httpPort}${route}`, {
     signal: AbortSignal.timeout(1_000),
   });
   if (!response.ok) {
@@ -160,7 +167,7 @@ async function waitForJson(route, predicate, timeoutMs) {
 
 function sendPacket(packet) {
   return new Promise((resolve, reject) => {
-    udp.send(packet, 20_777, "127.0.0.1", (error) => {
+    udp.send(packet, udpPort, "127.0.0.1", (error) => {
       if (error) {
         reject(error);
       } else {
@@ -171,7 +178,10 @@ function sendPacket(packet) {
 }
 
 function f1Packet(format, gameYear) {
-  const packet = Buffer.alloc(1_352);
+  const seasonPack = format === 2026;
+  const carDataLength = seasonPack ? 59 : 60;
+  const playerIndex = seasonPack ? 23 : 0;
+  const packet = Buffer.alloc(seasonPack ? 1_448 : 1_352);
   packet.writeUInt16LE(format, 0);
   packet.writeUInt8(gameYear, 2);
   packet.writeUInt8(1, 3);
@@ -181,13 +191,15 @@ function f1Packet(format, gameYear) {
   packet.writeFloatLE(1, 15);
   packet.writeUInt32LE(10, 19);
   packet.writeUInt32LE(12, 23);
+  packet.writeUInt8(playerIndex, 27);
   packet.writeUInt8(255, 28);
-  packet.writeUInt16LE(240, 29);
-  packet.writeFloatLE(0.8, 31);
-  packet.writeFloatLE(0.1, 39);
-  packet.writeInt8(7, 44);
-  packet.writeUInt16LE(11_000, 45);
-  packet.writeUInt8(1, 47);
+  const player = 29 + playerIndex * carDataLength;
+  packet.writeUInt16LE(240, player);
+  packet.writeFloatLE(0.8, player + 2);
+  packet.writeFloatLE(0.1, player + 10);
+  packet.writeInt8(7, player + 15);
+  packet.writeUInt16LE(11_000, player + 16);
+  packet.writeUInt8(1, player + 18);
   return packet;
 }
 
@@ -213,6 +225,34 @@ function delay(milliseconds) {
 
 function keepTail(value) {
   return value.slice(-32_768);
+}
+
+function availableTcpPort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close();
+        reject(new Error("Could not allocate a temporary TCP port."));
+        return;
+      }
+      server.close((error) => error ? reject(error) : resolve(address.port));
+    });
+  });
+}
+
+function availableUdpPort() {
+  return new Promise((resolve, reject) => {
+    const socket = createSocket("udp4");
+    socket.once("error", reject);
+    socket.bind(0, "127.0.0.1", () => {
+      const address = socket.address();
+      socket.close(() => resolve(address.port));
+    });
+  });
 }
 
 function platformName(value) {

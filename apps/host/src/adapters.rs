@@ -21,7 +21,7 @@ pub enum AdapterSelection {
     Auto,
     /// Accept only F1 24 original-format UDP packets.
     F1_24,
-    /// Accept only F1 25 original 2025-format UDP packets.
+    /// Accept F1 25 original 2025-format and 2026 Season Pack UDP packets.
     F1_25,
     /// Accept only the Euro Truck Simulator 2 bridge protocol.
     Ets2,

@@ -4,8 +4,8 @@ use opencarpanel_adapter_api::{
 use opencarpanel_telemetry_core::{MonotonicTimestamp, TelemetryField};
 
 use crate::{
-    CAR_TELEMETRY_PACKET_ID, DecodeError, F1_24_PROTOCOL, F1_25_PROTOCOL, F1Protocol, PacketHeader,
-    decode_player_sample, map_player_sample,
+    CAR_TELEMETRY_PACKET_ID, DecodeError, F1_24_PROTOCOL, F1_25_PROTOCOL, F1Protocol,
+    decode_header_and_layout, decode_player_sample, map_player_sample,
 };
 
 #[derive(Debug)]
@@ -43,13 +43,13 @@ impl F1Adapter {
         received_at: MonotonicTimestamp,
         output: &mut AdapterOutput,
     ) -> Result<(), AdapterError> {
-        let (header, payload) = PacketHeader::decode(datagram, self.protocol.packet_format)
+        let (header, payload, layout) = decode_header_and_layout(datagram, self.protocol)
             .map_err(|error| adapter_error(&error))?;
         if header.packet_id != CAR_TELEMETRY_PACKET_ID {
             return Ok(());
         }
 
-        let sample = decode_player_sample(&header, payload, datagram.len())
+        let sample = decode_player_sample(&header, payload, datagram.len(), layout)
             .map_err(|error| adapter_error(&error))?;
         let update = map_player_sample(&header, sample, received_at)
             .map_err(|error| adapter_error(&error))?;
@@ -104,6 +104,16 @@ fn adapter_error(error: &DecodeError) -> AdapterError {
     match error {
         DecodeError::UnsupportedPacketFormat { expected, actual } => {
             AdapterError::unsupported_protocol(expected.to_string(), actual.to_string())
+        }
+        DecodeError::UnsupportedPacketFormats { expected, actual } => {
+            AdapterError::unsupported_protocol(
+                expected
+                    .iter()
+                    .map(u16::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                actual.to_string(),
+            )
         }
         DecodeError::UnsupportedPacketVersion {
             packet_id,

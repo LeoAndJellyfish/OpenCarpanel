@@ -5,7 +5,7 @@ OpenCarpanel Host 默认在 UDP `20777` 上自动识别四个输入源，并把�
 | 游戏 | 游戏到 Host 的入口 | 首版要求 |
 | --- | --- | --- |
 | F1 24 | 游戏原生 UDP | Format `2024` |
-| F1 25 | 游戏原生 UDP | 选择原始 **F1 25 / 2025** UDP 模式；暂不支持 2026 Season Pack 格式 |
+| F1 25 | 游戏原生 UDP | 原始 **2025** 与 **2026 Season Pack** UDP 模式均可 |
 | Euro Truck Simulator 2 | 随包原生 SCS 插件 → loopback UDP | 安装 `opencarpanel-scs-telemetry` 插件 |
 | American Truck Simulator | 随包原生 SCS 插件 → loopback UDP | 安装同一插件 |
 
@@ -41,6 +41,8 @@ npm run package:host
 ## 自动识别与固定选择
 
 默认 `auto` 模式会识别四种协议。当前 active 来源持续发包时，Host 会保持两秒来源粘性，避免两个游戏同时运行时仪表盘来回切换。
+
+每个有效 snapshot 都携带稳定的 `meta.gameId`。驾驶页只在这个低频标识变化时切换页面配置：F1 24/25 使用方程式布局与 DRS 状态，ETS2/ATS 使用速度优先的卡车布局与 SCS bridge 状态。四款游戏分别保存为 `game-f1-24`、`game-f1-25`、`game-ets2`、`game-ats`，所以编辑某款游戏不会覆盖另一款；`/edit` 也可以手动选择要预览和编辑的游戏。
 
 排障或只允许一个游戏时，可在启动前设置：
 

@@ -1,8 +1,8 @@
 import {
   BREAKPOINT_NAMES,
-  DEFAULT_LAYOUT,
   cloneLayout,
   type BreakpointName,
+  type BuiltinGameId,
   type LayoutDocument,
   type WidgetManifest,
 } from "@opencarpanel/widget-sdk";
@@ -15,7 +15,16 @@ import {
   saveLayout,
 } from "../api/layouts";
 import { ConnectionScreen } from "../connection/screen";
-import { THEME_PRESETS, themePresetId } from "../dashboard/theme";
+import {
+  gamePresentation,
+  isBuiltinGameId,
+  SUPPORTED_GAME_PRESENTATIONS,
+} from "../dashboard/game-profile";
+import {
+  dashboardThemeStyle,
+  THEME_PRESETS,
+  themePresetId,
+} from "../dashboard/theme";
 import { selectBreakpoint } from "../dashboard/breakpoint";
 import { EditorCanvas } from "../editor/canvas";
 import {
@@ -52,39 +61,66 @@ const BREAKPOINT_LABELS: Readonly<Record<BreakpointName, string>> = {
   desktop: "桌面预览",
 };
 
+const INITIAL_GAME_ID: BuiltinGameId = "f1-24";
+
 export function EditRoute() {
   const runtime = useTelemetryRuntime();
-  const [history, setHistory] = useState(() => createHistory(cloneLayout(DEFAULT_LAYOUT)));
+  const [selectedGameId, setSelectedGameId] = useState<BuiltinGameId>(INITIAL_GAME_ID);
+  const presentation = gamePresentation(selectedGameId);
+  const [history, setHistory] = useState(() =>
+    createHistory(cloneLayout(gamePresentation(INITIAL_GAME_ID).defaultLayout)),
+  );
   const [savedDocument, setSavedDocument] = useState<LayoutDocument>();
   const [breakpoint, setBreakpoint] = useState<BreakpointName>(() =>
     selectBreakpoint(window.innerWidth, window.innerHeight),
   );
   const [selectedId, setSelectedId] = useState<string>();
-  const [loaded, setLoaded] = useState(false);
+  const [loadedLayoutId, setLoadedLayoutId] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("正在读取 Host 布局…");
   const [conflict, setConflict] = useState<LayoutDocument>();
   const fileInput = useRef<HTMLInputElement>(null);
+  const manuallySelectedGame = useRef(false);
   const demoMode = import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
   const layout = history.present;
   const selected = layout.widgets.find((widget) => widget.instanceId === selectedId);
   const selectedManifest = selected ? builtinWidgetManifest(selected.componentType) : undefined;
   const dirty = savedDocument ? layoutSignature(layout) !== layoutSignature(savedDocument) : false;
+  const loaded = loadedLayoutId === presentation.layoutId;
+
+  useEffect(() => {
+    if (
+      manuallySelectedGame.current ||
+      !isBuiltinGameId(runtime.gameId) ||
+      runtime.gameId === selectedGameId
+    ) {
+      return;
+    }
+    if (dirty) {
+      saveLayoutDraft(localStorage, layout);
+    }
+    setSelectedGameId(runtime.gameId);
+    setSelectedId(undefined);
+    setConflict(undefined);
+  }, [dirty, layout, runtime.gameId, selectedGameId]);
 
   useEffect(() => {
     if (!runtime.hasConnected || loaded) {
       return;
     }
     let active = true;
+    const fallback = cloneLayout(presentation.defaultLayout);
+    setHistory(createHistory(fallback));
+    setSavedDocument(fallback);
+    setSelectedId(undefined);
+    setConflict(undefined);
+    setNotice(`正在读取 ${presentation.label} 的独立布局…`);
     if (demoMode) {
-      const document = cloneLayout(DEFAULT_LAYOUT);
-      setHistory(createHistory(document));
-      setSavedDocument(document);
-      setLoaded(true);
+      setLoadedLayoutId(presentation.layoutId);
       setNotice("视觉演示模式：更改仅保存为本机浏览器草稿。");
       return;
     }
-    void loadLayout("default")
+    void loadLayout(presentation.layoutId)
       .then((loadedLayout) => {
         if (!active) {
           return;
@@ -103,14 +139,14 @@ export function EditRoute() {
           setNotice(loadedLayout.recovered ? "Host 已从最近备份恢复布局。" : "布局已同步。");
         }
         setSavedDocument(server);
-        setLoaded(true);
+        setLoadedLayoutId(presentation.layoutId);
       })
       .catch((error: unknown) => {
         if (!active) {
           return;
         }
-        setLoaded(true);
-        setSavedDocument(cloneLayout(DEFAULT_LAYOUT));
+        setLoadedLayoutId(presentation.layoutId);
+        setSavedDocument(fallback);
         setNotice(
           error instanceof Error
             ? `无法读取布局，正在使用安全默认值：${error.message}`
@@ -120,7 +156,7 @@ export function EditRoute() {
     return () => {
       active = false;
     };
-  }, [demoMode, loaded, runtime.hasConnected]);
+  }, [demoMode, loaded, presentation, runtime.hasConnected]);
 
   useEffect(() => {
     if (!loaded || !dirty) {
@@ -153,6 +189,19 @@ export function EditRoute() {
 
   const commit = (next: LayoutDocument) => {
     setHistory((current) => commitHistory(current, next));
+  };
+
+  const selectGame = (nextGameId: BuiltinGameId) => {
+    if (nextGameId === selectedGameId) {
+      return;
+    }
+    if (dirty && saveLayoutDraft(localStorage, layout)) {
+      setNotice("已保存当前游戏草稿，正在切换面板。");
+    }
+    manuallySelectedGame.current = true;
+    setSelectedGameId(nextGameId);
+    setSelectedId(undefined);
+    setConflict(undefined);
   };
 
   const add = (manifest: WidgetManifest<object>) => {
@@ -271,19 +320,36 @@ export function EditRoute() {
           <p class="eyebrow">OpenCarpanel / Layout Lab</p>
           <strong>{layout.name}</strong>
         </div>
-        <label class="editor-breakpoint">
-          <span>预览断点</span>
-          <select
-            value={breakpoint}
-            onChange={(event) => setBreakpoint(event.currentTarget.value as BreakpointName)}
-          >
-            {BREAKPOINT_NAMES.map((name) => (
-              <option key={name} value={name}>
-                {BREAKPOINT_LABELS[name]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div class="editor-preview-controls">
+          <label class="editor-breakpoint">
+            <span>游戏面板</span>
+            <select
+              value={selectedGameId}
+              onChange={(event) =>
+                selectGame(event.currentTarget.value as BuiltinGameId)
+              }
+            >
+              {SUPPORTED_GAME_PRESENTATIONS.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label class="editor-breakpoint">
+            <span>预览断点</span>
+            <select
+              value={breakpoint}
+              onChange={(event) => setBreakpoint(event.currentTarget.value as BreakpointName)}
+            >
+              {BREAKPOINT_NAMES.map((name) => (
+                <option key={name} value={name}>
+                  {BREAKPOINT_LABELS[name]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <nav class="editor-actions" aria-label="布局操作">
           <button
             type="button"
@@ -407,6 +473,9 @@ export function EditRoute() {
               class="drive-dashboard editor-preview"
               data-stale="false"
               data-theme={themePresetId(layout.theme)}
+              data-game={presentation.id}
+              data-game-family={presentation.family}
+              style={dashboardThemeStyle(layout.theme)}
             >
               <div class="dashboard-frame" aria-hidden="true" />
               <EditorCanvas
@@ -414,12 +483,13 @@ export function EditRoute() {
                 breakpoint={breakpoint}
                 loop={runtime.loop}
                 connection={runtime.connection}
+                statusMode={presentation.statusMode}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 onCommit={commit}
               />
               <footer class="drive-footer">
-                <span>{BREAKPOINT_LABELS[breakpoint]} / EDIT MODE</span>
+                <span>{presentation.label} / {BREAKPOINT_LABELS[breakpoint]} / EDIT MODE</span>
                 <span>REV {layout.revision}</span>
               </footer>
             </div>

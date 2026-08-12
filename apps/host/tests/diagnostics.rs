@@ -29,6 +29,7 @@ async fn diagnostics_are_local_bounded_and_sanitized() -> Result<(), Box<dyn Err
     assert_eq!(supported.len(), 4);
     assert_eq!(supported[0]["id"], "f1-24");
     assert_eq!(supported[1]["id"], "f1-25");
+    assert_eq!(supported[1]["protocolVersion"], "2025/v3 + 2026/v10");
     assert_eq!(supported[2]["id"], "ets2");
     assert_eq!(supported[3]["id"], "ats");
     assert!(supported.iter().all(|adapter| {

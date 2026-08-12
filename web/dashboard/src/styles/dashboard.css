@@ -29,6 +29,9 @@ body {
     radial-gradient(circle at 50% 42%, rgb(217 255 67 / 7%), transparent 31%),
     linear-gradient(135deg, #0c1013 0%, var(--surface-0) 56%, #0b0e12 100%);
   isolation: isolate;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
 }
 
 .drive-dashboard::before {
@@ -401,4 +404,69 @@ body {
   --ink: #fff;
   --signal: #fff;
   --redline: #ff4b3e;
+}
+
+.drive-dashboard[data-theme="road"] {
+  --surface-0: #080d10;
+  --ink: #f5f0e6;
+  --signal: #ff6a3d;
+  --redline: #ffcf54;
+}
+
+.drive-dashboard[data-game-family="truck"] {
+  background:
+    radial-gradient(
+      ellipse at 28% 78%,
+      color-mix(in srgb, var(--signal) 11%, transparent),
+      transparent 31%
+    ),
+    linear-gradient(157deg, #11171a 0%, var(--surface-0) 48%, #05080a 100%);
+}
+
+.drive-dashboard[data-game-family="truck"]::before {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--signal) 18%, transparent) 0 34px,
+    transparent 34px 82px
+  );
+  background-position: 50% 0;
+  background-size: 2px 100%;
+  background-repeat: no-repeat;
+  opacity: 0.72;
+  mask-image: linear-gradient(to bottom, transparent 4%, black 31%, black 82%, transparent);
+}
+
+.drive-dashboard[data-game-family="truck"]::after {
+  top: 58%;
+  right: -7%;
+  width: 54%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  opacity: 0.22;
+  transform: rotate(-8deg);
+}
+
+.drive-dashboard[data-game-family="truck"] .layout-widget-frame .speed-widget {
+  align-content: center;
+  padding: 4cqh 4cqw;
+}
+
+.drive-dashboard[data-game-family="truck"] .layout-widget-frame .speed-value {
+  font-size: min(70cqh, 48cqw);
+  font-weight: 650;
+}
+
+.drive-dashboard[data-game-family="truck"] .layout-widget-frame .gear-value {
+  font-size: min(64cqh, 72cqw);
+  color: var(--signal);
+}
+
+.drive-dashboard[data-game-family="truck"] .status-rail {
+  border-left-color: color-mix(in srgb, var(--signal) 28%, var(--line));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drive-dashboard {
+    transition-duration: 0ms;
+  }
 }

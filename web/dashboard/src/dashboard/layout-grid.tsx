@@ -8,6 +8,7 @@ import type { ComponentChildren, Ref } from "preact";
 
 import type { ConnectionView } from "../connection/client";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";
+import type { StatusMode } from "./game-profile";
 import { WidgetView } from "./widget-view";
 
 export interface LayoutItemContext {
@@ -22,6 +23,7 @@ export interface LayoutGridProps {
   readonly breakpoint: BreakpointName;
   readonly loop: TelemetryRenderLoop;
   readonly connection: ConnectionView;
+  readonly statusMode?: StatusMode;
   readonly renderItem?: (context: LayoutItemContext) => ComponentChildren;
   readonly gridRef?: Ref<HTMLElement>;
 }
@@ -31,6 +33,7 @@ export function LayoutGrid({
   breakpoint,
   loop,
   connection,
+  statusMode = "generic",
   renderItem,
   gridRef,
 }: LayoutGridProps) {
@@ -46,7 +49,14 @@ export function LayoutGrid({
           return null;
         }
         const className = placementClassName(placement);
-        const content = <WidgetView widget={widget} loop={loop} connection={connection} />;
+        const content = (
+          <WidgetView
+            widget={widget}
+            loop={loop}
+            connection={connection}
+            statusMode={statusMode}
+          />
+        );
         return renderItem ? (
           renderItem({ widget, placement, className, content })
         ) : (

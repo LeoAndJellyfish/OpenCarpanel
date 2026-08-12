@@ -1,4 +1,8 @@
-import type { ServerMessage } from "@opencarpanel/widget-sdk";
+import {
+  BUILTIN_GAME_IDS,
+  type BuiltinGameId,
+  type ServerMessage,
+} from "@opencarpanel/widget-sdk";
 import { useEffect, useState } from "preact/hooks";
 
 import { TelemetryConnection, type ConnectionView } from "../connection/client";
@@ -13,12 +17,14 @@ const initialView: ConnectionView = {
 
 export interface TelemetryRuntime {
   readonly connection: ConnectionView;
+  readonly gameId: string | undefined;
   readonly hasConnected: boolean;
   readonly loop: TelemetryRenderLoop;
 }
 
 export function useTelemetryRuntime(): TelemetryRuntime {
   const [connection, setConnection] = useState<ConnectionView>(initialView);
+  const [gameId, setGameId] = useState<string>();
   const [hasConnected, setHasConnected] = useState(false);
   const [store] = useState(
     () =>
@@ -27,11 +33,13 @@ export function useTelemetryRuntime(): TelemetryRuntime {
       }),
   );
   const [loop] = useState(() => new TelemetryRenderLoop(store));
-  const demoMode =
-    import.meta.env.DEV && new URLSearchParams(window.location.search).has("demo");
+  const search = new URLSearchParams(window.location.search);
+  const demoMode = import.meta.env.DEV && search.has("demo");
+  const demoGameId = readDemoGameId(search.get("game"));
 
   useEffect(() => {
     if (demoMode) {
+      const truck = demoGameId === "ets2" || demoGameId === "ats";
       let sequence = 0;
       const publishDemoFrame = () => {
         const elapsedMs = performance.now();
@@ -44,20 +52,22 @@ export function useTelemetryRuntime(): TelemetryRuntime {
             data: {
               meta: {
                 capturedAt: Math.round(elapsedMs * 1_000),
-                gameId: "f1-24",
+                gameId: demoGameId,
                 schemaVersion: 1,
                 sequence,
                 sessionId: "dashboard-visual-demo",
               },
               vehicle: {
-                speedMps: 76 + Math.sin(elapsedMs / 1_300) * 8,
-                rpm: 8_900 + wave * 2_800,
-                rpmMax: 12_000,
+                speedMps: truck
+                  ? 25 + Math.sin(elapsedMs / 1_900) * 4
+                  : 76 + Math.sin(elapsedMs / 1_300) * 8,
+                rpm: truck ? 1_250 + wave * 650 : 8_900 + wave * 2_800,
+                rpmMax: truck ? 2_500 : 12_000,
                 revLights: 0.58 + wave * 0.4,
                 throttle: 0.78 + wave * 0.2,
                 brake: 0,
-                gear: { forward: 7 },
-                drs: wave > 0.72 ? "active" : "available",
+                gear: { forward: truck ? 10 : 7 },
+                ...(truck ? {} : { drs: wave > 0.72 ? "active" : "available" as const }),
               },
             },
           },
@@ -65,6 +75,7 @@ export function useTelemetryRuntime(): TelemetryRuntime {
         );
       };
       setConnection({ phase: "connected", detail: "本地视觉演示数据正在运行。" });
+      setGameId(demoGameId);
       setHasConnected(true);
       publishDemoFrame();
       const interval = window.setInterval(publishDemoFrame, 1_000 / 60);
@@ -89,6 +100,11 @@ export function useTelemetryRuntime(): TelemetryRuntime {
     const observeMessage = (message: ServerMessage) => {
       if (message.type === "snapshot") {
         store.ingest(message, performance.now());
+        setGameId(
+          typeof message.data.meta?.gameId === "string"
+            ? message.data.meta.gameId
+            : undefined,
+        );
         if (staleTimer !== undefined) {
           window.clearTimeout(staleTimer);
         }
@@ -116,7 +132,13 @@ export function useTelemetryRuntime(): TelemetryRuntime {
       telemetryConnection.stop();
       loop.destroy();
     };
-  }, [demoMode, loop, store]);
+  }, [demoGameId, demoMode, loop, store]);
 
-  return { connection, hasConnected, loop };
+  return { connection, gameId, hasConnected, loop };
+}
+
+function readDemoGameId(value: string | null): BuiltinGameId {
+  return BUILTIN_GAME_IDS.includes(value as BuiltinGameId)
+    ? (value as BuiltinGameId)
+    : "f1-24";
 }

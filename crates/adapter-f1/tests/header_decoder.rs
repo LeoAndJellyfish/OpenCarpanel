@@ -1,6 +1,13 @@
 use opencarpanel_adapter_f1::{
-    DecodeError, F1_24_PACKET_FORMAT, F1_25_PACKET_FORMAT, PACKET_HEADER_LEN, PacketHeader,
+    DecodeError, F1_24_PACKET_FORMAT, F1_25_2026_PACKET_FORMAT, F1_25_PACKET_FORMAT,
+    PACKET_HEADER_LEN, PacketHeader,
 };
+
+const SUPPORTED_HEADERS: [(u16, u8); 3] = [
+    (F1_24_PACKET_FORMAT, 24),
+    (F1_25_PACKET_FORMAT, 25),
+    (F1_25_2026_PACKET_FORMAT, 26),
+];
 
 fn valid_header(packet_format: u16, game_year: u8) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(PACKET_HEADER_LEN);
@@ -21,7 +28,7 @@ fn valid_header(packet_format: u16, game_year: u8) -> Vec<u8> {
 
 #[test]
 fn valid_headers_decode_every_field_and_preserve_payload() -> Result<(), DecodeError> {
-    for (packet_format, game_year) in [(F1_24_PACKET_FORMAT, 24), (F1_25_PACKET_FORMAT, 25)] {
+    for (packet_format, game_year) in SUPPORTED_HEADERS {
         let mut datagram = valid_header(packet_format, game_year);
         datagram.extend_from_slice(&[0xAA, 0xBB, 0xCC]);
 
@@ -47,7 +54,7 @@ fn valid_headers_decode_every_field_and_preserve_payload() -> Result<(), DecodeE
 
 #[test]
 fn every_truncated_header_returns_unexpected_end() {
-    for (packet_format, game_year) in [(F1_24_PACKET_FORMAT, 24), (F1_25_PACKET_FORMAT, 25)] {
+    for (packet_format, game_year) in SUPPORTED_HEADERS {
         let bytes = valid_header(packet_format, game_year);
         for length in 0..PACKET_HEADER_LEN {
             let result = PacketHeader::decode(&bytes[..length], packet_format);
@@ -63,6 +70,7 @@ fn every_truncated_header_returns_unexpected_end() {
 fn packet_formats_are_strictly_isolated() {
     let f1_24 = valid_header(F1_24_PACKET_FORMAT, 24);
     let f1_25 = valid_header(F1_25_PACKET_FORMAT, 25);
+    let f1_25_2026 = valid_header(F1_25_2026_PACKET_FORMAT, 26);
 
     assert_eq!(
         PacketHeader::decode(&f1_25, F1_24_PACKET_FORMAT),
@@ -76,6 +84,13 @@ fn packet_formats_are_strictly_isolated() {
         Err(DecodeError::UnsupportedPacketFormat {
             expected: F1_25_PACKET_FORMAT,
             actual: F1_24_PACKET_FORMAT,
+        })
+    );
+    assert_eq!(
+        PacketHeader::decode(&f1_25_2026, F1_25_PACKET_FORMAT),
+        Err(DecodeError::UnsupportedPacketFormat {
+            expected: F1_25_PACKET_FORMAT,
+            actual: F1_25_2026_PACKET_FORMAT,
         })
     );
 }

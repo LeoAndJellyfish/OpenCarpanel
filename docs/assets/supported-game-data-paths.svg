@@ -23,7 +23,7 @@
   <rect x="218" y="239" width="126" height="54" rx="12" fill="#14191d" stroke="#3a4246"/>
   <text x="281" y="273" fill="#f2f0e9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" text-anchor="middle">F1 25</text>
   <path d="M129 293V328H382M281 293V328" fill="none" stroke="#d9ff43" stroke-width="3" marker-end="url(#green-arrow)"/>
-  <text x="66" y="352" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">formats 2024 / 2025</text>
+  <text x="66" y="352" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">formats 2024 / 2025 / 2026</text>
 
   <path d="M66 384H344" stroke="#2a3033" stroke-width="2"/>
   <text x="66" y="426" fill="#ffbd45" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="21" font-weight="700">SCS SDK bridge lane</text>

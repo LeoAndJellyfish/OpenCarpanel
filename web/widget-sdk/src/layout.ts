@@ -17,6 +17,10 @@ export const BREAKPOINT_NAMES = [
 
 export type BreakpointName = (typeof BREAKPOINT_NAMES)[number];
 
+export const BUILTIN_GAME_IDS = ["f1-24", "f1-25", "ets2", "ats"] as const;
+
+export type BuiltinGameId = (typeof BUILTIN_GAME_IDS)[number];
+
 export interface BreakpointGrid {
   readonly columns: number;
   readonly rows: number;
@@ -50,9 +54,11 @@ export interface LayoutDocument
   readonly theme: ThemeSettings;
 }
 
-const DEFAULT_PLACEMENTS: Readonly<
+type DefaultPlacements = Readonly<
   Record<"tachometer" | "gear" | "speed" | "status", Record<BreakpointName, GridPlacement>>
-> = {
+>;
+
+const FORMULA_PLACEMENTS: DefaultPlacements = {
   tachometer: {
     phonePortrait: { x: 0, y: 0, width: 12, height: 3 },
     phoneLandscape: { x: 0, y: 0, width: 12, height: 3 },
@@ -79,43 +85,140 @@ const DEFAULT_PLACEMENTS: Readonly<
   },
 };
 
-export const DEFAULT_LAYOUT: LayoutDocument = {
-  schemaVersion: LAYOUT_SCHEMA_VERSION,
-  revision: 0,
-  id: "default",
-  name: "F1 24 Default",
-  widgets: [
-    {
-      instanceId: "tachometer",
-      componentType: "core.tachometer",
-      placements: DEFAULT_PLACEMENTS.tachometer,
-      settings: { fallbackRpmMax: 12_000 },
-    },
-    {
-      instanceId: "gear",
-      componentType: "core.gear",
-      placements: DEFAULT_PLACEMENTS.gear,
-      settings: {},
-    },
-    {
-      instanceId: "speed",
-      componentType: "core.speed",
-      placements: DEFAULT_PLACEMENTS.speed,
-      settings: { unit: "km/h" },
-    },
-    {
-      instanceId: "status",
-      componentType: "core.status",
-      placements: DEFAULT_PLACEMENTS.status,
-      settings: {},
-    },
-  ],
-  theme: {
-    background: "#07090c",
-    foreground: "#f2f0e9",
-    accent: "#d9ff43",
-    warning: "#ff4b3e",
+const TRUCK_PLACEMENTS: DefaultPlacements = {
+  speed: {
+    phonePortrait: { x: 0, y: 0, width: 12, height: 8 },
+    phoneLandscape: { x: 0, y: 0, width: 7, height: 7 },
+    tablet: { x: 0, y: 0, width: 7, height: 8 },
+    desktop: { x: 0, y: 0, width: 7, height: 8 },
   },
+  gear: {
+    phonePortrait: { x: 0, y: 8, width: 5, height: 5 },
+    phoneLandscape: { x: 7, y: 0, width: 5, height: 5 },
+    tablet: { x: 7, y: 0, width: 5, height: 5 },
+    desktop: { x: 7, y: 0, width: 5, height: 5 },
+  },
+  tachometer: {
+    phonePortrait: { x: 5, y: 8, width: 7, height: 3 },
+    phoneLandscape: { x: 0, y: 7, width: 7, height: 3 },
+    tablet: { x: 0, y: 8, width: 7, height: 4 },
+    desktop: { x: 0, y: 8, width: 7, height: 4 },
+  },
+  status: {
+    phonePortrait: { x: 5, y: 11, width: 7, height: 4 },
+    phoneLandscape: { x: 7, y: 5, width: 5, height: 5 },
+    tablet: { x: 7, y: 5, width: 5, height: 7 },
+    desktop: { x: 7, y: 5, width: 5, height: 7 },
+  },
+};
+
+const SIGNAL_THEME: ThemeSettings = {
+  background: "#07090c",
+  foreground: "#f2f0e9",
+  accent: "#d9ff43",
+  warning: "#ff4b3e",
+};
+
+const CYAN_THEME: ThemeSettings = {
+  background: "#061015",
+  foreground: "#eefcff",
+  accent: "#42e8ff",
+  warning: "#ff5e6c",
+};
+
+const AMBER_THEME: ThemeSettings = {
+  background: "#0e0b08",
+  foreground: "#fff5e5",
+  accent: "#ffbd45",
+  warning: "#ff4b3e",
+};
+
+const ROAD_THEME: ThemeSettings = {
+  background: "#080d10",
+  foreground: "#f5f0e6",
+  accent: "#ff6a3d",
+  warning: "#ffcf54",
+};
+
+function builtInLayout(
+  id: string,
+  name: string,
+  placements: DefaultPlacements,
+  theme: ThemeSettings,
+  fallbackRpmMax: number,
+): LayoutDocument {
+  return {
+    schemaVersion: LAYOUT_SCHEMA_VERSION,
+    revision: 0,
+    id,
+    name,
+    widgets: [
+      {
+        instanceId: "tachometer",
+        componentType: "core.tachometer",
+        placements: placements.tachometer,
+        settings: { fallbackRpmMax },
+      },
+      {
+        instanceId: "gear",
+        componentType: "core.gear",
+        placements: placements.gear,
+        settings: {},
+      },
+      {
+        instanceId: "speed",
+        componentType: "core.speed",
+        placements: placements.speed,
+        settings: { unit: "km/h" },
+      },
+      {
+        instanceId: "status",
+        componentType: "core.status",
+        placements: placements.status,
+        settings: {},
+      },
+    ],
+    theme,
+  };
+}
+
+export const DEFAULT_LAYOUT = builtInLayout(
+  "default",
+  "OpenCarpanel Default",
+  FORMULA_PLACEMENTS,
+  SIGNAL_THEME,
+  12_000,
+);
+
+export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument>> = {
+  "f1-24": builtInLayout(
+    "game-f1-24",
+    "F1 24 Trackside",
+    FORMULA_PLACEMENTS,
+    SIGNAL_THEME,
+    12_000,
+  ),
+  "f1-25": builtInLayout(
+    "game-f1-25",
+    "F1 25 Electric Grid",
+    FORMULA_PLACEMENTS,
+    CYAN_THEME,
+    12_000,
+  ),
+  ets2: builtInLayout(
+    "game-ets2",
+    "ETS2 Long Haul",
+    TRUCK_PLACEMENTS,
+    AMBER_THEME,
+    2_500,
+  ),
+  ats: builtInLayout(
+    "game-ats",
+    "ATS Interstate",
+    TRUCK_PLACEMENTS,
+    ROAD_THEME,
+    2_500,
+  ),
 };
 
 export function cloneLayout(layout: LayoutDocument): LayoutDocument {

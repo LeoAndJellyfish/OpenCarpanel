@@ -41,6 +41,16 @@ export const THEME_PRESETS = [
       warning: "#ff4b3e",
     },
   },
+  {
+    id: "road",
+    name: "州际公路",
+    theme: {
+      background: "#080d10",
+      foreground: "#f5f0e6",
+      accent: "#ff6a3d",
+      warning: "#ffcf54",
+    },
+  },
 ] as const satisfies readonly {
   readonly id: string;
   readonly name: string;
@@ -52,6 +62,10 @@ export type ThemePresetId = (typeof THEME_PRESETS)[number]["id"];
 export function themePresetId(theme: ThemeSettings): ThemePresetId {
   const signature = themeSignature(theme);
   return THEME_PRESETS.find((preset) => themeSignature(preset.theme) === signature)?.id ?? "signal";
+}
+
+export function dashboardThemeStyle(theme: ThemeSettings): string {
+  return `--surface-0:${theme.background};--ink:${theme.foreground};--signal:${theme.accent};--redline:${theme.warning}`;
 }
 
 function themeSignature(theme: ThemeSettings): string {

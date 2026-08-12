@@ -23,6 +23,13 @@ pub enum DecodeError {
         /// Packet format read from the datagram.
         actual: u16,
     },
+    /// The packet identifies a format outside a multi-format game adapter.
+    UnsupportedPacketFormats {
+        /// Packet formats accepted by this adapter.
+        expected: &'static [u16],
+        /// Packet format read from the datagram.
+        actual: u16,
+    },
     /// The packet type has a version this adapter does not implement.
     UnsupportedPacketVersion {
         /// Packet type identifier.
@@ -86,6 +93,19 @@ impl Display for DecodeError {
                 formatter,
                 "unsupported F1 packet format {actual}; expected {expected}"
             ),
+            Self::UnsupportedPacketFormats { expected, actual } => {
+                write!(
+                    formatter,
+                    "unsupported F1 packet format {actual}; expected one of "
+                )?;
+                for (index, packet_format) in expected.iter().enumerate() {
+                    if index > 0 {
+                        formatter.write_str(", ")?;
+                    }
+                    write!(formatter, "{packet_format}")?;
+                }
+                Ok(())
+            }
             Self::UnsupportedPacketVersion {
                 packet_id,
                 expected,

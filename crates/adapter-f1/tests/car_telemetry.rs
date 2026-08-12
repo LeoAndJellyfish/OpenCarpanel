@@ -3,17 +3,39 @@ use std::{error::Error, io};
 use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
 use opencarpanel_adapter_f1::{
     CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_LEN, DecodeError, F1_24_PACKET_FORMAT,
-    F1_24Adapter, F1_25_PACKET_FORMAT, F1_25Adapter, PACKET_HEADER_LEN,
-    decode_f1_24_player_car_telemetry, decode_f1_25_player_car_telemetry,
+    F1_24Adapter, F1_25_2026_CAR_COUNT, F1_25_2026_CAR_TELEMETRY_DATA_LEN,
+    F1_25_2026_CAR_TELEMETRY_PACKET_LEN, F1_25_2026_PACKET_FORMAT, F1_25_PACKET_FORMAT,
+    F1_25Adapter, PACKET_HEADER_LEN, decode_f1_24_player_car_telemetry,
+    decode_f1_25_player_car_telemetry,
 };
 use opencarpanel_telemetry_core::{
     DrsState, Gear, MonotonicTimestamp, Normalized, TelemetryUpdate,
 };
 
-const PLAYER_INDEX: u8 = 7;
+const LEGACY_PLAYER_INDEX: u8 = 7;
+const SEASON_PACK_PLAYER_INDEX: u8 = 23;
 
-fn car_offset(index: usize) -> usize {
-    PACKET_HEADER_LEN + index * CAR_TELEMETRY_DATA_LEN
+#[derive(Clone, Copy)]
+struct Layout {
+    car_data_len: usize,
+    packet_len: usize,
+    player_index: u8,
+}
+
+const LEGACY_LAYOUT: Layout = Layout {
+    car_data_len: CAR_TELEMETRY_DATA_LEN,
+    packet_len: CAR_TELEMETRY_PACKET_LEN,
+    player_index: LEGACY_PLAYER_INDEX,
+};
+
+const SEASON_PACK_LAYOUT: Layout = Layout {
+    car_data_len: F1_25_2026_CAR_TELEMETRY_DATA_LEN,
+    packet_len: F1_25_2026_CAR_TELEMETRY_PACKET_LEN,
+    player_index: SEASON_PACK_PLAYER_INDEX,
+};
+
+fn car_offset(index: usize, car_data_len: usize) -> usize {
+    PACKET_HEADER_LEN + index * car_data_len
 }
 
 fn write_u16(packet: &mut [u8], offset: usize, value: u16) {
@@ -24,21 +46,21 @@ fn write_f32(packet: &mut [u8], offset: usize, value: f32) {
     packet[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
-fn synthetic_packet(packet_format: u16, game_year: u8) -> Vec<u8> {
-    let mut packet = Vec::with_capacity(CAR_TELEMETRY_PACKET_LEN);
+fn synthetic_packet(packet_format: u16, game_year: u8, layout: Layout) -> Vec<u8> {
+    let mut packet = Vec::with_capacity(layout.packet_len);
     packet.extend_from_slice(&packet_format.to_le_bytes());
     packet.extend_from_slice(&[game_year, 1, 0, 1, 6]);
     packet.extend_from_slice(&0x1122_3344_5566_7788_u64.to_le_bytes());
     packet.extend_from_slice(&15.25_f32.to_le_bytes());
     packet.extend_from_slice(&88_u32.to_le_bytes());
     packet.extend_from_slice(&100_u32.to_le_bytes());
-    packet.extend_from_slice(&[PLAYER_INDEX, 255]);
-    packet.resize(CAR_TELEMETRY_PACKET_LEN, 0);
+    packet.extend_from_slice(&[layout.player_index, 255]);
+    packet.resize(layout.packet_len, 0);
 
-    let other = car_offset(0);
+    let other = car_offset(0, layout.car_data_len);
     write_u16(&mut packet, other, 111);
 
-    let player = car_offset(usize::from(PLAYER_INDEX));
+    let player = car_offset(usize::from(layout.player_index), layout.car_data_len);
     write_u16(&mut packet, player, 324);
     write_f32(&mut packet, player + 2, 0.75);
     write_f32(&mut packet, player + 6, -0.25);
@@ -52,11 +74,15 @@ fn synthetic_packet(packet_format: u16, game_year: u8) -> Vec<u8> {
 }
 
 fn f1_24_packet() -> Vec<u8> {
-    synthetic_packet(F1_24_PACKET_FORMAT, 24)
+    synthetic_packet(F1_24_PACKET_FORMAT, 24, LEGACY_LAYOUT)
 }
 
 fn f1_25_packet() -> Vec<u8> {
-    synthetic_packet(F1_25_PACKET_FORMAT, 25)
+    synthetic_packet(F1_25_PACKET_FORMAT, 25, LEGACY_LAYOUT)
+}
+
+fn f1_25_2026_packet() -> Vec<u8> {
+    synthetic_packet(F1_25_2026_PACKET_FORMAT, 26, SEASON_PACK_LAYOUT)
 }
 
 fn rejected<T>(result: Result<T, DecodeError>) -> Result<DecodeError, Box<dyn Error>> {
@@ -98,9 +124,10 @@ fn assert_verified_vehicle_fields(update: &TelemetryUpdate) -> Result<(), Box<dy
 }
 
 #[test]
-fn both_formats_select_player_and_map_verified_fields() -> Result<(), Box<dyn Error>> {
+fn every_supported_layout_selects_player_and_maps_verified_fields() -> Result<(), Box<dyn Error>> {
     assert_verified_vehicle_fields(&decoded_f1_24(&f1_24_packet())?)?;
     assert_verified_vehicle_fields(&decoded_f1_25(&f1_25_packet())?)?;
+    assert_verified_vehicle_fields(&decoded_f1_25(&f1_25_2026_packet())?)?;
     Ok(())
 }
 
@@ -128,10 +155,28 @@ fn concrete_adapters_have_stable_ids_and_isolated_formats() -> Result<(), Box<dy
     assert_eq!(output.updates.len(), 1);
 
     output.clear();
+    f1_25.decode(
+        &f1_25_2026_packet(),
+        MonotonicTimestamp::from_micros(900),
+        &mut output,
+    )?;
+    assert_eq!(f1_25.descriptor().id.as_str(), "f1-25");
+    assert_eq!(output.updates.len(), 1);
+
+    output.clear();
     assert!(
         f1_24
             .decode(
                 &f1_25_packet(),
+                MonotonicTimestamp::from_micros(900),
+                &mut output,
+            )
+            .is_err()
+    );
+    assert!(
+        f1_24
+            .decode(
+                &f1_25_2026_packet(),
                 MonotonicTimestamp::from_micros(900),
                 &mut output,
             )
@@ -145,6 +190,36 @@ fn concrete_adapters_have_stable_ids_and_isolated_formats() -> Result<(), Box<dy
                 &mut output,
             )
             .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn season_pack_layout_enforces_24_cars_and_1448_bytes() -> Result<(), Box<dyn Error>> {
+    assert_eq!(F1_25_2026_CAR_COUNT, 24);
+
+    let packet = f1_25_2026_packet();
+    assert_eq!(packet.len(), 1_448);
+    assert_eq!(F1_25_2026_CAR_TELEMETRY_DATA_LEN, 59);
+    assert_eq!(F1_25_2026_CAR_TELEMETRY_PACKET_LEN, 1_448);
+
+    assert_eq!(
+        rejected(decoded_f1_25(&packet[..CAR_TELEMETRY_PACKET_LEN]))?,
+        DecodeError::InvalidPacketLength {
+            packet_id: 6,
+            expected: F1_25_2026_CAR_TELEMETRY_PACKET_LEN,
+            actual: CAR_TELEMETRY_PACKET_LEN,
+        }
+    );
+
+    let mut invalid_index = packet;
+    invalid_index[27] = 24;
+    assert_eq!(
+        rejected(decoded_f1_25(&invalid_index))?,
+        DecodeError::InvalidPlayerIndex {
+            index: 24,
+            car_count: F1_25_2026_CAR_COUNT,
+        }
     );
     Ok(())
 }
@@ -171,7 +246,7 @@ fn malformed_f1_25_packets_are_rejected_without_clamping() -> Result<(), Box<dyn
         }
     );
 
-    let player = car_offset(usize::from(PLAYER_INDEX));
+    let player = car_offset(usize::from(LEGACY_PLAYER_INDEX), CAR_TELEMETRY_DATA_LEN);
     for (expected_field, offset, value) in [
         ("throttle", player + 2, f32::NAN),
         ("throttle", player + 2, -0.01),
@@ -194,7 +269,7 @@ fn malformed_f1_25_packets_are_rejected_without_clamping() -> Result<(), Box<dyn
 
 #[test]
 fn invalid_version_drs_and_unknown_gear_remain_explicit() -> Result<(), Box<dyn Error>> {
-    let player = car_offset(usize::from(PLAYER_INDEX));
+    let player = car_offset(usize::from(LEGACY_PLAYER_INDEX), CAR_TELEMETRY_DATA_LEN);
     let mut packet = f1_25_packet();
     packet[player + 15] = 9_i8.to_le_bytes()[0];
     assert_eq!(decoded_f1_25(&packet)?.vehicle.gear, Some(Gear::Unknown));

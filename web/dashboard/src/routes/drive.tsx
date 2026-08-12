@@ -1,23 +1,31 @@
-import { DEFAULT_LAYOUT, type LayoutDocument } from "@opencarpanel/widget-sdk";
+import { cloneLayout, type LayoutDocument } from "@opencarpanel/widget-sdk";
 import { useEffect, useState } from "preact/hooks";
 
 import { loadLayout } from "../api/layouts";
 import { ConnectionScreen } from "../connection/screen";
 import { Dashboard } from "../dashboard/dashboard";
 import { useDashboardBreakpoint } from "../dashboard/breakpoint";
+import { gamePresentation } from "../dashboard/game-profile";
 import { useTelemetryRuntime } from "../telemetry/use-runtime";
 
 export function DriveRoute() {
   const runtime = useTelemetryRuntime();
   const breakpoint = useDashboardBreakpoint();
-  const [layout, setLayout] = useState<LayoutDocument>(DEFAULT_LAYOUT);
+  const presentation = gamePresentation(runtime.gameId);
+  const [layout, setLayout] = useState<LayoutDocument>(() =>
+    cloneLayout(presentation.defaultLayout),
+  );
 
   useEffect(() => {
-    if (runtime.connection.phase !== "connected" || import.meta.env.DEV && isDemoMode()) {
+    setLayout(cloneLayout(presentation.defaultLayout));
+    if (
+      runtime.connection.phase !== "connected" ||
+      (import.meta.env.DEV && isDemoMode())
+    ) {
       return;
     }
     let active = true;
-    void loadLayout("default")
+    void loadLayout(presentation.layoutId)
       .then((loaded) => {
         if (active) {
           setLayout(loaded.document);
@@ -29,7 +37,7 @@ export function DriveRoute() {
     return () => {
       active = false;
     };
-  }, [runtime.connection.phase]);
+  }, [presentation.defaultLayout, presentation.layoutId, runtime.connection.phase]);
 
   if (!runtime.hasConnected) {
     return <ConnectionScreen view={runtime.connection} />;
@@ -40,6 +48,7 @@ export function DriveRoute() {
       connection={runtime.connection}
       layout={layout}
       breakpoint={breakpoint}
+      presentation={presentation}
     />
   );
 }

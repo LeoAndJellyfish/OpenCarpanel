@@ -43,14 +43,19 @@ impl PacketHeader {
         datagram: &[u8],
         expected_packet_format: u16,
     ) -> Result<(Self, &[u8]), DecodeError> {
-        let mut cursor = Cursor::new(datagram);
-        let packet_format = cursor.read_u16_le()?;
-        if packet_format != expected_packet_format {
+        let (header, payload) = Self::decode_any_format(datagram)?;
+        if header.packet_format != expected_packet_format {
             return Err(DecodeError::UnsupportedPacketFormat {
                 expected: expected_packet_format,
-                actual: packet_format,
+                actual: header.packet_format,
             });
         }
+        Ok((header, payload))
+    }
+
+    pub(crate) fn decode_any_format(datagram: &[u8]) -> Result<(Self, &[u8]), DecodeError> {
+        let mut cursor = Cursor::new(datagram);
+        let packet_format = cursor.read_u16_le()?;
 
         let header = Self {
             packet_format,

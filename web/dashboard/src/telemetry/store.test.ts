@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TelemetryStore } from "./store";
 
 interface SnapshotValues {
+  readonly gameId?: string;
   readonly sessionId?: string;
   readonly speedMps?: number;
   readonly rpm?: number;
@@ -20,6 +21,7 @@ function snapshot(sequence: number, values: SnapshotValues): SnapshotMessage {
       meta: {
         schemaVersion: 1,
         sequence,
+        ...(values.gameId === undefined ? {} : { gameId: values.gameId }),
         ...(values.sessionId === undefined ? {} : { sessionId: values.sessionId }),
       },
       vehicle: {
@@ -76,6 +78,24 @@ describe("TelemetryStore", () => {
 
     store.ingest(snapshot(3, { sessionId: "b", rpm: 7_000 }), 15);
     expect(store.read("vehicle.rpm", 15)).toBe(7_000);
+  });
+
+  it("publishes a game change once and resets interpolation across sources", () => {
+    const store = new TelemetryStore({ expectedSampleIntervalMs: 20 });
+    store.ingest(snapshot(1, { gameId: "f1-25", sessionId: "same", rpm: 1_000 }), 0);
+    store.ingest(snapshot(2, { gameId: "f1-25", sessionId: "same", rpm: 5_000 }), 10);
+    expect(store.read("vehicle.rpm", 15)).toBe(2_000);
+
+    const game = vi.fn();
+    store.subscribe(["meta.gameId"], game);
+    store.ingest(snapshot(3, { gameId: "ets2", sessionId: "same", rpm: 1_500 }), 15);
+
+    expect(store.read("meta.gameId", 15)).toBe("ets2");
+    expect(store.read("vehicle.rpm", 15)).toBe(1_500);
+    expect(game).toHaveBeenCalledOnce();
+
+    store.ingest(snapshot(4, { gameId: "ets2", sessionId: "same", rpm: 1_600 }), 20);
+    expect(game).toHaveBeenCalledOnce();
   });
 
   it("notifies only subscribers whose field targets changed", () => {

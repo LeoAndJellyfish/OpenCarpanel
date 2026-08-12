@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import type { ConnectionView } from "../connection/client";
 import { LayoutGrid } from "../dashboard/layout-grid";
+import type { StatusMode } from "../dashboard/game-profile";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";
 import { builtinWidgetManifest } from "../widgets/catalog";
 import { movePlacement, resizePlacement, updatePlacement } from "./grid";
@@ -21,6 +22,7 @@ export interface EditorCanvasProps {
   readonly breakpoint: BreakpointName;
   readonly loop: TelemetryRenderLoop;
   readonly connection: ConnectionView;
+  readonly statusMode: StatusMode;
   readonly selectedId: string | undefined;
   readonly onSelect: (instanceId: string) => void;
   readonly onCommit: (layout: LayoutDocument) => void;
@@ -31,6 +33,7 @@ export function EditorCanvas({
   breakpoint,
   loop,
   connection,
+  statusMode,
   selectedId,
   onSelect,
   onCommit,
@@ -130,6 +133,7 @@ export function EditorCanvas({
       breakpoint={breakpoint}
       loop={loop}
       connection={connection}
+      statusMode={statusMode}
       renderItem={({ widget, placement, className, content }) => {
         const manifest = builtinWidgetManifest(widget.componentType);
         const label = manifest?.displayName ?? widget.componentType;

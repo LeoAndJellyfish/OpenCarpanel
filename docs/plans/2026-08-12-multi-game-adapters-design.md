@@ -2,7 +2,7 @@
 
 ## 状态
 
-Implemented。F1 24/25 共用经过格式隔离测试的解析器；ETS2/ATS 使用项目自带的轻量 SCS SDK 插件桥接到同一个 Host UDP ingress。真实游戏兼容性仍按发布检查清单单独验收。
+Implemented。F1 24/25 共用经过格式隔离测试的解析器；ETS2/ATS 使用项目自带的轻量 SCS SDK 插件桥接到同一个 Host UDP ingress。本文记录当时的首版 2025-only 边界；后续 2026 Season Pack 与按游戏前端设计见 [`2026-08-12-f1-25-2026-season-pack-design.md`](2026-08-12-f1-25-2026-season-pack-design.md)。真实游戏兼容性仍按发布检查清单单独验收。
 
 ## 1. 需求与边界
 

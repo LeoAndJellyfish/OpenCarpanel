@@ -2,10 +2,12 @@ import { useEffect, useRef } from "preact/hooks";
 
 import type { ConnectionView } from "../connection/client";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";
+import type { StatusMode } from "./game-profile";
 
 export interface StatusRailProps {
   readonly loop: TelemetryRenderLoop;
   readonly connection: ConnectionView;
+  readonly mode: StatusMode;
 }
 
 function connectionLabel(phase: ConnectionView["phase"]): string {
@@ -23,30 +25,41 @@ function connectionLabel(phase: ConnectionView["phase"]): string {
   }
 }
 
-export function StatusRail({ loop, connection }: StatusRailProps) {
+export function StatusRail({ loop, connection, mode }: StatusRailProps) {
   const telemetry = useRef<HTMLOutputElement>(null);
-  const drs = useRef<HTMLOutputElement>(null);
+  const source = useRef<HTMLOutputElement>(null);
 
   useEffect(
     () =>
-      loop.bind(["system.stale", "vehicle.drs"], (store, nowMs) => {
+      loop.bind(
+        mode === "drs" ? ["system.stale", "vehicle.drs"] : ["system.stale"],
+        (store, nowMs) => {
         const stale = store.read("system.stale", nowMs);
-        const drsState = store.read("vehicle.drs", nowMs);
         if (telemetry.current) {
           telemetry.current.textContent = stale ? "DATA STALE" : "TELEMETRY LIVE";
           telemetry.current.dataset.active = stale ? "false" : "true";
         }
-        if (drs.current) {
-          drs.current.textContent =
-            drsState === "active"
-              ? "DRS ACTIVE"
-              : drsState === "available"
-                ? "DRS READY"
-                : "DRS —";
-          drs.current.dataset.active = drsState === "active" ? "true" : "false";
+        if (source.current) {
+          if (mode === "drs") {
+            const drsState = store.read("vehicle.drs", nowMs);
+            source.current.textContent =
+              drsState === "active"
+                ? "DRS ACTIVE"
+                : drsState === "available"
+                  ? "DRS READY"
+                  : "DRS —";
+            source.current.dataset.active = drsState === "active" ? "true" : "false";
+          } else if (mode === "scs") {
+            source.current.textContent = stale ? "SCS WAITING" : "SCS BRIDGE";
+            source.current.dataset.active = stale ? "false" : "true";
+          } else {
+            source.current.textContent = stale ? "WAITING" : "GAME LINK";
+            source.current.dataset.active = stale ? "false" : "true";
+          }
         }
-      }),
-    [loop],
+      },
+      ),
+    [loop, mode],
   );
 
   return (
@@ -60,8 +73,10 @@ export function StatusRail({ loop, connection }: StatusRailProps) {
         <output ref={telemetry}>DATA STALE</output>
       </div>
       <div class="status-line">
-        <span>AERO</span>
-        <output ref={drs}>DRS —</output>
+        <span>{mode === "drs" ? "AERO" : "SOURCE"}</span>
+        <output ref={source}>
+          {mode === "drs" ? "DRS —" : mode === "scs" ? "SCS WAITING" : "WAITING"}
+        </output>
       </div>
     </aside>
   );
