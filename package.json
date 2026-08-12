@@ -12,6 +12,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "build:all": "npm run prepare:desktop && npm run build:desktop-web",
     "build:desktop": "npm run tauri --workspace @opencarpanel/desktop -- build --no-bundle",
     "build:desktop-web": "npm run build --workspace @opencarpanel/desktop",
     "build:host": "npm run build:web && cargo build --release --locked -p opencarpanel-host",
