@@ -20,6 +20,7 @@
 
 - [ ] Windows 干净环境安装/卸载、首次防火墙提示、托盘、关闭到托盘、开机启动
 - [ ] macOS Apple Silicon 干净环境安装、Privacy & Security 放行、托盘、关闭到托盘、开机启动
+- [ ] macOS Apple Silicon：原生 arm64 桌面端安装 x86_64 SCS bridge，并由 ETS2/ATS 在 Intel/Rosetta 插件 ABI 下成功加载
 - [ ] macOS Intel 干净环境完成同一流程
 - [ ] 安装目录中的 GUI 与无头 Host 都能运行；任一已运行时另一个报告所有者并退出
 - [ ] 配置坏文件可恢复；端口冲突应用失败后旧 Host 与旧配置继续工作

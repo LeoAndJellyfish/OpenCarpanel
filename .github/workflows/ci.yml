@@ -38,6 +38,14 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      - name: Install Node.js for desktop resource staging
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Stage real desktop sidecar and game bridge
+        run: npm run prepare:desktop-native
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 

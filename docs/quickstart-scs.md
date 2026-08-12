@@ -19,7 +19,7 @@ npm run build:scs-plugin
 产物位于 `target/scs-plugin-package/`。当前平台对应文件：
 
 - Windows：`opencarpanel-scs-telemetry.dll`
-- macOS：`opencarpanel-scs-telemetry.dylib`
+- macOS：`opencarpanel-scs-telemetry.dylib`（SCS SDK 1.14 游戏插件 ABI 为 `x86_64`）
 - Linux：`opencarpanel-scs-telemetry.so`
 
 ## 3. 手工安装到游戏
@@ -33,6 +33,8 @@ npm run build:scs-plugin
 | Linux | `<游戏目录>/bin/linux_x64/plugins/` |
 
 ETS2 和 ATS 可以各放一份相同文件。不要把 DLL 放在游戏根目录或 `bin/win_x86`。
+
+Apple Silicon 版 OpenCarpanel 桌面应用本身仍为原生 `arm64`；随包的 SCS bridge 则固定为 `x86_64`，因为它由游戏进程加载，而 SDK 1.14 头文件只定义了 x86/x64 ABI。桌面应用仅负责复制该文件，不会在自己的进程内加载它。Apple Silicon 上的实际游戏加载仍依赖游戏支持的 Intel/Rosetta 插件 ABI，并保留在发布清单中进行实机验收。
 
 重新启动游戏时，SCS 会提示已启用高级 SDK 功能；接受提示并进入驾驶状态。插件文件名与 ETS2LA 的 `scs-telemetry` 不同，两者可以并存。
 

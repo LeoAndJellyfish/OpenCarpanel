@@ -21,7 +21,9 @@ const ctest = process.platform === "win32"
 const platformArguments = process.platform === "win32"
   ? ["-A", "x64"]
   : process.platform === "darwin"
-    ? [`-DCMAKE_OSX_ARCHITECTURES=${macosArchitecture()}`]
+    // SCS SDK 1.14 only defines the Intel ABI on macOS. This dylib is loaded
+    // by the game process, not by the native Tauri desktop process.
+    ? ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]
     : [];
 const buildTypeArguments = process.platform === "win32"
   ? []
@@ -55,16 +57,24 @@ run(cmake, [
   stageDirectory,
 ]);
 
+if (process.platform === "darwin") {
+  verifyMacosGameAbi();
+}
+
 process.stdout.write(`SCS telemetry plugin staged at ${stageDirectory}\n`);
 
-function macosArchitecture() {
-  if (process.arch === "x64") {
-    return "x86_64";
+function verifyMacosGameAbi() {
+  const plugin = path.join(stageDirectory, "opencarpanel-scs-telemetry.dylib");
+  const result = spawnSync("file", [plugin], { encoding: "utf8" });
+  if (result.error) {
+    throw result.error;
   }
-  if (process.arch === "arm64") {
-    return "arm64";
+  if (result.status !== 0 || !result.stdout.includes("x86_64")) {
+    throw new Error(
+      `Expected the macOS SCS game plugin to be x86_64, got: ${result.stdout || result.stderr}`,
+    );
   }
-  throw new Error(`Unsupported macOS SCS plugin architecture: ${process.arch}`);
+  process.stdout.write("Verified macOS SCS game plugin ABI: x86_64\n");
 }
 
 function findCmake() {

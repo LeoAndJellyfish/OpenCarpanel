@@ -51,6 +51,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Stage real desktop sidecar and game bridge
+        run: npm run prepare:desktop-native
+
       - name: Check formatting, types, tests, and release Host
         shell: pwsh
         run: |
