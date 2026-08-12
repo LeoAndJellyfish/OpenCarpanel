@@ -2,22 +2,22 @@ use std::{
     error::Error,
     fmt::{self, Display, Formatter},
     io,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
     sync::Arc,
 };
 
 use opencarpanel_adapter_api::AdapterError;
-use opencarpanel_config::LayoutRepository;
+use opencarpanel_config::{HostSettings, LayoutRepository, ValidationError};
 use opencarpanel_telemetry_core::TelemetrySnapshot;
 use tokio::{
     net::{TcpListener, UdpSocket},
-    sync::watch,
+    sync::{Semaphore, watch},
     task::{JoinError, JoinHandle},
 };
 
 use crate::{
-    HostState, PairingError,
+    HostState, PairedDevice, PairingError,
     adapters::{AdapterRegistry, AdapterSelection},
     http,
     pairing::PairingService,
@@ -34,6 +34,8 @@ pub struct HostConfig {
     pub udp_address: SocketAddr,
     /// Automatic detection or one fixed game adapter.
     pub adapter_selection: AdapterSelection,
+    /// Maximum per-client latest-state publication rate.
+    pub snapshot_hz_limit: u16,
     /// Persistent layouts and settings directory.
     pub data_directory: PathBuf,
 }
@@ -45,7 +47,74 @@ impl Default for HostConfig {
             http_address: SocketAddr::new(any_v4, 20_778),
             udp_address: SocketAddr::new(any_v4, 20_777),
             adapter_selection: AdapterSelection::Auto,
+            snapshot_hz_limit: 60,
             data_directory: default_data_directory(),
+        }
+    }
+}
+
+impl HostConfig {
+    /// Builds a runtime config from validated persisted settings.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HostSettingsError`] for invalid settings, socket text, or a
+    /// game selection not compiled into this Host.
+    pub fn from_settings(
+        settings: &HostSettings,
+        data_directory: impl Into<PathBuf>,
+    ) -> Result<Self, HostSettingsError> {
+        settings.validate().map_err(HostSettingsError::Validation)?;
+        Ok(Self {
+            http_address: settings
+                .http_bind
+                .parse()
+                .map_err(HostSettingsError::HttpAddress)?,
+            udp_address: settings
+                .udp_bind
+                .parse()
+                .map_err(HostSettingsError::UdpAddress)?,
+            adapter_selection: settings
+                .adapter_selection
+                .parse()
+                .map_err(HostSettingsError::AdapterSelection)?,
+            snapshot_hz_limit: settings.snapshot_hz,
+            data_directory: data_directory.into(),
+        })
+    }
+}
+
+/// Failure converting persisted settings into typed Host runtime config.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum HostSettingsError {
+    /// Model-level validation failure.
+    Validation(ValidationError),
+    /// HTTP listener address failed to parse.
+    HttpAddress(AddrParseError),
+    /// UDP listener address failed to parse.
+    UdpAddress(AddrParseError),
+    /// Fixed adapter selection failed to parse.
+    AdapterSelection(crate::ParseAdapterSelectionError),
+}
+
+impl Display for HostSettingsError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Validation(error) => Display::fmt(error, formatter),
+            Self::HttpAddress(error) => write!(formatter, "invalid HTTP bind address: {error}"),
+            Self::UdpAddress(error) => write!(formatter, "invalid UDP bind address: {error}"),
+            Self::AdapterSelection(error) => Display::fmt(error, formatter),
+        }
+    }
+}
+
+impl Error for HostSettingsError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Validation(error) => Some(error),
+            Self::HttpAddress(error) | Self::UdpAddress(error) => Some(error),
+            Self::AdapterSelection(error) => Some(error),
         }
     }
 }
@@ -72,6 +141,13 @@ pub enum HostError {
     },
     /// Built-in adapter metadata could not initialize.
     Adapter(AdapterError),
+    /// Persistent paired-device state could not be opened safely.
+    DeviceStore {
+        /// Application data directory containing `clients.json`.
+        path: PathBuf,
+        /// Underlying filesystem failure.
+        source: io::Error,
+    },
     /// The owned supervisor task panicked or was cancelled unexpectedly.
     Join(JoinError),
 }
@@ -93,6 +169,11 @@ impl Display for HostError {
             Self::Adapter(error) => {
                 write!(formatter, "failed to initialize game adapters: {error}")
             }
+            Self::DeviceStore { path, source } => write!(
+                formatter,
+                "failed to load paired devices from {}: {source}",
+                path.display()
+            ),
             Self::Join(error) => write!(formatter, "Host supervisor task failed: {error}"),
         }
     }
@@ -101,7 +182,9 @@ impl Display for HostError {
 impl Error for HostError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Bind { source, .. } | Self::Runtime { source, .. } => Some(source),
+            Self::Bind { source, .. }
+            | Self::Runtime { source, .. }
+            | Self::DeviceStore { source, .. } => Some(source),
             Self::Adapter(error) => Some(error),
             Self::Join(error) => Some(error),
         }
@@ -115,6 +198,7 @@ pub struct RunningHost {
     udp_address: SocketAddr,
     state: Arc<HostState>,
     pairing: Arc<PairingService>,
+    websocket_connections: Arc<Semaphore>,
     shutdown_sender: watch::Sender<bool>,
     supervisor: Option<JoinHandle<Result<(), HostError>>>,
     _temporary_data: Option<tempfile::TempDir>,
@@ -152,6 +236,41 @@ impl RunningHost {
         self.pairing.issue_token(ttl).await
     }
 
+    /// Returns non-secret metadata for remembered dashboard devices.
+    pub async fn paired_devices(&self) -> Vec<PairedDevice> {
+        self.pairing.devices().await
+    }
+
+    /// Revokes one remembered device by its non-secret local id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PairingError::StorageUnavailable`] if the revocation cannot
+    /// be committed atomically.
+    pub async fn revoke_device(&self, id: &str) -> Result<bool, PairingError> {
+        self.pairing.revoke_device(id).await
+    }
+
+    /// Revokes all remembered dashboard devices.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PairingError::StorageUnavailable`] if the empty registry
+    /// cannot be committed atomically.
+    pub async fn revoke_all_devices(&self) -> Result<usize, PairingError> {
+        self.pairing.revoke_all_devices().await
+    }
+
+    /// Returns a point-in-time non-secret diagnostic view.
+    #[must_use]
+    pub fn diagnostics(&self) -> crate::HostDiagnostics {
+        crate::diagnostics::snapshot(
+            &self.state,
+            crate::MAX_WEBSOCKET_CONNECTIONS
+                .saturating_sub(self.websocket_connections.available_permits()),
+        )
+    }
+
     /// Signals every service and waits for the owned supervisor to exit.
     ///
     /// # Errors
@@ -186,8 +305,14 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
         http_address,
         udp_address,
         adapter_selection,
+        snapshot_hz_limit,
         data_directory,
     } = config;
+    let pairing =
+        PairingService::load(&data_directory).map_err(|source| HostError::DeviceStore {
+            path: data_directory.clone(),
+            source,
+        })?;
     let http_listener =
         TcpListener::bind(http_address)
             .await
@@ -207,7 +332,9 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
         http_listener,
         udp_socket,
         LayoutRepository::new(data_directory),
+        pairing,
         adapter_selection,
+        snapshot_hz_limit,
         None,
     )
 }
@@ -228,11 +355,18 @@ pub fn spawn_host(
         source,
     })?;
     let layouts = LayoutRepository::new(temporary_data.path());
+    let pairing =
+        PairingService::load(temporary_data.path()).map_err(|source| HostError::DeviceStore {
+            path: temporary_data.path().to_path_buf(),
+            source,
+        })?;
     spawn_host_inner(
         http_listener,
         udp_socket,
         layouts,
+        pairing,
         AdapterSelection::Auto,
+        60,
         Some(temporary_data),
     )
 }
@@ -252,11 +386,18 @@ pub fn spawn_host_with_adapter_selection(
         source,
     })?;
     let layouts = LayoutRepository::new(temporary_data.path());
+    let pairing =
+        PairingService::load(temporary_data.path()).map_err(|source| HostError::DeviceStore {
+            path: temporary_data.path().to_path_buf(),
+            source,
+        })?;
     spawn_host_inner(
         http_listener,
         udp_socket,
         layouts,
+        pairing,
         adapter_selection,
+        60,
         Some(temporary_data),
     )
 }
@@ -275,7 +416,9 @@ pub fn spawn_host_with_layout_repository(
         http_listener,
         udp_socket,
         layouts,
+        PairingService::ephemeral(),
         AdapterSelection::Auto,
+        60,
         None,
     )
 }
@@ -284,7 +427,9 @@ fn spawn_host_inner(
     http_listener: TcpListener,
     udp_socket: UdpSocket,
     layouts: LayoutRepository,
+    pairing: PairingService,
     adapter_selection: AdapterSelection,
+    snapshot_hz_limit: u16,
     temporary_data: Option<tempfile::TempDir>,
 ) -> Result<RunningHost, HostError> {
     let http_address = http_listener
@@ -305,12 +450,14 @@ fn spawn_host_inner(
         adapters.supported_adapters(),
         TelemetrySnapshot::default(),
     ));
-    let pairing = Arc::new(PairingService::new());
+    let pairing = Arc::new(pairing);
     let layouts = Arc::new(layouts);
+    let websocket_connections = Arc::new(Semaphore::new(crate::MAX_WEBSOCKET_CONNECTIONS));
     let (shutdown_sender, shutdown_receiver) = watch::channel(false);
     let supervisor_state = Arc::clone(&state);
     let supervisor_pairing = Arc::clone(&pairing);
     let supervisor_layouts = Arc::clone(&layouts);
+    let supervisor_connections = Arc::clone(&websocket_connections);
     let supervisor = tokio::spawn(run_supervised(
         http_listener,
         udp_socket,
@@ -319,6 +466,8 @@ fn spawn_host_inner(
             state: supervisor_state,
             pairing: supervisor_pairing,
             layouts: supervisor_layouts,
+            websocket_connections: supervisor_connections,
+            snapshot_hz_limit,
             adapters,
         },
     ));
@@ -328,6 +477,7 @@ fn spawn_host_inner(
         udp_address,
         state,
         pairing,
+        websocket_connections,
         shutdown_sender,
         supervisor: Some(supervisor),
         _temporary_data: temporary_data,
@@ -338,6 +488,8 @@ struct RuntimeServices {
     state: Arc<HostState>,
     pairing: Arc<PairingService>,
     layouts: Arc<LayoutRepository>,
+    websocket_connections: Arc<Semaphore>,
+    snapshot_hz_limit: u16,
     adapters: AdapterRegistry,
 }
 
@@ -351,19 +503,30 @@ async fn run_supervised(
         state,
         pairing,
         layouts,
+        websocket_connections,
+        snapshot_hz_limit,
         adapters,
     } = services;
     let http_shutdown = shutdown.clone();
     let udp_shutdown = shutdown;
     let http_state = Arc::clone(&state);
     let http_service = async move {
-        axum::serve(http_listener, http::router(http_state, pairing, layouts))
-            .with_graceful_shutdown(wait_for_shutdown(http_shutdown))
-            .await
-            .map_err(|source| HostError::Runtime {
-                service: "HTTP",
-                source,
-            })
+        axum::serve(
+            http_listener,
+            http::router(
+                http_state,
+                pairing,
+                layouts,
+                websocket_connections,
+                snapshot_hz_limit,
+            ),
+        )
+        .with_graceful_shutdown(wait_for_shutdown(http_shutdown))
+        .await
+        .map_err(|source| HostError::Runtime {
+            service: "HTTP",
+            source,
+        })
     };
     let udp_service = async move {
         run_udp_ingestion(udp_socket, udp_shutdown, state, adapters)
@@ -378,7 +541,9 @@ async fn run_supervised(
     Ok(())
 }
 
-fn default_data_directory() -> PathBuf {
+/// Returns the shared per-user application-data directory.
+#[must_use]
+pub fn default_data_directory() -> PathBuf {
     if let Some(configured) = std::env::var_os("OPENCARPANEL_DATA_DIR") {
         return PathBuf::from(configured);
     }

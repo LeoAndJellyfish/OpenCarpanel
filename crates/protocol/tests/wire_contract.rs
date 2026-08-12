@@ -97,12 +97,14 @@ fn client_hello_and_event_ack_keep_stable_external_tags() -> serde_json::Result<
     let hello = encoded(&ClientMessage::new(ClientPayload::Hello(ClientHello {
         pairing_token: Some("pair-once".into()),
         device_session: None,
+        device_name: Some("Test tablet".into()),
         last_event_seq: Some(10),
         snapshot_hz: 60,
     })))?;
     assert_eq!(hello["v"], 1);
     assert_eq!(hello["type"], "hello");
     assert_eq!(hello["snapshotHz"], 60);
+    assert_eq!(hello["deviceName"], "Test tablet");
 
     let ack = encoded(&ClientMessage::new(ClientPayload::EventAck(
         EventAckMessage { seq: 11 },

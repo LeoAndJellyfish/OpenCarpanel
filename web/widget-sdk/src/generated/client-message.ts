@@ -35,6 +35,10 @@ export type ClientMessage = {
  */
 export interface ClientHello {
   /**
+   * Human-readable bounded label shown in local device management.
+   */
+  deviceName?: string | null;
+  /**
    * Previously issued device session used for reconnects.
    */
   deviceSession?: string | null;

@@ -46,7 +46,7 @@ pub(crate) async fn upgrade(
         .max_message_size(TRANSPORT_MESSAGE_LIMIT)
         .max_frame_size(TRANSPORT_MESSAGE_LIMIT)
         .on_upgrade(move |socket| async move {
-            handle_socket(socket, state.host, state.pairing).await;
+            handle_socket(socket, state.host, state.pairing, state.snapshot_hz_limit).await;
             drop(connection_permit);
         })
 }
@@ -78,7 +78,12 @@ fn origin_matches_host(headers: &HeaderMap) -> bool {
             .is_some_and(|authority| authority.as_str().eq_ignore_ascii_case(host))
 }
 
-async fn handle_socket(mut socket: WebSocket, host: Arc<HostState>, pairing: Arc<PairingService>) {
+async fn handle_socket(
+    mut socket: WebSocket,
+    host: Arc<HostState>,
+    pairing: Arc<PairingService>,
+    snapshot_hz_limit: u16,
+) {
     let hello = match read_hello(&mut socket).await {
         Ok(hello) => hello,
         Err(failure) => {
@@ -135,7 +140,8 @@ async fn handle_socket(mut socket: WebSocket, host: Arc<HostState>, pairing: Arc
         return;
     }
 
-    let snapshot_period = Duration::from_secs_f64(1.0 / f64::from(hello.snapshot_hz));
+    let effective_snapshot_hz = hello.snapshot_hz.min(snapshot_hz_limit.max(1));
+    let snapshot_period = Duration::from_secs_f64(1.0 / f64::from(effective_snapshot_hz));
     let mut snapshot_tick = tokio::time::interval(snapshot_period);
     snapshot_tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
     let _initial_tick = snapshot_tick.tick().await;
@@ -218,6 +224,14 @@ async fn read_hello(socket: &mut WebSocket) -> Result<ClientHello, ConnectionFai
     if !(1..=120).contains(&hello.snapshot_hz) {
         return Err(ConnectionFailure::invalid_message(
             "snapshotHz must be between 1 and 120",
+        ));
+    }
+    if hello.device_name.as_ref().is_some_and(|name| {
+        let trimmed = name.trim();
+        trimmed.is_empty() || trimmed.len() > 64 || trimmed.chars().any(char::is_control)
+    }) {
+        return Err(ConnectionFailure::invalid_message(
+            "deviceName must be 1 to 64 bytes without control characters",
         ));
     }
     Ok(hello)
@@ -447,6 +461,13 @@ impl From<PairingError> for ConnectionFailure {
                 retryable: false,
                 close_code: close_code::POLICY,
                 close_reason: "pairing_token_expired",
+            },
+            PairingError::StorageUnavailable => Self {
+                error_code: ErrorCode::Internal,
+                message: "paired-device storage is unavailable",
+                retryable: true,
+                close_code: close_code::ERROR,
+                close_reason: "device_storage_unavailable",
             },
         }
     }

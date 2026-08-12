@@ -55,6 +55,9 @@ pub struct ClientHello {
     /// Previously issued device session used for reconnects.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_session: Option<String>,
+    /// Human-readable bounded label shown in local device management.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device_name: Option<String>,
     /// Last reliable event sequence consumed by the client.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_event_seq: Option<u64>,

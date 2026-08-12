@@ -16,6 +16,7 @@ pub(crate) struct HttpState {
     pub(crate) pairing: Arc<PairingService>,
     pub(crate) layouts: Arc<LayoutRepository>,
     pub(crate) websocket_connections: Arc<Semaphore>,
+    pub(crate) snapshot_hz_limit: u16,
 }
 
 #[derive(Debug, Serialize)]
@@ -33,6 +34,8 @@ pub(crate) fn router(
     host: Arc<HostState>,
     pairing: Arc<PairingService>,
     layouts: Arc<LayoutRepository>,
+    websocket_connections: Arc<Semaphore>,
+    snapshot_hz_limit: u16,
 ) -> Router {
     Router::new()
         .route("/", get(static_assets::root))
@@ -49,7 +52,8 @@ pub(crate) fn router(
             host,
             pairing,
             layouts,
-            websocket_connections: Arc::new(Semaphore::new(websocket::MAX_WEBSOCKET_CONNECTIONS)),
+            websocket_connections,
+            snapshot_hz_limit,
         })
 }
 

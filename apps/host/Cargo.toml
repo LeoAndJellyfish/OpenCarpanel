@@ -10,8 +10,10 @@ publish = false
 
 [dependencies]
 axum = { version = "0.8.9", features = ["ws"] }
+atomic-write-file = "0.3.0"
 base64 = "0.22.1"
 futures-util = "0.3.34"
+fs2 = "0.4.3"
 getrandom = "0.3.4"
 if-addrs = "0.15.0"
 opencarpanel-adapter-api = { path = "../../crates/adapter-api" }
@@ -20,7 +22,7 @@ opencarpanel-adapter-scs = { path = "../../crates/adapter-scs" }
 opencarpanel-config = { path = "../../crates/config" }
 opencarpanel-protocol = { path = "../../crates/protocol" }
 opencarpanel-telemetry-core = { path = "../../crates/telemetry-core" }
-qrcode = { version = "0.14.1", default-features = false }
+qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.10.9"

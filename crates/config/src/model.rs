@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
     fmt::{self, Display, Formatter},
+    net::SocketAddr,
 };
 
 use schemars::JsonSchema;
@@ -300,6 +301,9 @@ pub struct HostSettings {
     pub http_bind: String,
     /// Maximum snapshot publication rate.
     pub snapshot_hz: u16,
+    /// Automatic source detection or one fixed adapter id.
+    #[serde(default = "default_adapter_selection")]
+    pub adapter_selection: String,
 }
 
 impl Default for HostSettings {
@@ -309,6 +313,7 @@ impl Default for HostSettings {
             udp_bind: "0.0.0.0:20777".into(),
             http_bind: "0.0.0.0:20778".into(),
             snapshot_hz: 60,
+            adapter_selection: default_adapter_selection(),
         }
     }
 }
@@ -327,10 +332,105 @@ impl HostSettings {
         }
         validate_string("UDP bind address", &self.udp_bind, false)?;
         validate_string("HTTP bind address", &self.http_bind, false)?;
+        self.udp_bind
+            .parse::<SocketAddr>()
+            .map_err(|_| ValidationError::InvalidSocketAddress {
+                field: "UDP bind address",
+                value: self.udp_bind.clone(),
+            })?;
+        self.http_bind.parse::<SocketAddr>().map_err(|_| {
+            ValidationError::InvalidSocketAddress {
+                field: "HTTP bind address",
+                value: self.http_bind.clone(),
+            }
+        })?;
         if !matches!(self.snapshot_hz, 20 | 30 | 60) {
             return Err(ValidationError::UnsupportedSnapshotRate(self.snapshot_hz));
         }
+        if !matches!(
+            self.adapter_selection.as_str(),
+            "auto" | "f1-24" | "f1-25" | "ets2" | "ats"
+        ) {
+            return Err(ValidationError::UnsupportedAdapterSelection(
+                self.adapter_selection.clone(),
+            ));
+        }
         Ok(())
+    }
+}
+
+fn default_adapter_selection() -> String {
+    "auto".to_owned()
+}
+
+/// Desktop-shell preferences that do not affect the telemetry hot path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", default)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent persisted user toggles are clearer than synthetic two-variant enums"
+)]
+pub struct DesktopSettings {
+    /// Hides the main window while keeping the Host active.
+    pub close_to_tray: bool,
+    /// Desired operating-system login item state.
+    pub launch_at_login: bool,
+    /// Allows local game/source transition notifications.
+    pub notifications_enabled: bool,
+    /// Allows background checks against the signed update manifest.
+    pub automatic_updates: bool,
+    /// Whether the first-run setup checklist has been acknowledged.
+    pub onboarding_complete: bool,
+}
+
+impl Default for DesktopSettings {
+    fn default() -> Self {
+        Self {
+            close_to_tray: true,
+            launch_at_login: false,
+            notifications_enabled: true,
+            automatic_updates: true,
+            onboarding_complete: false,
+        }
+    }
+}
+
+/// Complete versioned settings document shared by GUI and headless entry points.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettings {
+    /// Settings document schema version.
+    pub schema_version: u16,
+    /// Network, adapter, and publication settings.
+    pub host: HostSettings,
+    /// Desktop-only preferences ignored by the headless binary.
+    #[serde(default)]
+    pub desktop: DesktopSettings,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            schema_version: CONFIG_SCHEMA_VERSION,
+            host: HostSettings::default(),
+            desktop: DesktopSettings::default(),
+        }
+    }
+}
+
+impl AppSettings {
+    /// Validates the document before runtime use or persistence.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] for a future schema or invalid Host fields.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        if self.schema_version != CONFIG_SCHEMA_VERSION {
+            return Err(ValidationError::UnsupportedSchema {
+                actual: self.schema_version,
+            });
+        }
+        self.host.validate()
     }
 }
 
@@ -354,6 +454,13 @@ pub enum ValidationError {
     EmptyString {
         /// Field being validated.
         field: &'static str,
+    },
+    /// A configured listener address is not a complete IP socket address.
+    InvalidSocketAddress {
+        /// Human-readable settings field.
+        field: &'static str,
+        /// Rejected value.
+        value: String,
     },
     /// A string exceeds its configured bound.
     StringTooLong {
@@ -398,6 +505,8 @@ pub enum ValidationError {
     },
     /// Snapshot publication rate is not an allowed preset.
     UnsupportedSnapshotRate(u16),
+    /// Adapter selection is neither auto nor one compiled-in stable id.
+    UnsupportedAdapterSelection(String),
 }
 
 impl Display for ValidationError {
@@ -413,6 +522,12 @@ impl Display for ValidationError {
                 write!(formatter, "invalid {kind} identifier {value:?}")
             }
             Self::EmptyString { field } => write!(formatter, "{field} cannot be empty"),
+            Self::InvalidSocketAddress { field, value } => {
+                write!(
+                    formatter,
+                    "{field} is not a valid IP:port socket address: {value:?}"
+                )
+            }
             Self::StringTooLong {
                 field,
                 actual,
@@ -446,6 +561,10 @@ impl Display for ValidationError {
                     "snapshot rate {rate} Hz is not one of 20, 30, or 60"
                 )
             }
+            Self::UnsupportedAdapterSelection(value) => write!(
+                formatter,
+                "adapter selection {value:?} is unsupported; use auto, f1-24, f1-25, ets2, or ats"
+            ),
         }
     }
 }

@@ -41,15 +41,17 @@ function lastEventSequence(storage: Storage): number {
 }
 
 function helloMessage(
-  pairingToken: string | undefined,
-  deviceSession: string | undefined,
-  sequence: number,
+    pairingToken: string | undefined,
+    deviceSession: string | undefined,
+    sequence: number,
+    deviceName: string,
 ): ClientMessage | undefined {
   if (pairingToken) {
     return {
       v: PROTOCOL_VERSION,
       type: "hello",
       pairingToken,
+      deviceName,
       lastEventSeq: sequence,
       snapshotHz: 60,
     };
@@ -122,6 +124,7 @@ export class TelemetryConnection {
       this.#pairingToken,
       this.#deviceSession,
       lastEventSequence(window.localStorage),
+      dashboardDeviceName(window.navigator),
     );
   }
 
@@ -239,4 +242,24 @@ export class TelemetryConnection {
       socket.send(JSON.stringify(message));
     }
   }
+}
+
+function dashboardDeviceName(navigator: Navigator): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const device = userAgent.includes("ipad")
+    || (userAgent.includes("macintosh") && navigator.maxTouchPoints > 1)
+    ? "iPad"
+    : userAgent.includes("iphone")
+      ? "iPhone"
+      : userAgent.includes("android")
+        ? "Android"
+        : "Browser";
+  const browser = userAgent.includes("edg/")
+    ? "Edge"
+    : userAgent.includes("chrome/") || userAgent.includes("crios/")
+      ? "Chrome"
+      : userAgent.includes("safari/")
+        ? "Safari"
+        : "Web";
+  return `${device} · ${browser}`;
 }

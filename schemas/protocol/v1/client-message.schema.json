@@ -62,6 +62,13 @@
       "description": "First message sent by a dashboard client.",
       "type": "object",
       "properties": {
+        "deviceName": {
+          "description": "Human-readable bounded label shown in local device management.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "deviceSession": {
           "description": "Previously issued device session used for reconnects.",
           "type": [

@@ -4,7 +4,10 @@ use std::{
 };
 
 use if_addrs::get_if_addrs;
-use qrcode::{QrCode, render::unicode};
+use qrcode::{
+    QrCode,
+    render::{svg, unicode},
+};
 
 /// Builds the LAN pairing URL while keeping the one-time token in the fragment.
 #[must_use]
@@ -31,6 +34,20 @@ pub fn terminal_qr(value: &str) -> Result<String, qrcode::types::QrError> {
     Ok(QrCode::new(value.as_bytes())?
         .render::<unicode::Dense1x2>()
         .quiet_zone(true)
+        .build())
+}
+
+/// Renders a high-contrast pairing QR symbol for the desktop control center.
+///
+/// # Errors
+///
+/// Returns a QR encoding error when the value cannot fit in a QR symbol.
+pub fn qr_svg(value: &str) -> Result<String, qrcode::types::QrError> {
+    Ok(QrCode::new(value.as_bytes())?
+        .render::<svg::Color<'_>>()
+        .min_dimensions(320, 320)
+        .dark_color(svg::Color("#07090d"))
+        .light_color(svg::Color("#f4f7f1"))
         .build())
 }
 
@@ -146,6 +163,7 @@ mod tests {
         let url = pairing_url("127.0.0.1:20778".parse()?, "url-safe_token");
         assert_eq!(url, "http://127.0.0.1:20778/#pair=url-safe_token");
         assert!(terminal_qr(&url).is_ok());
+        assert!(qr_svg(&url)?.contains("<svg"));
         Ok(())
     }
 
