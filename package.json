@@ -1,9 +1,10 @@
 {
   "name": "opencarpanel",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "Apache-2.0",
   "workspaces": [
+    "apps/desktop",
     "web/dashboard",
     "web/widget-sdk"
   ],
@@ -11,19 +12,25 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "build:desktop": "npm run tauri --workspace @opencarpanel/desktop -- build --no-bundle",
+    "build:desktop-web": "npm run build --workspace @opencarpanel/desktop",
     "build:host": "npm run build:web && cargo build --release --locked -p opencarpanel-host",
     "build:scs-plugin": "node tools/build-scs-plugin.mjs",
     "build:web": "npm run build --workspace @opencarpanel/dashboard && node tools/check-dashboard-bundle.mjs",
     "check:web": "npm run check:web-types && npm run check --workspaces --if-present",
     "check:web-types": "node tools/check-web-types.mjs",
+    "dev:desktop": "npm run tauri --workspace @opencarpanel/desktop -- dev",
     "generate:web-types": "node tools/generate-web-types.mjs",
+    "bundle:desktop": "npm run tauri --workspace @opencarpanel/desktop -- build",
     "package:host": "npm run build:host && npm run build:scs-plugin && node tools/package-release.mjs",
+    "prepare:desktop": "npm run build:web && cargo build --release --locked -p opencarpanel-host && npm run build:scs-plugin && node tools/stage-desktop-resources.mjs",
     "test:package-smoke": "node tools/smoke-package.mjs",
     "test:host-latency": "cargo test -p opencarpanel-host --test end_to_end_latency --release -- --nocapture",
     "test:host-soak": "node tests/performance/host-soak.mjs",
     "test:web": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
     "@preact/preset-vite": "2.10.6",
     "json-schema-to-typescript": "15.0.4",
     "typescript": "7.0.2",

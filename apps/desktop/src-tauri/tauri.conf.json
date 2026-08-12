@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "OpenCarpanel",
+  "version": "0.2.0",
+  "identifier": "io.github.leoandjellyfish.opencarpanel",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build:all",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "OpenCarpanel Control Center",
+        "width": 1240,
+        "height": 800,
+        "minWidth": 860,
+        "minHeight": 620,
+        "center": true,
+        "resizable": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Local multi-game driving telemetry control center",
+    "longDescription": "OpenCarpanel receives local game telemetry and serves a low-latency dashboard to phones and tablets on your LAN.",
+    "copyright": "Copyright 2026 OpenCarpanel contributors",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "licenseFile": "../../../LICENSE",
+    "resources": [
+      "resources/**/*"
+    ],
+    "externalBin": [
+      "binaries/opencarpanel-host"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "-"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4NUM5REU0QzJDMjMwQUMKUldTc01NTEM1SjFjT050TXJ6Q2ZCbzg2YThzL2Zsb2hPRDI1bDN1U1RRVWVxZVRNbURNN1ltUm0K"
+    }
+  }
+}

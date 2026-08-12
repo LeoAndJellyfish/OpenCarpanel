@@ -1,17 +1,19 @@
 {
-  "name": "@opencarpanel/dashboard",
+  "name": "@opencarpanel/desktop",
   "private": true,
   "version": "0.2.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:all": "npm run prepare:desktop --prefix ../.. && vite build",
     "check": "tsc -p tsconfig.json --noEmit",
-    "dev": "vite --host",
+    "dev": "vite",
+    "tauri": "tauri",
     "test": "vitest run"
   },
   "dependencies": {
-    "@opencarpanel/widget-sdk": "0.2.0",
+    "@tauri-apps/api": "2.11.1",
     "preact": "10.29.8"
   }
 }

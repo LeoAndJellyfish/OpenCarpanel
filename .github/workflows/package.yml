@@ -1,4 +1,4 @@
-name: Package preview
+name: Release desktop
 
 on:
   workflow_dispatch:
@@ -7,22 +7,89 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  package:
-    name: Package (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+  validate:
+    name: Validate release source
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate tag and application version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tagVersion = '${{ github.ref_name }}'.TrimStart('v')
+          $appVersion = (Get-Content apps/desktop/src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          if ($tagVersion -ne $appVersion) {
+            throw "Tag version $tagVersion does not match desktop version $appVersion."
+          }
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install Rust 1.91.1
+        uses: dtolnay/rust-toolchain@1.91.1
+        with:
+          components: clippy, rustfmt
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check formatting, types, tests, and release Host
+        shell: pwsh
+        run: |
+          cargo fmt --all -- --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo clippy --locked --workspace --all-targets -- -D warnings
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo test --locked --workspace
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run check:web
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:web
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run package:host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:package-smoke
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  publish:
+    name: Bundle ${{ matrix.label }}
+    needs: validate
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-latest
-          - macos-latest
+        include:
+          - label: Windows x64
+            platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: "--target x86_64-pc-windows-msvc"
+          - label: macOS Apple Silicon
+            platform: macos-15
+            target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+          - label: macOS Intel
+            platform: macos-15-intel
+            target: x86_64-apple-darwin
+            args: "--target x86_64-apple-darwin"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -37,28 +104,72 @@ jobs:
 
       - name: Install Rust 1.91.1
         uses: dtolnay/rust-toolchain@1.91.1
+        with:
+          targets: ${{ matrix.target }}
 
-      - name: Install locked web dependencies
+      - name: Install locked dependencies
         run: npm ci
 
-      - name: Build and stage release directory
-        run: npm run package:host
+      - name: Build signed-update desktop bundles
+        uses: tauri-apps/tauri-action@v1
+        env:
+          CARGO_BUILD_TARGET: ${{ matrix.target }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: OpenCarpanel v__VERSION__
+          releaseBody: |
+            OpenCarpanel v0.2.0 introduces the Tauri desktop control center while retaining the bundled headless Host.
 
-      - name: Smoke test packaged Host and all game inputs
-        run: npm run test:package-smoke
+            See `docs/releases/v0.2.0.md` for setup, security, update, compatibility, and validation notes.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          updaterJsonPreferNsis: true
+          releaseAssetNamePattern: "OpenCarpanel_[version]_[platform]_[arch]_[bundle][setup][ext]"
+          retryAttempts: 2
 
-      - name: Archive preview with executable permissions
+  verify-and-publish:
+    name: Verify and publish release
+    needs: publish
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify complete updater manifest and assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          $packageDirectory = Get-ChildItem dist/release -Directory -Filter 'OpenCarpanel-*' | Select-Object -First 1
-          if ($null -eq $packageDirectory) { throw 'Release directory was not created.' }
-          $archive = "dist/release/opencarpanel-${{ runner.os }}-${{ runner.arch }}.tar.gz"
-          tar -czf $archive -C dist/release $packageDirectory.Name
-
-      - name: Upload unsigned preview artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: opencarpanel-${{ runner.os }}-${{ runner.arch }}
-          path: dist/release/opencarpanel-*.tar.gz
-          if-no-files-found: error
-          retention-days: 14
+          $release = gh api "repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" | ConvertFrom-Json
+          if (-not $release.draft) { throw 'Release was published before aggregate verification.' }
+          $assetNames = @($release.assets | ForEach-Object name)
+          $requiredPatterns = @(
+            '^latest\.json$',
+            'windows.*x64.*nsis.*\.exe$',
+            'macos.*aarch64.*dmg.*\.dmg$',
+            'macos.*x86_64.*dmg.*\.dmg$',
+            '\.sig$'
+          )
+          foreach ($pattern in $requiredPatterns) {
+            if (-not ($assetNames | Where-Object { $_ -match $pattern })) {
+              throw "Missing required release asset matching $pattern. Found: $($assetNames -join ', ')"
+            }
+          }
+          $manifestAsset = $release.assets | Where-Object name -eq 'latest.json' | Select-Object -First 1
+          gh api -H 'Accept: application/octet-stream' $manifestAsset.url > latest.json
+          $manifest = Get-Content latest.json -Raw | ConvertFrom-Json
+          $platformNames = @($manifest.platforms.PSObject.Properties.Name)
+          foreach ($platform in @('windows-x86_64', 'darwin-aarch64', 'darwin-x86_64')) {
+            if ($platform -notin $platformNames) {
+              throw "Updater manifest is missing $platform."
+            }
+          }
+          gh release edit '${{ github.ref_name }}' --repo '${{ github.repository }}' --draft=false --latest

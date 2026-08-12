@@ -1,6 +1,6 @@
 # OpenCarpanel 多游戏快速开始
 
-OpenCarpanel Host 默认在 UDP `20777` 上自动识别四个输入源，并把当前 active 游戏发布给同一套手机/iPad Dashboard。
+OpenCarpanel 桌面控制中心内嵌的 Host 默认在 UDP `20777` 上自动识别四个输入源，并把当前 active 游戏发布给同一套手机/iPad Dashboard。安装目录仍附带独立无头 Host，但不能与 GUI 同时运行。
 
 | 游戏 | 游戏到 Host 的入口 | 首版要求 |
 | --- | --- | --- |
@@ -15,7 +15,22 @@ OpenCarpanel Host 默认在 UDP `20777` 上自动识别四个输入源，并把�
 - [F1 25 快速开始](quickstart-f1-25.md)
 - [ETS2 / ATS 快速开始](quickstart-scs.md)
 
-## 构建与启动
+## 安装与启动
+
+从 [GitHub Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载 Windows x64 安装器、Apple Silicon DMG 或 Intel DMG。启动桌面控制中心后：
+
+1. 在“设备与配对”生成二维码并用同一局域网中的手机/iPad 扫描。
+2. 在“游戏设置”按向导配置 F1，或选择 ETS2/ATS 目录安装 bridge。
+3. 回到“总览”观察 `GAME → UDP → HOST → MOBILE` 链路和包计数。
+
+从源码构建 GUI：
+
+```powershell
+npm ci
+npm run build:desktop
+```
+
+### 无头模式（高级）
 
 只运行 Host 需要 Node.js 22+ 和仓库指定的 Rust 工具链：
 
@@ -44,7 +59,7 @@ npm run package:host
 
 每个有效 snapshot 都携带稳定的 `meta.gameId`。驾驶页只在这个低频标识变化时切换页面配置：F1 24/25 使用方程式布局与 DRS 状态，ETS2/ATS 使用速度优先的卡车布局与 SCS bridge 状态。四款游戏分别保存为 `game-f1-24`、`game-f1-25`、`game-ets2`、`game-ats`，所以编辑某款游戏不会覆盖另一款；`/edit` 也可以手动选择要预览和编辑的游戏。
 
-排障或只允许一个游戏时，可在启动前设置：
+排障或只允许一个游戏时，在控制中心“网络”页选择目标 adapter。无头自动化也可在启动前设置：
 
 ```powershell
 $env:OPENCARPANEL_GAME = "f1-25" # auto | f1-24 | f1-25 | ets2 | ats
@@ -61,7 +76,7 @@ OPENCARPANEL_GAME=ets2 ./target/release/opencarpanel-host
 
 ## 判断问题在哪一段
 
-打开 `http://127.0.0.1:20778/api/v1/diagnostics`：
+在控制中心“系统与诊断”查看摘要或打开完整 JSON；默认地址是 `http://127.0.0.1:20778/api/v1/diagnostics`：
 
 - `telemetry.packetsReceived = 0`：Host 没收到任何 UDP。检查游戏 UDP 设置或 SCS 插件是否加载。
 - `packetsReceived > 0` 但 `packetsRecognized = 0`：端口通，但 format/mode/插件协议不匹配。

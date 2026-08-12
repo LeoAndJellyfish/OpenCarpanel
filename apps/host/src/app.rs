@@ -82,6 +82,90 @@ impl HostConfig {
             data_directory: data_directory.into(),
         })
     }
+
+    /// Applies the same developer and automation overrides used by both entry points.
+    ///
+    /// Persisted settings remain the user-facing source of truth. These environment
+    /// variables are intentionally applied afterwards so integration tests can bind
+    /// ephemeral ports without rewriting a real profile.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HostEnvironmentError`] when an override cannot be parsed or is
+    /// outside the supported publication-rate set.
+    pub fn apply_environment_overrides(&mut self) -> Result<(), HostEnvironmentError> {
+        if let Ok(address) = std::env::var("OPENCARPANEL_HTTP_BIND") {
+            self.http_address = address.parse().map_err(HostEnvironmentError::HttpAddress)?;
+        }
+        if let Ok(address) = std::env::var("OPENCARPANEL_UDP_BIND") {
+            self.udp_address = address.parse().map_err(HostEnvironmentError::UdpAddress)?;
+        }
+        if let Ok(selection) = std::env::var("OPENCARPANEL_GAME") {
+            self.adapter_selection = selection
+                .parse()
+                .map_err(HostEnvironmentError::AdapterSelection)?;
+        }
+        if let Ok(snapshot_hz) = std::env::var("OPENCARPANEL_SNAPSHOT_HZ") {
+            let snapshot_hz = snapshot_hz
+                .parse::<u16>()
+                .map_err(HostEnvironmentError::SnapshotRate)?;
+            if !matches!(snapshot_hz, 20 | 30 | 60) {
+                return Err(HostEnvironmentError::UnsupportedSnapshotRate(snapshot_hz));
+            }
+            self.snapshot_hz_limit = snapshot_hz;
+        }
+        Ok(())
+    }
+}
+
+/// Invalid environment override shared by desktop and headless startup.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum HostEnvironmentError {
+    /// `OPENCARPANEL_HTTP_BIND` is not a socket address.
+    HttpAddress(AddrParseError),
+    /// `OPENCARPANEL_UDP_BIND` is not a socket address.
+    UdpAddress(AddrParseError),
+    /// `OPENCARPANEL_GAME` names no compiled adapter selection.
+    AdapterSelection(crate::ParseAdapterSelectionError),
+    /// `OPENCARPANEL_SNAPSHOT_HZ` is not an integer.
+    SnapshotRate(std::num::ParseIntError),
+    /// Parsed snapshot rate is not one of the bounded supported values.
+    UnsupportedSnapshotRate(u16),
+}
+
+impl Display for HostEnvironmentError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::HttpAddress(error) => {
+                write!(formatter, "invalid OPENCARPANEL_HTTP_BIND: {error}")
+            }
+            Self::UdpAddress(error) => {
+                write!(formatter, "invalid OPENCARPANEL_UDP_BIND: {error}")
+            }
+            Self::AdapterSelection(error) => {
+                write!(formatter, "invalid OPENCARPANEL_GAME: {error}")
+            }
+            Self::SnapshotRate(error) => {
+                write!(formatter, "invalid OPENCARPANEL_SNAPSHOT_HZ: {error}")
+            }
+            Self::UnsupportedSnapshotRate(rate) => write!(
+                formatter,
+                "OPENCARPANEL_SNAPSHOT_HZ must be 20, 30, or 60; got {rate}"
+            ),
+        }
+    }
+}
+
+impl Error for HostEnvironmentError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::HttpAddress(error) | Self::UdpAddress(error) => Some(error),
+            Self::AdapterSelection(error) => Some(error),
+            Self::SnapshotRate(error) => Some(error),
+            Self::UnsupportedSnapshotRate(_) => None,
+        }
+    }
 }
 
 /// Failure converting persisted settings into typed Host runtime config.

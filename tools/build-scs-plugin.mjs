@@ -21,7 +21,7 @@ const ctest = process.platform === "win32"
 const platformArguments = process.platform === "win32"
   ? ["-A", "x64"]
   : process.platform === "darwin"
-    ? ["-DCMAKE_OSX_ARCHITECTURES=x86_64"]
+    ? [`-DCMAKE_OSX_ARCHITECTURES=${macosArchitecture()}`]
     : [];
 const buildTypeArguments = process.platform === "win32"
   ? []
@@ -56,6 +56,16 @@ run(cmake, [
 ]);
 
 process.stdout.write(`SCS telemetry plugin staged at ${stageDirectory}\n`);
+
+function macosArchitecture() {
+  if (process.arch === "x64") {
+    return "x86_64";
+  }
+  if (process.arch === "arm64") {
+    return "arm64";
+  }
+  throw new Error(`Unsupported macOS SCS plugin architecture: ${process.arch}`);
+}
 
 function findCmake() {
   const executable = process.platform === "win32" ? "cmake.exe" : "cmake";

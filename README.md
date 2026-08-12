@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <strong>Windows / macOS 本地 Host → 同一局域网中的手机或 iPad。</strong><br>
-  无云端运行依赖，无 CDN，无账户；启动、扫码、驾驶。
+  <strong>Windows / macOS 桌面控制中心 → 同一局域网中的手机或 iPad。</strong><br>
+  无云端运行依赖，无 CDN，无账户；安装、扫码、驾驶。低内存无头 Host 仍随包提供。
 </p>
 
 <p align="center">
@@ -31,16 +31,18 @@
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.1.1` 是 unsigned preview，已支持 F1 25 2026 Season Pack 与按游戏自动换页。真实 F1 25/2026、ETS2、ATS 与多种手机/iPad 的完整验收仍会如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.2.0` 新增 Tauri 2 桌面控制中心、托盘、开机启动、设备管理、SCS 安装向导与签名更新包。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
-1. 从 [Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载与你系统匹配的 `.tar.gz` 并解压。
-2. Windows 运行 `OpenCarpanel.exe`；macOS 运行 `OpenCarpanel`。
-3. 让手机/iPad 与电脑连接同一局域网，扫描终端的一次性二维码。
+1. 从 [Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载 Windows x64 安装器，或与你 Mac 架构匹配的 DMG。
+2. 启动 **OpenCarpanel** 桌面控制中心。macOS preview 首次运行可能需要在“隐私与安全性”中允许打开。
+3. 打开“设备与配对”，让手机/iPad 与电脑连接同一局域网并扫描一次性二维码。
 4. 按游戏配置数据源：
    - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 的原始 **2025** 与 **2026 Season Pack** mode 均可。
-   - **ETS2/ATS：** 把发布包 `plugins/scs/` 中的插件复制到游戏 64 位 `plugins` 目录，重启并接受 SDK 提示。
+   - **ETS2/ATS：** 在“游戏设置”中选择游戏目录并安装内置 bridge，重启游戏并接受 SDK 提示。
+
+安装目录同时包含独立的 `opencarpanel-host`（Windows 为 `.exe`）。GUI 与 CLI 共用一个实例锁和配置目录；任一已经运行时，另一个会说明当前所有者并退出，而不会争抢 `20777/20778`。
 
 精确目录、防火墙、异机配置和分段排障见[多游戏快速开始](./docs/quickstart-multi-game.md)。
 
@@ -51,14 +53,14 @@
 
 ```powershell
 npm ci
-npm run build:host
-.\target\release\opencarpanel-host.exe
+npm run build:desktop
 ```
 
-macOS 最后一行改为：
+只构建/运行无头模式：
 
-```bash
-./target/release/opencarpanel-host
+```powershell
+npm run build:host
+.\target\release\opencarpanel-host.exe
 ```
 
 </details>
@@ -122,7 +124,7 @@ npm run test:host-latency
 ## 项目地图
 
 ```text
-apps/       Rust Host 可执行程序
+apps/       Rust Host 与 Tauri/Preact 桌面控制中心
 crates/     Adapter API、F1/SCS adapters、telemetry、protocol、config
 plugins/    最小 SCS Telemetry SDK 原生桥接插件
 web/        Preact Dashboard、Editor 与 Widget SDK
@@ -140,6 +142,7 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 - [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)
 - [视觉与动效设计](./docs/plans/2026-08-11-f1-dashboard-visual-design.md)
 - [ADR：为什么采用版本化本机桥接](./docs/adr/0007-versioned-local-game-input-bridges.md)
+- [ADR：为什么桌面端嵌入同一个 Host](./docs/adr/0008-tauri-desktop-embedded-host.md)
 - [F1 24](./docs/protocols/f1-24.md)、[F1 25](./docs/protocols/f1-25.md) 与 [SCS bridge v1](./docs/protocols/scs-bridge-v1.md) 协议边界
 - [发布检查清单](./docs/release-checklist.md)
 
@@ -148,7 +151,8 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 - F1 首版没有圈速、比赛状态、轮胎、损伤、天气、处罚与赛事事件。
 - F1 25 的 2026 Car Telemetry 2（packet id `16`）、主动空气动力学等新增字段尚未映射；现有驾驶页字段来自 packet id `6`。
 - ETS2/ATS 尚无导航、灯光、油量、任务等卡车专属字段，也不会伪造 F1 转速灯。
-- Windows 正式代码签名、macOS 签名/notarization 与自动更新器尚未完成。
+- Windows Authenticode 与 macOS Developer ID/notarization 尚未配置；macOS 产物仅 ad-hoc 签名。
+- 应用内更新包使用独立私钥签名并在安装前强制验签，但这不等同于操作系统发布者签名。
 
 ## License
 

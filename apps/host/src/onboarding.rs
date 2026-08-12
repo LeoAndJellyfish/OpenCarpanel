@@ -12,8 +12,14 @@ use qrcode::{
 /// Builds the LAN pairing URL while keeping the one-time token in the fragment.
 #[must_use]
 pub fn pairing_url(bound_address: SocketAddr, token: &str) -> String {
+    format!("{}/#pair={token}", dashboard_url(bound_address))
+}
+
+/// Builds the browser dashboard URL reachable from the local network.
+#[must_use]
+pub fn dashboard_url(bound_address: SocketAddr) -> String {
     let address = access_address(bound_address, discover_lan_ip().ok());
-    format!("http://{address}/#pair={token}")
+    format!("http://{address}")
 }
 
 pub(crate) fn access_address(bound_address: SocketAddr, discovered: Option<IpAddr>) -> SocketAddr {

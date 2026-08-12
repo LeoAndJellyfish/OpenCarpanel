@@ -1,58 +1,49 @@
-# OpenCarpanel 发布检查清单
+# OpenCarpanel v0.2.0 发布检查清单
 
-本清单用于 `v0.1.1` 多游戏预览：F1 24、F1 25 原始 2025/2026 Season Pack UDP、ETS2 与 ATS。`v0.1.0` 边界记录在独立发布说明中。任何没有实测的项目必须保持未勾选，不能由合成协议 fixture 或自动化结果代替真实游戏验收。
+本清单区分“自动化或合成数据已验证”和“真实游戏/设备已验证”。没有实测的项目保持未勾选，不能由 fixture、截图或 CI 代替。
 
 ## 自动化门禁
 
-- [x] `cargo fmt --all -- --check`（Windows，2026-08-12）
-- [x] `cargo clippy --locked --workspace --all-targets -- -D warnings`（Windows，2026-08-12）
-- [x] `cargo test --locked --workspace`（Windows，2026-08-12）
-- [x] `npm ci`（Windows，2026-08-12）
-- [x] `npm run check:web`（Windows，2026-08-12）
-- [x] `npm run test:web`（Windows，2026-08-12）
-- [x] `npm run build:web`（Windows，2026-08-12）
-- [x] `npm run build:scs-plugin`，Windows x64 插件编译、native wire test 和安装 staging 通过（2026-08-12）
-- [x] `npm run package:host`，Windows x64 Host、插件、README 视觉资源、NOTICE、项目/SCS 许可和分游戏指南均在产物中（2026-08-12）
-- [x] `npm run test:package-smoke`，Windows 包内 Host 依次识别 `f1-24/2024 → f1-25/2025 → f1-25/2026 → ets2 → ats`，5/5 recognized、0 errors（2026-08-12）
-- [x] `npm run test:host-latency`，Windows release 合成 UDP→WebSocket p95 `26.86 ms`（2026-08-12）
-- [ ] `npm run test:host-soak`，两小时、四客户端、60 Hz，无崩溃、解析错误或超过 16 MiB 的首末 RSS 增长
+- [x] Windows：Rust fmt、workspace Clippy `-D warnings`、workspace tests（2026-08-12）
+- [x] Windows：桌面 Preact typecheck、3 个 model tests、production build（2026-08-12）
+- [x] Windows：Tauri desktop 5 个 Rust tests，覆盖 Host 重启回滚、SCS 安装/备份与更新检查节流（2026-08-12）
+- [x] Windows：SCS x64 native wire test 与当前平台资源 staging（2026-08-12）
+- [x] Windows：Tauri MSI/NSIS 实际生成，安装清单包含 GUI、独立 Host、SCS bridge、LICENSE/NOTICE/docs（2026-08-12；本机 smoke 使用临时 updater key）
+- [x] 1240×800、860×800 production UI 视觉检查：总览、配对和游戏向导无水平溢出（2026-08-12）
+- [x] 共享实例锁进程测试：CLI↔CLI 拒绝重复启动；GUI 与 CLI 使用同一 guard（2026-08-12）
+- [x] 设置文件原子保存、三份备份/损坏隔离、设备凭据只存 SHA-256 摘要的测试（2026-08-12）
+- [ ] GitHub Actions：Windows x64、macOS Apple Silicon、macOS Intel 安装包全部成功
+- [ ] Release `latest.json` 同时包含 `windows-x86_64`、`darwin-aarch64`、`darwin-x86_64` 且各有 `.sig`
+- [ ] `npm run test:host-soak`：两小时、四客户端、60 Hz，无崩溃、解析错误或超过 16 MiB 的首末 RSS 增长
 
-## 实机功能
+## 桌面与更新实机
 
-- [ ] Windows 干净环境可以启动，防火墙引导清楚
-- [ ] macOS 干净环境可以启动，入站网络权限清楚
-- [ ] F1 24 实机 packet format 2024 正确显示速度、档位、RPM、转速灯、油门、刹车与 DRS
-- [ ] F1 25 实机选择原始 `F1 25 / 2025` UDP 后正确显示速度、档位、RPM、转速灯、油门、刹车与 DRS
-- [ ] F1 25 实机使用默认 2026 Season Pack UDP 后正确显示同一字段，且诊断显示 `activeAdapter = f1-25`
-- [ ] ETS2 实机加载随包 SCS 插件、接受 SDK 提示并正确显示速度、档位、RPM/RPM 上限、油门和刹车
-- [ ] ATS 实机加载随包 SCS 插件、接受 SDK 提示并正确显示同一组字段
-- [ ] `auto` 在单游戏运行时选中正确来源；固定 `f1-24|f1-25|ets2|ats` 时不会被其他游戏抢占
-- [ ] 手机竖屏、手机横屏和 iPad 均可配对、重连并显示 stale/disconnected
-- [ ] 游戏变化时驾驶页自动切换 F1/卡车视觉、正确状态语义与各游戏独立用户布局
-- [ ] 编辑器可选择游戏、拖动、缩放、切换断点、保存、处理 409、导入和导出，切换游戏不覆盖另一游戏配置
-- [ ] 损坏布局可从最近有效备份恢复，原损坏文件仍可诊断
+- [ ] Windows 干净环境安装/卸载、首次防火墙提示、托盘、关闭到托盘、开机启动
+- [ ] macOS Apple Silicon 干净环境安装、Privacy & Security 放行、托盘、关闭到托盘、开机启动
+- [ ] macOS Intel 干净环境完成同一流程
+- [ ] 安装目录中的 GUI 与无头 Host 都能运行；任一已运行时另一个报告所有者并退出
+- [ ] 配置坏文件可恢复；端口冲突应用失败后旧 Host 与旧配置继续工作
+- [ ] 从 v0.1.1 配置升级并保留布局、配对设备与网络设置
+- [ ] 从 v0.2.0 测试清单执行一次有效签名更新；下载/验签/安装失败均保留现版本
+- [ ] 系统日志目录可从控制中心打开，日志不包含 pairing/session secret
 
-## 真实性能
+## 游戏与手机实机
 
-- [ ] 基准手机连续运行 10 分钟：60 FPS、帧时间 p95 < 16.7 ms、JS p95 < 3 ms、掉帧 < 1%
-- [ ] iPad 连续运行 10 分钟达到同一基线
-- [ ] 实机游戏 UDP 接收到浏览器 rAF 完成的 p95 < 100 ms
-- [ ] 记录设备、OS、浏览器、采样时长和方法到 `tests/performance/results/`
+- [ ] F1 24 format 2024：速度、档位、RPM、转速灯、油门、刹车、DRS
+- [ ] F1 25 format 2025 与 2026 Season Pack：上述字段和 `activeAdapter = f1-25`
+- [ ] ETS2/ATS：GUI 安装 bridge、游戏 SDK 提示、对应字段持续更新
+- [ ] 手机竖屏、横屏与 iPad：配对、重连、stale/disconnected、每游戏独立布局
+- [ ] 游戏变化时 Dashboard 自动切换 F1/卡车视觉；控制中心同步更新当前游戏
+- [ ] 实机 UDP 到浏览器 rAF 完成 p95 < 100 ms；基准手机/iPad 连续 10 分钟达到帧预算
 
-## 安全、隐私与分发
+## 分发边界
 
-- [ ] 产物只包含本地运行所需文件，不引用 CDN 或远程运行服务
-- [ ] CSP、Origin、消息大小、连接数和布局导入边界测试通过
-- [ ] 诊断导出不包含令牌、设备 session、IP、玩家名或原始 UDP
-- [ ] `LICENSE`、版本和第三方许可证随包分发
-- [ ] Windows 正式产物完成代码签名
-- [ ] macOS 正式产物完成签名和 notarization
-- [ ] 尚未完成签名时，产物必须明确标记为 unsigned preview，不能称为正式稳定版
-- [ ] 更新器只有在签名 manifest、失败回滚和显式关闭选项完成后才启用
+- [x] 驾驶和配置完全本地；仅启用更新检查时访问 GitHub Release
+- [x] 严格 CSP；WebView 仅能调用白名单 Rust commands，远程页面无 Tauri capability
+- [x] 自动更新可关闭；更新包在 Host 停止前下载并验签；同步安装失败会恢复 Host
+- [x] Apache-2.0、NOTICE、SCS SDK 独立许可随包
+- [x] macOS 采用 ad-hoc 签名，Release/README 明示尚未 notarize
+- [ ] Windows Authenticode 代码签名
+- [ ] macOS Developer ID 签名与 notarization
 
-## 发布后
-
-- [ ] 保留上一稳定版配置读取/迁移测试
-- [ ] 从全新配置和既有 v1 配置各完成一次升级演练
-- [ ] 失败更新不会替换当前可运行版本
-- [ ] 发布说明准确列出四款游戏的字段范围、F1 25 的 2025/2026 两套 UDP、自动页面切换、卡车依赖随包插件，以及尚未完成的实机验证
+在最后两项操作系统签名完成前，`v0.2.0` 应称为 **public preview**，不能暗示系统安装器已由受信任商业身份签名。

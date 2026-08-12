@@ -2,7 +2,7 @@ use std::{error::Error, time::Duration};
 
 use opencarpanel_config::SettingsRepository;
 use opencarpanel_host::{
-    AdapterSelection, HostConfig, InstanceGuard, InstanceMode, bind_host, default_data_directory,
+    HostConfig, InstanceGuard, InstanceMode, bind_host, default_data_directory,
 };
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
@@ -33,7 +33,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         );
     }
     let mut config = HostConfig::from_settings(&loaded.settings.host, data_directory)?;
-    apply_environment_overrides(&mut config)?;
+    config.apply_environment_overrides()?;
 
     let running = bind_host(config).await?;
     info!(
@@ -46,9 +46,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         .issue_pairing_token(Duration::from_secs(15 * 60))
         .await?;
     let pairing_url = opencarpanel_host::pairing_url(running.http_address(), &pairing_token);
-    let dashboard_url = pairing_url
-        .split_once("/#")
-        .map_or(pairing_url.as_str(), |(base, _fragment)| base);
+    let dashboard_url = opencarpanel_host::dashboard_url(running.http_address());
     println!("\nOpenCarpanel 已启动。请让手机/iPad 与电脑连接同一局域网。\n");
     println!("配对地址（15 分钟内一次有效）：\n{pairing_url}\n");
     println!("扫描二维码：\n");
@@ -66,30 +64,5 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     tokio::signal::ctrl_c().await?;
     info!("shutdown requested");
     running.shutdown().await?;
-    Ok(())
-}
-
-fn apply_environment_overrides(
-    config: &mut HostConfig,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if let Ok(address) = std::env::var("OPENCARPANEL_HTTP_BIND") {
-        config.http_address = address.parse()?;
-    }
-    if let Ok(address) = std::env::var("OPENCARPANEL_UDP_BIND") {
-        config.udp_address = address.parse()?;
-    }
-    if let Ok(selection) = std::env::var("OPENCARPANEL_GAME") {
-        config.adapter_selection = selection.parse::<AdapterSelection>()?;
-    }
-    if let Ok(snapshot_hz) = std::env::var("OPENCARPANEL_SNAPSHOT_HZ") {
-        let snapshot_hz = snapshot_hz.parse::<u16>()?;
-        if !matches!(snapshot_hz, 20 | 30 | 60) {
-            return Err(format!(
-                "OPENCARPANEL_SNAPSHOT_HZ must be 20, 30, or 60; got {snapshot_hz}"
-            )
-            .into());
-        }
-        config.snapshot_hz_limit = snapshot_hz;
-    }
     Ok(())
 }

@@ -2,7 +2,13 @@
 
 Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向外发送仪表 UDP。OpenCarpanel 随包提供一个最小 SCS Telemetry SDK 插件：游戏调用插件，插件把当前帧的必要仪表数据以固定 44 字节报文发送到同机 `127.0.0.1:20777`，随后由 Rust Host 转发给手机/iPad。
 
-## 1. 获取插件
+## 1. 使用桌面安装向导（推荐）
+
+完全退出 ETS2/ATS。在 OpenCarpanel“游戏设置”中选择对应游戏，点击“选择游戏目录”，再执行安装/更新。Rust 后端只会从用户选中的规范化游戏目录推导 64 位插件位置，拒绝符号链接逃逸；若已有不同版本，会保留最多三份备份并在原子写入后核对 SHA-256。
+
+重新启动游戏，接受 SCS 的高级 SDK 功能提示并进入驾驶状态。控制中心的总览应自动显示 `ets2` 或 `ats`，手机页也会切换到对应卡车布局。
+
+## 2. 手工获取插件（无头模式）
 
 预览包中插件位于 `plugins/scs/`。从源码构建：
 
@@ -16,7 +22,7 @@ npm run build:scs-plugin
 - macOS：`opencarpanel-scs-telemetry.dylib`
 - Linux：`opencarpanel-scs-telemetry.so`
 
-## 2. 安装到游戏
+## 3. 手工安装到游戏
 
 完全退出游戏，创建缺失的 `plugins` 目录，然后复制插件：
 
@@ -30,7 +36,7 @@ ETS2 和 ATS 可以各放一份相同文件。不要把 DLL 放在游戏根目�
 
 重新启动游戏时，SCS 会提示已启用高级 SDK 功能；接受提示并进入驾驶状态。插件文件名与 ETS2LA 的 `scs-telemetry` 不同，两者可以并存。
 
-## 3. 启动与验证 Host
+## 4. 启动与验证 Host
 
 Host 使用默认 UDP 20777。通常保留自动识别即可；排障时固定游戏：
 
@@ -41,7 +47,7 @@ $env:OPENCARPANEL_GAME = "ets2" # 美卡改为 ats
 
 成功驾驶后，`/api/v1/diagnostics` 的 `activeAdapter` 应为 `ets2` 或 `ats`，对应 adapter 的 `packetsRecognized` 应持续增长。
 
-## 4. 常见问题
+## 5. 常见问题
 
 | 现象 | 检查 |
 | --- | --- |

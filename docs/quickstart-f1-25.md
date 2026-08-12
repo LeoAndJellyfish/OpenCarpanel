@@ -2,13 +2,13 @@
 
 当前 F1 25 adapter 同时支持原始 `2025` UDP 与 2026 Season Pack 的 `2026` UDP，显示玩家车辆的速度、档位、RPM、转速灯、油门、刹车和 DRS。圈速、比赛状态、轮胎、损伤与离散赛事事件尚未实现。
 
-> **版本提示：** EA 说明新用户会默认使用 2026 Season Pack UDP；`v0.1.1` 可直接识别，不需要切回旧模式。历史 `v0.1.0` 下载包仍只支持原始 2025 UDP。
+> **版本提示：** EA 说明新用户会默认使用 2026 Season Pack UDP；`v0.2.0` 可直接识别，不需要切回旧模式。历史 `v0.1.0` 下载包仍只支持原始 2025 UDP。
 
 EA 当前说明与两套规格入口：[F1 25 / 2026 Season Pack UDP Specification](https://forums.ea.com/blog/f1-games-game-info-hub-en/ea-sports%E2%84%A2-f1%C2%AE25-2026-season-pack-udp-specification/12187347)。
 
-## 1. 启动 Host
+## 1. 启动控制中心
 
-按[多游戏快速开始](quickstart-multi-game.md)构建并启动。默认 `auto` 即可；排障时可固定为 F1 25：
+按[多游戏快速开始](quickstart-multi-game.md)安装并启动。默认 `auto` 即可；排障时可在“网络”页固定为 F1 25。无头模式也可使用：
 
 ```powershell
 $env:OPENCARPANEL_GAME = "f1-25"
@@ -46,4 +46,4 @@ $env:OPENCARPANEL_GAME = "f1-25"
 }
 ```
 
-数值会持续增长，示例只表达字段关系。若收到包但没有识别，确认使用的是 `v0.1.1` 而非 `v0.1.0`，再检查端口为 20777、packet format 为 2025 或 2026。识别后手机页会自动切换到 F1 25 青色方程式布局，并加载 `game-f1-25` 的独立用户配置。协议实现边界见 [F1 25 协议说明](protocols/f1-25.md)。
+数值会持续增长，示例只表达字段关系。若收到包但没有识别，确认使用的是 `v0.2.0`，再检查端口为 20777、packet format 为 2025 或 2026。识别后手机页会自动切换到 F1 25 青色方程式布局，并加载 `game-f1-25` 的独立用户配置。协议实现边界见 [F1 25 协议说明](protocols/f1-25.md)。

@@ -1,16 +1,16 @@
 # OpenCarpanel F1 24 快速开始
 
-本文对应 `0.1.x` 本地预览版。当前 F1 24 adapter 已显示玩家车辆的速度、档位、发动机转速、转速灯、油门、刹车与 DRS；圈速、比赛状态、轮胎和处罚等 packet 仍在后续范围内。
+本文对应 `v0.2.0` 桌面预览版。当前 F1 24 adapter 已显示玩家车辆的速度、档位、发动机转速、转速灯、油门、刹车与 DRS；圈速、比赛状态、轮胎和处罚等 packet 仍在后续范围内。
 
-## 1. 构建 Host
+## 1. 安装桌面控制中心
 
-需要 Node.js 22 或更高版本，以及仓库 `rust-toolchain.toml` 指定的 Rust stable 工具链。
+从 [Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载 Windows x64 安装器，或与你 Mac 架构匹配的 DMG。源码构建需要 Node.js 22+ 与仓库指定的 Rust：
 
 ```powershell
 git clone <你的 OpenCarpanel 仓库地址>
 cd OpenCarpanel
 npm ci
-npm run build:host
+npm run build:desktop
 ```
 
 也可以生成包含许可证和本指南的本机预览目录：
@@ -21,7 +21,11 @@ npm run package:host
 
 输出位于 `dist/release/OpenCarpanel-<version>-<platform>-<arch>/`。当前产物尚未进行 Windows 代码签名或 macOS notarization，只用于开发和预览。
 
-## 2. 启动
+## 2. 启动与配对
+
+通常直接打开 **OpenCarpanel**，在“设备与配对”生成 10 分钟内一次有效的二维码。手机或 iPad 与电脑连接同一局域网后扫描；配对成功的设备会被记住并可随时撤销。
+
+无头模式仍可使用安装目录中的 `opencarpanel-host`，或源码产物：
 
 Windows：
 
@@ -40,7 +44,7 @@ Host 默认监听：
 - 游戏遥测 UDP：`0.0.0.0:20777`
 - Dashboard HTTP/WebSocket：`0.0.0.0:20778`
 
-终端会打印一个 15 分钟内、仅可使用一次的配对地址和二维码。手机或 iPad 与电脑连接同一局域网后扫描二维码；若终端字体无法正确显示二维码，直接在移动设备输入配对地址。
+无头 Host 会在终端打印一个 15 分钟内、仅可使用一次的配对地址和二维码。
 
 配对成功后，驾驶页位于 `/`，布局编辑器位于 `/edit`。编辑器支持响应式断点、拖动/缩放、撤销/重做、主题、Host 持久化以及安全的 JSON 导入导出。
 
@@ -83,8 +87,8 @@ Host 默认监听：
 | 手机打不开页面 | 确认同一 Wi-Fi、配对 IP 属于真实网卡、TCP 20778 防火墙允许、路由器未启用客户端隔离 |
 | 页面显示 `DATA STALE` | 确认 F1 24 正在赛道会话中、UDP Telemetry 为 On、IP/端口/Format 正确 |
 | `packetsReceived` 增长但 `packetsRecognized` 为 0 | 确认 UDP Format 为 `2024`；若设置了 `OPENCARPANEL_GAME`，确认值为 `f1-24` |
-| 配对令牌无效 | 令牌已使用或超过 15 分钟；重启 Host 获取新令牌 |
-| UDP 端口占用 | 关闭占用 20777 的遥测工具，或在后续配置支持完成前只运行一个接收器 |
+| 配对令牌无效 | 令牌已使用或过期；在控制中心重新生成（无头模式重启 Host） |
+| UDP 端口占用 | 关闭占用 20777 的遥测工具，或在控制中心“网络”页换用双方一致的新端口 |
 | 布局保存冲突 | 编辑器会显示 revision 冲突；选择加载 Host 版本或明确覆盖，不会静默丢失修改 |
 
 布局默认保存在：
@@ -96,4 +100,4 @@ Host 使用原子写入和最近有效备份。不要把配对地址、设备 se
 
 ## 6. 退出
 
-在终端按 `Ctrl+C`，Host 会关闭 HTTP 和 UDP 服务。若重新启动，浏览器需要使用新二维码再次配对；`0.1.x` 尚未持久化设备 session。
+关闭桌面窗口默认只缩到托盘，Host 会继续接收遥测；从托盘菜单选择“退出 OpenCarpanel”才会优雅关闭 HTTP/UDP。无头模式在终端按 `Ctrl+C`。已经配对的设备会持久化，除非用户主动撤销。
