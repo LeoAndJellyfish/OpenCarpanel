@@ -124,9 +124,9 @@ jobs:
           tagName: v__VERSION__
           releaseName: OpenCarpanel v__VERSION__
           releaseBody: |
-            OpenCarpanel v0.2.0 introduces the Tauri desktop control center while retaining the bundled headless Host.
+            OpenCarpanel v0.2.1 fixes SCS game-directory selection in packaged desktop builds while retaining the bundled headless Host.
 
-            See `docs/releases/v0.2.0.md` for setup, security, update, compatibility, and validation notes.
+            See `docs/releases/v0.2.1.md` for the fix, compatibility, and validation notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

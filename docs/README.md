@@ -19,5 +19,6 @@
 - [`releases/v0.1.0.md`](releases/v0.1.0.md)：首个公开预览版的发布说明与已知限制。
 - [`releases/v0.1.1.md`](releases/v0.1.1.md)：2026 Season Pack 与游戏自适应 Dashboard 小版本说明。
 - [`releases/v0.2.0.md`](releases/v0.2.0.md)：桌面控制中心大版本说明、安装与已知边界。
+- [`releases/v0.2.1.md`](releases/v0.2.1.md)：SCS 游戏目录选择修复、兼容性与验证说明。
 
 架构设计描述“系统应当是什么样”，实施计划描述“按什么顺序把它建出来”，ADR 解释“为什么选择该方案”。

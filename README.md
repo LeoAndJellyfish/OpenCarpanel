@@ -31,7 +31,7 @@
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.2.0` 新增 Tauri 2 桌面控制中心、托盘、开机启动、设备管理、SCS 安装向导与签名更新包。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.2.1` 修复安装版桌面控制中心无法确认 ETS2/ATS 游戏目录的问题，并保留 v0.2.0 的托盘、开机启动、设备管理、SCS 安装向导与签名更新能力。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
@@ -145,14 +145,6 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 - [ADR：为什么桌面端嵌入同一个 Host](./docs/adr/0008-tauri-desktop-embedded-host.md)
 - [F1 24](./docs/protocols/f1-24.md)、[F1 25](./docs/protocols/f1-25.md) 与 [SCS bridge v1](./docs/protocols/scs-bridge-v1.md) 协议边界
 - [发布检查清单](./docs/release-checklist.md)
-
-## 当前边界
-
-- F1 首版没有圈速、比赛状态、轮胎、损伤、天气、处罚与赛事事件。
-- F1 25 的 2026 Car Telemetry 2（packet id `16`）、主动空气动力学等新增字段尚未映射；现有驾驶页字段来自 packet id `6`。
-- ETS2/ATS 尚无导航、灯光、油量、任务等卡车专属字段，也不会伪造 F1 转速灯。
-- Windows Authenticode 与 macOS Developer ID/notarization 尚未配置；macOS 产物仅 ad-hoc 签名。
-- 应用内更新包使用独立私钥签名并在安装前强制验签，但这不等同于操作系统发布者签名。
 
 ## License
 

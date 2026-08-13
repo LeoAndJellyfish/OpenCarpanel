@@ -37,6 +37,7 @@ const host = spawn(executable, [], {
   env: {
     ...process.env,
     OPENCARPANEL_DATA_DIR: dataDirectory,
+    OPENCARPANEL_RUNTIME_DIR: path.join(dataDirectory, "runtime"),
     OPENCARPANEL_GAME: "auto",
     OPENCARPANEL_HTTP_BIND: `127.0.0.1:${httpPort}`,
     OPENCARPANEL_UDP_BIND: `127.0.0.1:${udpPort}`,

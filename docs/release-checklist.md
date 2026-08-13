@@ -1,4 +1,4 @@
-# OpenCarpanel v0.2.0 发布检查清单
+# OpenCarpanel v0.2.1 发布检查清单
 
 本清单区分“自动化或合成数据已验证”和“真实游戏/设备已验证”。没有实测的项目保持未勾选，不能由 fixture、截图或 CI 代替。
 
@@ -6,7 +6,7 @@
 
 - [x] Windows：Rust fmt、workspace Clippy `-D warnings`、workspace tests（2026-08-12）
 - [x] Windows：桌面 Preact typecheck、3 个 model tests、production build（2026-08-12）
-- [x] Windows：Tauri desktop 5 个 Rust tests，覆盖 Host 重启回滚、SCS 安装/备份与更新检查节流（2026-08-12）
+- [x] Windows：Tauri desktop 7 个 Rust tests，覆盖 Host 重启回滚、SCS 安装/备份、两种打包资源布局与更新检查节流（2026-08-13）
 - [x] Windows：SCS x64 native wire test 与当前平台资源 staging（2026-08-12）
 - [x] Windows：Tauri MSI/NSIS 实际生成，安装清单包含 GUI、独立 Host、SCS bridge、LICENSE/NOTICE/docs（2026-08-12；本机 smoke 使用临时 updater key）
 - [x] 1240×800、860×800 production UI 视觉检查：总览、配对和游戏向导无水平溢出（2026-08-12）
@@ -26,7 +26,7 @@
 - [ ] 安装目录中的 GUI 与无头 Host 都能运行；任一已运行时另一个报告所有者并退出
 - [ ] 配置坏文件可恢复；端口冲突应用失败后旧 Host 与旧配置继续工作
 - [ ] 从 v0.1.1 配置升级并保留布局、配对设备与网络设置
-- [ ] 从 v0.2.0 测试清单执行一次有效签名更新；下载/验签/安装失败均保留现版本
+- [ ] 从 v0.2.0 执行一次有效签名更新到 v0.2.1；下载/验签/安装失败均保留原版本
 - [ ] 系统日志目录可从控制中心打开，日志不包含 pairing/session secret
 
 ## 游戏与手机实机
@@ -48,4 +48,4 @@
 - [ ] Windows Authenticode 代码签名
 - [ ] macOS Developer ID 签名与 notarization
 
-在最后两项操作系统签名完成前，`v0.2.0` 应称为 **public preview**，不能暗示系统安装器已由受信任商业身份签名。
+在最后两项操作系统签名完成前，`v0.2.1` 应称为 **public preview**，不能暗示系统安装器已由受信任商业身份签名。

@@ -8,7 +8,7 @@ use std::{
 use atomic_write_file::AtomicWriteFile;
 use serde::Serialize;
 use sha2::{Digest as _, Sha256};
-use tauri::{AppHandle, Manager as _, path::BaseDirectory};
+use tauri::{AppHandle, Manager as _};
 
 const BACKUP_LIMIT: usize = 3;
 
@@ -129,14 +129,11 @@ fn install_with_artifact(
 }
 
 fn bundled_plugin(app: &AppHandle) -> Result<PathBuf, String> {
-    let bundled = app
+    let resource_directory = app
         .path()
-        .resolve(
-            Path::new("plugins").join("scs").join(plugin_filename()),
-            BaseDirectory::Resource,
-        )
+        .resource_dir()
         .map_err(|error| error.to_string())?;
-    if bundled.is_file() {
+    if let Some(bundled) = locate_bundled_plugin(&resource_directory) {
         return Ok(bundled);
     }
 
@@ -152,6 +149,25 @@ fn bundled_plugin(app: &AppHandle) -> Result<PathBuf, String> {
         }
     }
     Err("桌面安装包中缺少当前平台的 SCS bridge，请重新安装 OpenCarpanel".to_owned())
+}
+
+fn locate_bundled_plugin(resource_directory: &Path) -> Option<PathBuf> {
+    // A glob entry such as `resources/**/*` keeps the leading `resources`
+    // directory in Tauri bundles. Keep the flat candidate as a compatibility
+    // fallback for development builds and future explicit resource mappings.
+    [
+        resource_directory
+            .join("resources")
+            .join("plugins")
+            .join("scs")
+            .join(plugin_filename()),
+        resource_directory
+            .join("plugins")
+            .join("scs")
+            .join(plugin_filename()),
+    ]
+    .into_iter()
+    .find(|candidate| candidate.is_file())
 }
 
 fn resolve_plugin_directory(
@@ -355,6 +371,39 @@ mod tests {
             Err(error) => error,
         };
         assert!(error.contains("win_x64") || error.contains("MacOS"));
+        Ok(())
+    }
+
+    #[test]
+    fn locates_the_scs_bridge_in_tauri_glob_resource_layout() -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let artifact = temp
+            .path()
+            .join("resources")
+            .join("plugins")
+            .join("scs")
+            .join(plugin_filename());
+        let parent = artifact.parent().ok_or("artifact path has no parent")?;
+        fs::create_dir_all(parent)?;
+        fs::write(&artifact, b"plugin")?;
+
+        assert_eq!(locate_bundled_plugin(temp.path()), Some(artifact));
+        Ok(())
+    }
+
+    #[test]
+    fn locates_the_scs_bridge_in_flat_resource_layout() -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let artifact = temp
+            .path()
+            .join("plugins")
+            .join("scs")
+            .join(plugin_filename());
+        let parent = artifact.parent().ok_or("artifact path has no parent")?;
+        fs::create_dir_all(parent)?;
+        fs::write(&artifact, b"plugin")?;
+
+        assert_eq!(locate_bundled_plugin(temp.path()), Some(artifact));
         Ok(())
     }
 

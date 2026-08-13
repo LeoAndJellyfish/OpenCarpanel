@@ -6,7 +6,7 @@ import { formatAge, gameProfile, telemetryIsLive } from "./model";
 function diagnostics(activeAdapter: string | null, age: number | null): HostDiagnostics {
   return {
     status: "ok",
-    version: "0.2.0",
+    version: "0.2.1",
     protocolVersion: 1,
     adapter: activeAdapter ?? "auto",
     adapterSelection: "auto",
