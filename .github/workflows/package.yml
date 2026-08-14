@@ -122,11 +122,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: OpenCarpanel v__VERSION__
+          releaseName: OpenCarpanel v__VERSION__ — Expanded Game Telemetry
           releaseBody: |
-            OpenCarpanel v0.2.2 streamlines the desktop control center with concise labels, direct game-setting values, and less explanatory copy.
+            OpenCarpanel v0.3.0 substantially expands F1 and SCS telemetry while keeping the complete driving data path local.
 
-            See `docs/releases/v0.2.2.md` for the interface changes, compatibility, and validation notes.
+            See `docs/releases/v0.3.0.md` for the new fields, compatibility, and validation notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
