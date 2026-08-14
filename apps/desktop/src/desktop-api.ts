@@ -114,7 +114,7 @@ export interface UpdateInfo {
 const demoQr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><rect width="18" height="18" fill="#f4f7f1"/><g fill="#07090d"><path d="M1 1h6v6H1zm1 1v4h4V2zm9-1h6v6h-6zm1 1v4h4V2zM1 11h6v6H1zm1 1v4h4v-4z"/><path d="M9 9h2v2H9zm3 0h1v1h-1zm2 0h3v2h-1v-1h-2zm-6 3h2v1H9v2H8zm3 0h2v2h-1v2h-2v-1h1zm3 1h3v1h-1v3h-2v-1h1v-1h-1z"/></g></svg>`;
 
 let demoState: DesktopBootstrap = {
-  version: "0.3.2",
+  version: "0.3.3",
   autostartEnabled: false,
   settings: {
     schemaVersion: 1,
@@ -135,7 +135,7 @@ let demoState: DesktopBootstrap = {
   },
   diagnostics: {
     status: "ok",
-    version: "0.3.2",
+    version: "0.3.3",
     protocolVersion: 1,
     adapter: "f1-25",
     adapterSelection: "auto",
@@ -280,17 +280,31 @@ export async function openLogs(): Promise<void> {
   }
 }
 
+export async function discoverScsDirectory(
+  game: "ets2" | "ats",
+): Promise<ScsPluginStatus | null> {
+  return isTauri()
+    ? invoke<ScsPluginStatus | null>("discover_scs_directory", { game })
+    : demoScsStatus(game);
+}
+
 export async function chooseScsDirectory(game: "ets2" | "ats"): Promise<ScsPluginStatus | null> {
   return isTauri()
     ? invoke<ScsPluginStatus | null>("choose_scs_directory", { game })
-    : {
-        game,
-        gameDirectory: `C:\\Program Files (x86)\\Steam\\steamapps\\common\\${game === "ets2" ? "Euro Truck Simulator 2" : "American Truck Simulator"}`,
-        pluginPath: `C:\\Program Files (x86)\\Steam\\steamapps\\common\\${game === "ets2" ? "Euro Truck Simulator 2" : "American Truck Simulator"}\\bin\\win_x64\\plugins\\opencarpanel-scs-telemetry.dll`,
-        state: "missing",
-        bundledSha256: "4b5b1c8f6f4de25e9ec83c19df438f622474dcb1ad8ff19ee728b74b5f45c3b1",
-        installedSha256: null,
-      };
+    : demoScsStatus(game);
+}
+
+function demoScsStatus(game: "ets2" | "ats"): ScsPluginStatus {
+  const directory = game === "ets2" ? "Euro Truck Simulator 2" : "American Truck Simulator";
+  const gameDirectory = `C:\\Program Files (x86)\\Steam\\steamapps\\common\\${directory}`;
+  return {
+    game,
+    gameDirectory,
+    pluginPath: `${gameDirectory}\\bin\\win_x64\\plugins\\opencarpanel-scs-telemetry.dll`,
+    state: "missing",
+    bundledSha256: "4b5b1c8f6f4de25e9ec83c19df438f622474dcb1ad8ff19ee728b74b5f45c3b1",
+    installedSha256: null,
+  };
 }
 
 export async function installScsPlugin(status: ScsPluginStatus): Promise<ScsPluginStatus> {

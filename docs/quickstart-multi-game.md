@@ -20,7 +20,7 @@ OpenCarpanel 桌面控制中心内嵌的 Host 默认在 UDP `20777` 上自动识
 从 [GitHub Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载 Windows x64 安装器、Apple Silicon DMG 或 Intel DMG。启动桌面控制中心后：
 
 1. 在“设备与配对”生成二维码并用同一局域网中的手机/iPad 扫描。
-2. 在“游戏设置”按向导配置 F1，或选择 ETS2/ATS 目录安装 bridge。
+2. 在“游戏设置”按向导配置 F1；ETS2/ATS 会先自动查找 Steam 安装目录，未找到时再手动选择目录并安装 bridge。
 3. 回到“总览”观察 `GAME → UDP → HOST → MOBILE` 链路和包计数。
 
 从源码构建 GUI：

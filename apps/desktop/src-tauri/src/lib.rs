@@ -5,9 +5,11 @@ use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tracing_subscriber::EnvFilter;
 
 mod commands;
+mod installation_cache;
 mod notifications;
 mod runtime;
 mod scs;
+mod steam;
 mod tray;
 mod updater;
 
@@ -39,6 +41,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
             commands::save_settings,
             commands::open_dashboard,
             commands::open_logs,
+            commands::discover_scs_directory,
             commands::choose_scs_directory,
             commands::install_scs_plugin,
             commands::check_for_updates,

@@ -108,11 +108,25 @@ pub fn open_logs(app: AppHandle, runtime: State<'_, SharedDesktopRuntime>) -> Re
 }
 
 #[tauri::command]
+pub async fn discover_scs_directory(
+    app: AppHandle,
+    runtime: State<'_, SharedDesktopRuntime>,
+    game: String,
+) -> Result<Option<ScsPluginStatus>, String> {
+    let data_directory = runtime.data_directory().to_path_buf();
+    tauri::async_runtime::spawn_blocking(move || crate::scs::discover(&app, &data_directory, &game))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 pub async fn choose_scs_directory(
     app: AppHandle,
+    runtime: State<'_, SharedDesktopRuntime>,
     game: String,
 ) -> Result<Option<ScsPluginStatus>, String> {
     let handle = app.clone();
+    let data_directory = runtime.data_directory().to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
         handle
             .dialog()
@@ -122,8 +136,12 @@ pub async fn choose_scs_directory(
             .map(|path| path.into_path().map_err(|error| error.to_string()))
             .transpose()
             .and_then(|path| {
-                path.map(|path| crate::scs::inspect(&handle, &game, &path))
-                    .transpose()
+                path.map(|path| {
+                    let status = crate::scs::inspect(&handle, &game, &path)?;
+                    crate::scs::remember_status(&data_directory, &status);
+                    Ok(status)
+                })
+                .transpose()
             })
     })
     .await
@@ -133,11 +151,15 @@ pub async fn choose_scs_directory(
 #[tauri::command]
 pub async fn install_scs_plugin(
     app: AppHandle,
+    runtime: State<'_, SharedDesktopRuntime>,
     game: String,
     selected_directory: String,
 ) -> Result<ScsPluginStatus, String> {
+    let data_directory = runtime.data_directory().to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
-        crate::scs::install(&app, &game, std::path::Path::new(&selected_directory))
+        let status = crate::scs::install(&app, &game, std::path::Path::new(&selected_directory))?;
+        crate::scs::remember_status(&data_directory, &status);
+        Ok(status)
     })
     .await
     .map_err(|error| error.to_string())?

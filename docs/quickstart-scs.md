@@ -4,7 +4,16 @@ Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向
 
 ## 1. 使用桌面安装向导（推荐）
 
-完全退出 ETS2/ATS。在 OpenCarpanel“游戏设置”中选择对应游戏，点击“选择游戏目录”，再执行安装/更新。Rust 后端只会从用户选中的规范化游戏目录推导 64 位插件位置，拒绝符号链接逃逸；若已有不同版本，会保留最多三份备份并在原子写入后核对 SHA-256。
+完全退出 ETS2/ATS。在 OpenCarpanel“游戏设置”中选择对应游戏后，控制中心会自动执行以下只读检查：
+
+1. Windows 读取 Steam 注册表位置与常见安装目录；macOS 读取用户的 Steam 数据目录。
+2. 解析 `steamapps/libraryfolders.vdf`，覆盖默认库和额外 Steam 游戏库。
+3. ETS2 只匹配 `appmanifest_227300.acf`，ATS 只匹配 `appmanifest_270880.acf`，并读取 manifest 中的 `installdir`。
+4. 对推导出的游戏根目录继续执行现有平台二进制目录、规范化路径和符号链接边界校验。
+
+找到后界面会直接显示目录和 bridge 状态，并把 ETS2/ATS 两个规范化路径分别写入本机 `scs-installations.json`；下次启动会先重新校验缓存，再按需查找 Steam。该文件不会进入 Host 网络诊断。自动查找不会扫描整块磁盘、修改 Steam 配置或连接 Steam Web API；如果显示“未在 Steam 中找到”，仍可点击“选择文件夹”手动指定游戏根目录，手动结果也会进入同一缓存。
+
+确认目录后执行安装/更新。Rust 后端只会从已校验的游戏目录推导 64 位插件位置；若已有不同版本，会保留最多三份备份，并在原子写入后核对 SHA-256。
 
 重新启动游戏，接受 SCS 的高级 SDK 功能提示并进入驾驶状态。控制中心的总览应自动显示 `ets2` 或 `ats`，手机页也会切换到对应卡车布局。
 

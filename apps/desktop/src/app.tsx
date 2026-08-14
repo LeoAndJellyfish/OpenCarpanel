@@ -1,5 +1,5 @@
 import type { JSX } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import {
   type AppSettings,
@@ -12,6 +12,7 @@ import {
   checkForUpdates,
   chooseScsDirectory,
   createPairing,
+  discoverScsDirectory,
   openDashboard,
   openLogs,
   refreshRuntime,
@@ -29,6 +30,12 @@ import {
   gameProfile,
   telemetryIsLive,
 } from "./model";
+import {
+  type ScsDiscoveryPhase,
+  type ScsGame,
+  isScsGame,
+  scsDirectoryPresentation,
+} from "./scs-discovery";
 import {
   IDLE_UPDATE_PROGRESS,
   type UpdateProgressState,
@@ -65,7 +72,12 @@ export function App() {
   const [section, setSection] = useState<Section>(initialSection);
   const [setupGame, setSetupGame] = useState<SetupGame>("f1-25");
   const [pairing, setPairing] = useState<PairingTicket | null>(null);
-  const [scsStatus, setScsStatus] = useState<ScsPluginStatus | null>(null);
+  const [scsStatuses, setScsStatuses] = useState<Partial<Record<ScsGame, ScsPluginStatus>>>({});
+  const [scsDiscovery, setScsDiscovery] = useState<Record<ScsGame, ScsDiscoveryPhase>>({
+    ets2: "idle",
+    ats: "idle",
+  });
+  const scsRequestVersions = useRef<Record<ScsGame, number>>({ ets2: 0, ats: 0 });
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [updateProgress, setUpdateProgress] = useState<UpdateProgressState>(
     IDLE_UPDATE_PROGRESS,
@@ -110,6 +122,30 @@ export function App() {
     }, 800);
     return () => window.clearInterval(timer);
   }, [data !== null, busy]);
+
+  useEffect(() => {
+    if (section !== "games" || !isScsGame(setupGame)) return;
+    const game = setupGame;
+    if (scsStatuses[game] || scsDiscovery[game] !== "idle") return;
+    const requestVersion = scsRequestVersions.current[game] + 1;
+    scsRequestVersions.current[game] = requestVersion;
+    setScsDiscovery((current) => ({ ...current, [game]: "searching" }));
+    void discoverScsDirectory(game)
+      .then((status) => {
+        if (scsRequestVersions.current[game] !== requestVersion) return;
+        if (status) {
+          setScsStatuses((current) => ({ ...current, [game]: status }));
+        }
+        setScsDiscovery((current) => ({
+          ...current,
+          [game]: status ? "automatic" : "not-found",
+        }));
+      })
+      .catch(() => {
+        if (scsRequestVersions.current[game] !== requestVersion) return;
+        setScsDiscovery((current) => ({ ...current, [game]: "failed" }));
+      });
+  }, [section, setupGame, scsStatuses, scsDiscovery]);
 
   const profile = useMemo(
     () => (data ? gameProfile(data.diagnostics) : null),
@@ -159,13 +195,24 @@ export function App() {
   }
 
   async function chooseGameDirectory() {
+    if (!isScsGame(setupGame)) return;
+    const game = setupGame;
+    const previousPhase = scsDiscovery[game];
     setBusy("scs-folder");
     setError(null);
     try {
-      if (setupGame !== "ets2" && setupGame !== "ats") return;
-      const selected = await chooseScsDirectory(setupGame);
-      if (selected) setScsStatus(selected);
+      scsRequestVersions.current[game] += 1;
+      const selected = await chooseScsDirectory(game);
+      if (selected) {
+        setScsStatuses((current) => ({ ...current, [game]: selected }));
+        setScsDiscovery((current) => ({ ...current, [game]: "manual" }));
+      } else if (previousPhase === "searching") {
+        setScsDiscovery((current) => ({ ...current, [game]: "idle" }));
+      }
     } catch (reason) {
+      if (previousPhase === "searching") {
+        setScsDiscovery((current) => ({ ...current, [game]: "failed" }));
+      }
       setError(errorText(reason));
     } finally {
       setBusy(null);
@@ -173,17 +220,27 @@ export function App() {
   }
 
   async function installGamePlugin() {
+    if (!isScsGame(setupGame)) return;
+    const game = setupGame;
+    const scsStatus = scsStatuses[game];
     if (!scsStatus) return;
     setBusy("scs-install");
     setError(null);
     try {
       const installed = await installScsPlugin(scsStatus);
-      setScsStatus(installed);
+      setScsStatuses((current) => ({ ...current, [game]: installed }));
       setMessage("SCS bridge 已安装并通过 SHA-256 校验；完全重启游戏后接受 SDK 提示");
     } catch (reason) {
       setError(errorText(reason));
     } finally {
       setBusy(null);
+    }
+  }
+
+  function selectSetupGame(game: SetupGame) {
+    setSetupGame(game);
+    if (isScsGame(game) && matchesRetryableDiscovery(scsDiscovery[game])) {
+      setScsDiscovery((current) => ({ ...current, [game]: "idle" }));
     }
   }
 
@@ -339,7 +396,7 @@ export function App() {
               data={data}
               onChooseDirectory={() => void chooseGameDirectory()}
               onInstallPlugin={() => void installGamePlugin()}
-              onSelectGame={setSetupGame}
+              onSelectGame={selectSetupGame}
               onSetSelection={(selection) =>
                 void commitSettings(
                   {
@@ -349,7 +406,8 @@ export function App() {
                   selection === "auto" ? "已启用游戏自动识别" : `已固定到 ${selection}`,
                 )
               }
-              scsStatus={scsStatus?.game === setupGame ? scsStatus : null}
+              scsDiscovery={isScsGame(setupGame) ? scsDiscovery[setupGame] : "idle"}
+              scsStatus={isScsGame(setupGame) ? (scsStatuses[setupGame] ?? null) : null}
               selected={setupGame}
             />
           )}
@@ -614,6 +672,7 @@ function GamesView({
   data,
   selected,
   scsStatus,
+  scsDiscovery,
   busy,
   onSelectGame,
   onChooseDirectory,
@@ -623,6 +682,7 @@ function GamesView({
   data: DesktopBootstrap;
   selected: SetupGame;
   scsStatus: ScsPluginStatus | null;
+  scsDiscovery: ScsDiscoveryPhase;
   busy: string | null;
   onSelectGame: (game: SetupGame) => void;
   onChooseDirectory: () => void;
@@ -659,6 +719,7 @@ function GamesView({
             <ScsSetup
               busy={busy}
               game={selected}
+              discovery={scsDiscovery}
               status={scsStatus}
               onChooseDirectory={onChooseDirectory}
               onInstall={onInstallPlugin}
@@ -714,6 +775,7 @@ function F1Setup({ game, udpPort }: { game: "f1-24" | "f1-25"; udpPort: string }
 function ScsSetup({
   game,
   status,
+  discovery,
   busy,
   onChooseDirectory,
   onInstall,
@@ -721,21 +783,23 @@ function ScsSetup({
 }: {
   game: "ets2" | "ats";
   status: ScsPluginStatus | null;
+  discovery: ScsDiscoveryPhase;
   busy: string | null;
   onChooseDirectory: () => void;
   onInstall: () => void;
   udpPort: string;
 }) {
+  const directory = scsDirectoryPresentation(status, discovery);
   return (
     <div class="wizard-body">
       <div class="folder-picker">
-        <div><small>GAME ROOT / {game.toUpperCase()}</small><strong>{status?.gameDirectory ?? "尚未选择游戏目录"}</strong></div>
+        <div><small>{game.toUpperCase()} 游戏目录</small><strong aria-live="polite">{directory.directory}</strong></div>
         <button class="button-quiet" type="button" disabled={busy === "scs-folder"} onClick={onChooseDirectory}>
-          {busy === "scs-folder" ? "正在打开…" : "选择文件夹"}
+          {busy === "scs-folder" ? "正在打开…" : directory.chooseLabel}
         </button>
       </div>
       <ol class="setup-steps compact">
-        <li><span>01</span><strong>游戏目录</strong><b>{status ? "SELECTED" : "WAITING"}</b></li>
+        <li><span>01</span><strong>游戏目录</strong><b>{directory.directoryState}</b></li>
         <li><span>02</span><strong>SCS Bridge</strong><b>{status?.state.toUpperCase() ?? "NOT INSTALLED"}</b></li>
         <li><span>03</span><strong>重启游戏并确认 SDK</strong><b>RESTART</b></li>
         <li><span>04</span><strong>遥测目标</strong><b>127.0.0.1:{udpPort}</b></li>
@@ -746,6 +810,10 @@ function ScsSetup({
       {status && <p class="microcopy">安装位置：<span>{status.pluginPath}</span></p>}
     </div>
   );
+}
+
+function matchesRetryableDiscovery(phase: ScsDiscoveryPhase): boolean {
+  return phase === "not-found" || phase === "failed";
 }
 
 function DashboardView({

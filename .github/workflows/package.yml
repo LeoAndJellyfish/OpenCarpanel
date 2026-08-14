@@ -122,11 +122,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: OpenCarpanel v__VERSION__ — Dashboard Controls & Update Progress
+          releaseName: OpenCarpanel v__VERSION__ — Automatic Steam Game Discovery
           releaseBody: |
-            OpenCarpanel v0.3.2 makes dashboard customization immediate with game-specific component switches, and makes desktop updates observable with clear download and installation progress.
+            OpenCarpanel v0.3.3 automatically locates Euro Truck Simulator 2 and American Truck Simulator across Steam libraries while preserving a validated manual folder fallback.
 
-            See `docs/releases/v0.3.2.md` for editor behavior, updater safety, compatibility, and validation notes.
+            See `docs/releases/v0.3.3.md` for discovery behavior, path validation, compatibility, and verification notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

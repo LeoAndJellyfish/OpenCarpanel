@@ -57,6 +57,45 @@ pub fn inspect(
     inspect_with_artifact(game, selected_directory, &bundled)
 }
 
+/// Discovers and inspects the first valid Steam-managed installation.
+///
+/// # Errors
+///
+/// Rejects unsupported game ids or a missing bundled bridge. Unreadable Steam
+/// metadata and invalid installation candidates are skipped so callers can
+/// retain manual directory selection as a fallback.
+pub fn discover(
+    app: &AppHandle,
+    data_directory: &Path,
+    game: &str,
+) -> Result<Option<ScsPluginStatus>, String> {
+    validate_game(game)?;
+    let bundled = bundled_plugin(app)?;
+    let mut candidates = Vec::new();
+    match crate::installation_cache::load(data_directory, game) {
+        Ok(Some(cached)) => candidates.push(cached),
+        Ok(None) => {}
+        Err(error) => tracing::warn!(game, %error, "ignored invalid SCS installation cache"),
+    }
+    candidates.extend(crate::steam::discover_game_directories(game)?);
+    let status = inspect_discovered_candidates(game, &candidates, &bundled);
+    if let Some(status) = status.as_ref() {
+        remember_status(data_directory, status);
+    }
+    Ok(status)
+}
+
+/// Stores a successfully inspected manual selection for later reuse.
+pub fn remember_status(data_directory: &Path, status: &ScsPluginStatus) {
+    if let Err(error) = crate::installation_cache::remember(
+        data_directory,
+        &status.game,
+        Path::new(&status.game_directory),
+    ) {
+        tracing::warn!(game = status.game, %error, "failed to remember SCS installation");
+    }
+}
+
 /// Installs or updates the bridge with backup, atomic replacement, and hash verification.
 ///
 /// # Errors
@@ -96,6 +135,27 @@ fn inspect_with_artifact(
         bundled_sha256: bundled_hash,
         installed_sha256: installed_hash,
     })
+}
+
+fn inspect_discovered_candidates(
+    game: &str,
+    candidates: &[PathBuf],
+    bundled: &Path,
+) -> Option<ScsPluginStatus> {
+    for candidate in candidates {
+        match inspect_with_artifact(game, candidate, bundled) {
+            Ok(status) => return Some(status),
+            Err(error) => {
+                tracing::debug!(
+                    game,
+                    path = %candidate.display(),
+                    %error,
+                    "ignored invalid Steam game installation"
+                );
+            }
+        }
+    }
+    None
 }
 
 fn install_with_artifact(
@@ -371,6 +431,25 @@ mod tests {
             Err(error) => error,
         };
         assert!(error.contains("win_x64") || error.contains("MacOS"));
+        Ok(())
+    }
+
+    #[test]
+    fn discovery_skips_invalid_candidates_before_accepting_a_valid_game()
+    -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let artifact = temp.path().join(plugin_filename());
+        fs::write(&artifact, b"plugin")?;
+        let invalid = temp.path().join("invalid");
+        fs::create_dir_all(&invalid)?;
+        let valid = temp.path().join("Euro Truck Simulator 2");
+        fs::create_dir_all(valid.join(platform_binary_test_path()))?;
+
+        let status =
+            inspect_discovered_candidates("ets2", &[invalid, valid.canonicalize()?], &artifact)
+                .ok_or("valid Steam candidate was not accepted")?;
+        assert_eq!(status.game, "ets2");
+        assert_eq!(status.state, ScsPluginState::Missing);
         Ok(())
     }
 

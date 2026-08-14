@@ -27,5 +27,6 @@
 - [`releases/v0.3.0.md`](releases/v0.3.0.md)：F1 与 SCS 遥测扩展、bridge v2、兼容性与验证说明。
 - [`releases/v0.3.1.md`](releases/v0.3.1.md)：游戏自适应遥测面板、默认布局安全迁移与响应式验证说明。
 - [`releases/v0.3.2.md`](releases/v0.3.2.md)：按游戏过滤的组件开关、桌面更新进度与兼容性说明。
+- [`releases/v0.3.3.md`](releases/v0.3.3.md)：ETS2/ATS Steam 自动发现、本地路径缓存与安全兜底说明。
 
 架构设计描述“系统应当是什么样”，实施计划描述“按什么顺序把它建出来”，ADR 解释“为什么选择该方案”。

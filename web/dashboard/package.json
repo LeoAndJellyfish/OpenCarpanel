@@ -1,7 +1,7 @@
 {
   "name": "@opencarpanel/dashboard",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@opencarpanel/widget-sdk": "0.3.2",
+    "@opencarpanel/widget-sdk": "0.3.3",
     "preact": "10.29.8"
   }
 }

@@ -31,7 +31,7 @@
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.3.2` 将仪表盘编辑器改为按游戏过滤的组件开关：单击即可启用或停用，F1 与 ETS2/ATS 不再混入不适用组件；桌面端更新同时新增真实下载进度、验签与安装阶段反馈。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.3.3` 会从 Steam 注册表、默认目录、全部 `libraryfolders.vdf` 游戏库和 AppID manifest 自动定位 ETS2/ATS；结果在本机分游戏缓存并在下次启动重新校验，找不到时仍可手动选择。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
@@ -40,7 +40,7 @@
 3. 打开“设备与配对”，让手机/iPad 与电脑连接同一局域网并扫描一次性二维码。
 4. 按游戏配置数据源：
    - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 的原始 **2025** 与 **2026 Season Pack** mode 均可。
-   - **ETS2/ATS：** 在“游戏设置”中选择游戏目录并安装内置 bridge，重启游戏并接受 SDK 提示。
+   - **ETS2/ATS：** “游戏设置”会通过 Steam 库与 AppID 自动定位游戏；未找到时可手动选择目录。安装内置 bridge 后，重启游戏并接受 SDK 提示。
 
 安装目录同时包含独立的 `opencarpanel-host`（Windows 为 `.exe`）。GUI 与 CLI 共用一个实例锁和配置目录；任一已经运行时，另一个会说明当前所有者并退出，而不会争抢 `20777/20778`。
 
