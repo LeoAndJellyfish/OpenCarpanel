@@ -7,7 +7,7 @@ use std::{
 
 use atomic_write_file::AtomicWriteFile;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, ipc::Channel};
 use tauri_plugin_notification::NotificationExt as _;
 use tauri_plugin_updater::UpdaterExt as _;
 
@@ -31,6 +31,26 @@ pub struct UpdateInfo {
     pub notes: Option<String>,
     /// Publication timestamp when supplied.
     pub published_at: Option<String>,
+}
+
+/// Ordered progress events emitted while installing a signed update.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "phase", rename_all = "camelCase")]
+pub enum UpdateProgress {
+    /// The updater is confirming that the announced release is still available.
+    Preparing,
+    /// A signed release artifact is being downloaded.
+    #[serde(rename_all = "camelCase")]
+    Downloading {
+        /// Bytes received across all chunks so far.
+        downloaded_bytes: u64,
+        /// Server-provided artifact size when available.
+        total_bytes: Option<u64>,
+    },
+    /// The download is complete and its embedded signature is being verified.
+    Verifying,
+    /// Signature verification succeeded and the installer is about to start.
+    Installing,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -81,7 +101,12 @@ pub async fn check(app: &AppHandle) -> Result<UpdateInfo, String> {
 ///
 /// Returns when no update exists or any check, download, signature, install,
 /// shutdown, or recovery step fails.
-pub async fn install(app: AppHandle, runtime: Arc<DesktopRuntime>) -> Result<(), String> {
+pub async fn install(
+    app: AppHandle,
+    runtime: Arc<DesktopRuntime>,
+    on_progress: Channel<UpdateProgress>,
+) -> Result<(), String> {
+    let _ = on_progress.send(UpdateProgress::Preparing);
     let update = app
         .updater()
         .map_err(|error| error.to_string())?
@@ -89,11 +114,23 @@ pub async fn install(app: AppHandle, runtime: Arc<DesktopRuntime>) -> Result<(),
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "当前已经是最新版本".to_owned())?;
+    let download_progress = on_progress.clone();
+    let verification_progress = on_progress.clone();
+    let mut downloaded_bytes = 0;
     let bytes = update
-        .download(|_chunk, _total| {}, || {})
+        .download(
+            move |chunk_length, total_bytes| {
+                let progress = record_chunk(&mut downloaded_bytes, chunk_length, total_bytes);
+                let _ = download_progress.send(progress);
+            },
+            move || {
+                let _ = verification_progress.send(UpdateProgress::Verifying);
+            },
+        )
         .await
         .map_err(|error| format!("更新下载或签名验证失败：{error}"))?;
 
+    let _ = on_progress.send(UpdateProgress::Installing);
     runtime.begin_exit();
     if let Err(error) = runtime.shutdown().await {
         runtime.cancel_exit();
@@ -172,6 +209,19 @@ fn bounded_notes(value: &str) -> String {
     value.chars().take(4_000).collect()
 }
 
+fn record_chunk(
+    downloaded_bytes: &mut u64,
+    chunk_length: usize,
+    total_bytes: Option<u64>,
+) -> UpdateProgress {
+    *downloaded_bytes =
+        downloaded_bytes.saturating_add(u64::try_from(chunk_length).unwrap_or(u64::MAX));
+    UpdateProgress::Downloading {
+        downloaded_bytes: *downloaded_bytes,
+        total_bytes,
+    }
+}
+
 fn unix_time_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -198,5 +248,41 @@ mod tests {
     fn release_notes_are_bounded() {
         let input = "x".repeat(5_000);
         assert_eq!(bounded_notes(&input).len(), 4_000);
+    }
+
+    #[test]
+    fn download_progress_accumulates_chunks() {
+        let mut downloaded_bytes = 0;
+        assert_eq!(
+            record_chunk(&mut downloaded_bytes, 32, Some(96)),
+            UpdateProgress::Downloading {
+                downloaded_bytes: 32,
+                total_bytes: Some(96),
+            }
+        );
+        assert_eq!(
+            record_chunk(&mut downloaded_bytes, 64, Some(96)),
+            UpdateProgress::Downloading {
+                downloaded_bytes: 96,
+                total_bytes: Some(96),
+            }
+        );
+    }
+
+    #[test]
+    fn update_progress_uses_the_frontend_json_contract() -> Result<(), Box<dyn Error>> {
+        let value = serde_json::to_value(UpdateProgress::Downloading {
+            downloaded_bytes: 64,
+            total_bytes: Some(128),
+        })?;
+        assert_eq!(
+            value,
+            serde_json::json!({
+                "phase": "downloading",
+                "downloadedBytes": 64,
+                "totalBytes": 128,
+            })
+        );
+        Ok(())
     }
 }

@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use opencarpanel_config::AppSettings;
 use serde::Serialize;
-use tauri::{AppHandle, Manager as _, State};
+use tauri::{AppHandle, Manager as _, State, ipc::Channel};
 use tauri_plugin_autostart::ManagerExt as _;
 use tauri_plugin_dialog::DialogExt as _;
 use tauri_plugin_opener::OpenerExt as _;
 
 use crate::runtime::{PairingTicket, RuntimeSnapshot, SharedDesktopRuntime};
 use crate::scs::ScsPluginStatus;
-use crate::updater::UpdateInfo;
+use crate::updater::{UpdateInfo, UpdateProgress};
 
 /// Bootstrap payload including operating-system integration state.
 #[derive(Debug, Serialize)]
@@ -152,8 +152,9 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
 pub async fn install_update(
     app: AppHandle,
     runtime: State<'_, SharedDesktopRuntime>,
+    on_progress: Channel<UpdateProgress>,
 ) -> Result<(), String> {
-    crate::updater::install(app, Arc::clone(runtime.inner())).await
+    crate::updater::install(app, Arc::clone(runtime.inner()), on_progress).await
 }
 
 fn set_autostart(app: &AppHandle, enabled: bool) -> Result<(), String> {

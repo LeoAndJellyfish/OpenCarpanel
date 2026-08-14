@@ -29,6 +29,16 @@ import {
   gameProfile,
   telemetryIsLive,
 } from "./model";
+import {
+  IDLE_UPDATE_PROGRESS,
+  type UpdateProgressState,
+  applyUpdateProgress,
+  beginUpdateProgress,
+  failUpdateProgress,
+  formatUpdateBytes,
+  updateProgressLabel,
+  updateProgressRatio,
+} from "./update-progress";
 
 type Section = "overview" | "pairing" | "games" | "dashboard" | "network" | "system";
 type SetupGame = Exclude<GameId, "waiting">;
@@ -57,6 +67,9 @@ export function App() {
   const [pairing, setPairing] = useState<PairingTicket | null>(null);
   const [scsStatus, setScsStatus] = useState<ScsPluginStatus | null>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<UpdateProgressState>(
+    IDLE_UPDATE_PROGRESS,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -176,12 +189,15 @@ export function App() {
 
   async function checkUpdates() {
     setBusy("update-check");
+    setUpdateProgress(beginUpdateProgress("checking"));
     setError(null);
     try {
       const info = await checkForUpdates();
       setUpdateInfo(info);
+      setUpdateProgress(IDLE_UPDATE_PROGRESS);
       setMessage(info.available ? `发现 OpenCarpanel ${info.version}` : "当前已经是最新版本");
     } catch (reason) {
+      setUpdateProgress((current) => failUpdateProgress(current));
       setError(errorText(reason));
     } finally {
       setBusy(null);
@@ -190,10 +206,16 @@ export function App() {
 
   async function applyUpdate() {
     setBusy("update-install");
+    setUpdateProgress(beginUpdateProgress("preparing"));
     setError(null);
     try {
-      await installUpdate();
+      await installUpdate((progress) => {
+        setUpdateProgress((current) => applyUpdateProgress(current, progress));
+      });
+      setUpdateProgress(IDLE_UPDATE_PROGRESS);
+      setBusy(null);
     } catch (reason) {
+      setUpdateProgress((current) => failUpdateProgress(current));
       setError(errorText(reason));
       setBusy(null);
     }
@@ -358,6 +380,7 @@ export function App() {
               onCheckUpdate={() => void checkUpdates()}
               onInstallUpdate={() => void applyUpdate()}
               updateInfo={updateInfo}
+              updateProgress={updateProgress}
             />
           )}
         </div>
@@ -831,6 +854,7 @@ function SystemView({
   onCheckUpdate,
   onInstallUpdate,
   updateInfo,
+  updateProgress,
 }: {
   data: DesktopBootstrap;
   busy: string | null;
@@ -840,6 +864,7 @@ function SystemView({
   onCheckUpdate: () => void;
   onInstallUpdate: () => void;
   updateInfo: UpdateInfo | null;
+  updateProgress: UpdateProgressState;
 }) {
   function toggle(key: keyof AppSettings["desktop"], value: boolean, message: string) {
     onChange({ ...data.settings, desktop: { ...data.settings.desktop, [key]: value } }, message);
@@ -883,8 +908,9 @@ function SystemView({
           <div class="panel-heading"><h2>软件更新</h2><span class="security-tag">SIGNED</span></div>
           <div class="version-lockup"><small>{updateInfo?.available ? "UPDATE READY" : "INSTALLED"}</small><strong>v{updateInfo?.version ?? data.version}</strong><span>{updateInfo?.available ? `当前 v${data.version}` : "Release channel / GitHub"}</span></div>
           {updateInfo?.notes && <p>{updateInfo.notes}</p>}
+          {updateProgress.phase !== "idle" && <UpdateProgress progress={updateProgress} />}
           {updateInfo?.available ? (
-            <button class="button-signal full-button" disabled={busy === "update-install"} type="button" onClick={onInstallUpdate}>{busy === "update-install" ? "正在下载、验签并安装…" : `安装 v${updateInfo.version}`}</button>
+            <button class="button-signal full-button" disabled={busy === "update-install"} type="button" onClick={onInstallUpdate}>{busy === "update-install" ? "更新进行中" : `安装 v${updateInfo.version}`}</button>
           ) : (
             <button class="button-quiet full-button" disabled={busy === "update-check"} type="button" onClick={onCheckUpdate}>{busy === "update-check" ? "正在访问签名发布清单…" : "手动检查更新"}</button>
           )}
@@ -909,6 +935,44 @@ function SystemView({
         </div>
         <div class="path-readout"><span>APPLICATION DATA</span><code>{data.dataDirectory}</code></div>
       </section>
+    </div>
+  );
+}
+
+function UpdateProgress({ progress }: { progress: UpdateProgressState }) {
+  const ratio = updateProgressRatio(progress);
+  const percentage = ratio === null ? null : Math.round(ratio * 100);
+  const bytes = formatUpdateBytes(progress);
+  const label = updateProgressLabel(progress.phase);
+  const indeterminate = ratio === null && progress.phase !== "failed";
+
+  return (
+    <div
+      class="update-progress"
+      data-indeterminate={indeterminate}
+      data-phase={progress.phase}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <div class="update-progress-heading">
+        <strong>{label}</strong>
+        {percentage !== null && <span>{percentage}%</span>}
+      </div>
+      <div
+        class="update-progress-track"
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={percentage === null ? undefined : 0}
+        aria-valuemax={percentage === null ? undefined : 100}
+        aria-valuenow={percentage ?? undefined}
+        aria-valuetext={percentage === null ? label : `${percentage}%`}
+      >
+        <i
+          class="update-progress-fill"
+          style={ratio === null ? undefined : `--update-progress: ${ratio}`}
+        />
+      </div>
+      {bytes && <small>{bytes}</small>}
     </div>
   );
 }

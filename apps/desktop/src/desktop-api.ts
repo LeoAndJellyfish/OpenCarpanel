@@ -1,4 +1,6 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
+
+import type { UpdateProgressEvent } from "./update-progress";
 
 export interface HostSettings {
   schemaVersion: number;
@@ -313,8 +315,17 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
       };
 }
 
-export async function installUpdate(): Promise<void> {
+export async function installUpdate(
+  onProgress: (progress: UpdateProgressEvent) => void,
+): Promise<void> {
   if (isTauri()) {
-    await invoke("install_update");
+    const progressChannel = new Channel<UpdateProgressEvent>(onProgress);
+    await invoke("install_update", { onProgress: progressChannel });
+    return;
   }
+
+  onProgress({ phase: "preparing" });
+  onProgress({ phase: "downloading", downloadedBytes: 1, totalBytes: 1 });
+  onProgress({ phase: "verifying" });
+  onProgress({ phase: "installing" });
 }
