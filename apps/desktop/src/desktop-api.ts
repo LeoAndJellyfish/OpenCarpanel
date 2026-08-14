@@ -112,7 +112,7 @@ export interface UpdateInfo {
 const demoQr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><rect width="18" height="18" fill="#f4f7f1"/><g fill="#07090d"><path d="M1 1h6v6H1zm1 1v4h4V2zm9-1h6v6h-6zm1 1v4h4V2zM1 11h6v6H1zm1 1v4h4v-4z"/><path d="M9 9h2v2H9zm3 0h1v1h-1zm2 0h3v2h-1v-1h-2zm-6 3h2v1H9v2H8zm3 0h2v2h-1v2h-2v-1h1zm3 1h3v1h-1v3h-2v-1h1v-1h-1z"/></g></svg>`;
 
 let demoState: DesktopBootstrap = {
-  version: "0.2.1",
+  version: "0.2.2",
   autostartEnabled: false,
   settings: {
     schemaVersion: 1,
@@ -133,7 +133,7 @@ let demoState: DesktopBootstrap = {
   },
   diagnostics: {
     status: "ok",
-    version: "0.2.1",
+    version: "0.2.2",
     protocolVersion: 1,
     adapter: "f1-25",
     adapterSelection: "auto",

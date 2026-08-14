@@ -124,9 +124,9 @@ jobs:
           tagName: v__VERSION__
           releaseName: OpenCarpanel v__VERSION__
           releaseBody: |
-            OpenCarpanel v0.2.1 fixes SCS game-directory selection in packaged desktop builds while retaining the bundled headless Host.
+            OpenCarpanel v0.2.2 streamlines the desktop control center with concise labels, direct game-setting values, and less explanatory copy.
 
-            See `docs/releases/v0.2.1.md` for the fix, compatibility, and validation notes.
+            See `docs/releases/v0.2.2.md` for the interface changes, compatibility, and validation notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

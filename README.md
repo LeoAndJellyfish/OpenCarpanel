@@ -31,7 +31,7 @@
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.2.1` 修复安装版桌面控制中心无法确认 ETS2/ATS 游戏目录的问题，并保留 v0.2.0 的托盘、开机启动、设备管理、SCS 安装向导与签名更新能力。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.2.2` 精简桌面控制中心的解释性文案，游戏设置改为更直接的字段名与目标值，同时保留关键状态、错误提示和 v0.2.1 的 SCS 目录修复。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
