@@ -1,6 +1,6 @@
-# 游戏数据链路与 SCS 数据包协议图解
+# 游戏数据链路与数据包协议图解
 
-本文用可缩放的教材式图示说明四款游戏如何把遥测送到手机，以及 ETS2/ATS 原生桥接插件的 v1 44-byte 兼容包和当前 v2 188-byte 数据包如何排列。图中所有连接都是本机或同一局域网连接；运行时不经过云端服务。
+本文说明四款游戏如何把遥测送到手机，列出 F1 24、原始 F1 25 与 2026 Season Pack 三套精确 UDP packet 矩阵，并用可缩放的教材式图示展示 ETS2/ATS 原生桥接插件的 v1 44-byte 兼容包和当前 v2 188-byte 数据包。图中所有连接都是本机或同一局域网连接；运行时不经过云端服务。
 
 ## 四款游戏如何进入同一个 Dashboard
 
@@ -14,6 +14,22 @@
 2. **ETS2 / ATS：SCS SDK 回调桥接。** 游戏加载随包插件，在未暂停帧的 `FRAME_END` 回调中，把当前状态编码为固定 188-byte v2 报文，并非阻塞地发到同机 `127.0.0.1:20777`。Host 仍接受旧插件的 44-byte v1 报文。
 
 四条输入在 `AdapterRegistry` 中都有独立 adapter/reducer。自动模式对当前来源保持两秒粘性，防止同时运行多款游戏时画面来回切换；也可以用 `OPENCARPANEL_GAME=f1-24|f1-25|ets2|ats` 固定来源。随后 Host 把统一遥测通过已配对的 HTTP/WebSocket 送到手机或 iPad；Dashboard 使用统一模型中的 `meta.gameId` 自动选择游戏视觉与独立用户布局，不从某个速度/RPM 字段反向猜游戏。
+
+## F1 原生 UDP：三套精确 wire layout
+
+三种 mode 都使用 29-byte packed、小端公共头和 `packetVersion = 1`，但车辆数、单车 entry 和总包长并不相同。Host 先按 `packetFormat` 选择布局，再验证 packet ID 与精确总长；相近长度不会被当作兼容格式。
+
+| Packet | ID | F1 24 / format 2024 | F1 25 / format 2025 | 2026 Season Pack / format 2026 |
+| --- | ---: | ---: | ---: | ---: |
+| Session | `1` | 753 bytes | 753 bytes | 926 bytes |
+| Lap Data | `2` | 1285 bytes（22 × 57 + 2-byte trailer） | 1285 bytes（22 × 57 + 2-byte trailer） | 1399 bytes（24 × 57 + 2-byte trailer） |
+| Event | `3` | 45 bytes | 45 bytes | 45 bytes |
+| Car Telemetry | `6` | 1352 bytes（22 × 60 + 3-byte trailer） | 1352 bytes（22 × 60 + 3-byte trailer） | 1448 bytes（24 × 59 + 3-byte trailer） |
+| Car Status | `7` | 1239 bytes（22 × 55） | 1239 bytes（22 × 55） | 1445 bytes（24 × 59） |
+| Car Damage | `10` | 953 bytes（22 × 42） | 1041 bytes（22 × 46） | 1133 bytes（24 × 46） |
+| Car Telemetry 2 | `16` | — | — | 269 bytes（24 × 10） |
+
+表中括号只描述公共头之后的主要数组和尾部字段，总长度已经包含 29-byte header。原始 F1 25 的 Car Damage entry 比 F1 24 多 4-byte 轮胎起泡数组；2026 把车辆数提高到 24、把 Car Telemetry 的发动机温度从 `u16` 改为 `u8`、在 Car Status 增加 4-byte ERS harvesting limit，并新增主动空气动力学/超车状态的 packet `16`。详细字段和厂商资料入口见 [F1 24 协议](protocols/f1-24.md)与 [F1 25 / 2026 协议](protocols/f1-25.md)。
 
 ## v1：44 字节基础包逐 byte 看
 

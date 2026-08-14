@@ -24,7 +24,7 @@
 | 游戏 | 电脑端输入 | 主要字段 | 需要注意 |
 | --- | --- | --- | --- |
 | **F1 24** | 游戏原生 UDP，format `2024` | 驾驶、圈速/比赛状态、赛事事件、燃油/ERS、轮胎、损伤、天气与处罚 | 严格解析 packet `1/2/3/6/7/10` |
-| **F1 25 + 2026 Season Pack** | 游戏原生 UDP，format `2025` 或 `2026` | 与 F1 24 相同；2026 另含主动空气动力学与超车状态 | 两种 mode 按各自车辆数与精确包长解析；2026 支持 packet `16` |
+| **F1 25 + 2026 Season Pack** | 游戏原生 UDP，format `2025` 或 `2026` | 包含 F1 24 字段并增加轮胎起泡；2026 另含主动空气动力学与超车状态 | 两种 mode 按各自车辆数与精确包长解析；2026 支持 packet `16` |
 | **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 驾驶、导航、道路限速、油量/续航、灯光与配送任务 | 首次使用需复制插件并接受游戏 SDK 提示 |
 | **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | v2 插件只向 `127.0.0.1:20777` 非阻塞发送；Host 兼容 v1 |
 
@@ -73,7 +73,9 @@ npm run build:host
 
 F1 直接发送官方 UDP；ETS2/ATS 由游戏加载最小 SCS 插件，把 callback 编码为固定 188-byte v2 本机数据报（Host 仍接受 44-byte v1）。Host 逐字段安全解析，并交给每游戏独立 reducer；连续状态只保留最新值，离散事件进入有界 ring，最终通过已配对的本地 WebSocket 发布。
 
-[打开教材式图解：四游戏链路、v1/v2 数据包阵列、字段表与 ETS2LA 方案对照 →](./docs/data-paths-and-scs-packet.md)
+这些长度不能跨游戏或 mode 混用：F1 24 与原始 F1 25 的 Car Telemetry 都是 1352 bytes，但 Car Damage 分别为 953 和 1041 bytes；2026 Season Pack 的 Car Telemetry 为 1448 bytes，并新增 269-byte Car Telemetry 2。SCS 的 188-byte v2 也是独立版本，不是把扩展字段塞入旧 44-byte v1。三套 F1 精确 packet 矩阵与两版 SCS offset 见下方教材式图解。
+
+[打开教材式图解：四游戏链路、F1 精确包长、SCS v1/v2 数据包阵列与 ETS2LA 方案对照 →](./docs/data-paths-and-scs-packet.md)
 
 ## 为驾驶场景做的取舍
 

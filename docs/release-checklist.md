@@ -11,6 +11,7 @@
 - [x] Windows：桌面 Preact typecheck、8 项测试、production build（2026-08-14）
 - [x] Windows：Tauri desktop 9 个 Rust tests，覆盖更新进度 IPC、Host 重启回滚、SCS 安装/备份、两种打包资源布局与更新检查节流（2026-08-14）
 - [x] Dashboard 编辑器真实浏览器演示：F1/ETS2 组件集合隔离，侧栏开关、检查器移除和再次启用均同步更新画布（2026-08-14）
+- [x] 协议说明复核：三套 F1 packet 总长/entry/trailer 与 Rust 常量一致；SCS v1 44-byte、v2 188-byte 与 C++ encoder/Rust decoder 一致（2026-08-14）
 - [x] Windows/macOS：SCS bridge v2 native wire test 与当前平台资源 staging（CI run `31771803103`，2026-08-14）
 - [x] Windows：Tauri MSI/NSIS 实际生成，安装清单包含 GUI、独立 Host、SCS bridge、LICENSE/NOTICE/docs（2026-08-12；本机 smoke 使用临时 updater key）
 - [x] 1240×800、860×800 production UI 视觉检查：总览、配对和游戏向导无水平溢出（2026-08-12）

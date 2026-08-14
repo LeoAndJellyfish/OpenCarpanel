@@ -9,7 +9,7 @@
 - [`plans/2026-08-12-v0.2-desktop-control-center-design.md`](plans/2026-08-12-v0.2-desktop-control-center-design.md)：Tauri 桌面控制中心、单 Host、配置、托盘和签名更新设计。
 - [`plans/2026-08-14-dashboard-widget-toggle-design.md`](plans/2026-08-14-dashboard-widget-toggle-design.md)：按游戏过滤的 Steam 浮层式组件开关与兼容性设计。
 - [`plans/2026-08-14-desktop-update-progress-design.md`](plans/2026-08-14-desktop-update-progress-design.md)：应用内更新下载、验签和安装阶段的进度反馈设计。
-- [`data-paths-and-scs-packet.md`](data-paths-and-scs-packet.md)：四款游戏的端到端数据链路与 SCS bridge v1/v2 数组图解。
+- [`data-paths-and-scs-packet.md`](data-paths-and-scs-packet.md)：四款游戏的端到端数据链路、三套 F1 精确包长与 SCS bridge v1/v2 数组图解。
 - [`plans/2026-08-11-f1-24-mvp-implementation.md`](plans/2026-08-11-f1-24-mvp-implementation.md)：按测试优先顺序拆分的实施计划。
 - [`adr/`](adr/)：重要且长期有效的架构决策记录。
 - [`protocols/f1-24.md`](protocols/f1-24.md)：F1 24 官方资料入口和适配器实现边界。
