@@ -33,13 +33,13 @@ import {
 type Section = "overview" | "pairing" | "games" | "dashboard" | "network" | "system";
 type SetupGame = Exclude<GameId, "waiting">;
 
-const NAVIGATION: readonly { id: Section; index: string; label: string; detail: string }[] = [
-  { id: "overview", index: "01", label: "总览", detail: "LIVE SYSTEM" },
-  { id: "pairing", index: "02", label: "设备与配对", detail: "LINK DEVICES" },
-  { id: "games", index: "03", label: "游戏设置", detail: "INPUT GARAGE" },
-  { id: "dashboard", index: "04", label: "仪表盘", detail: "DRIVER DISPLAY" },
-  { id: "network", index: "05", label: "网络", detail: "LOCAL TRANSPORT" },
-  { id: "system", index: "06", label: "系统与诊断", detail: "SERVICE BAY" },
+const NAVIGATION: readonly { id: Section; index: string; label: string }[] = [
+  { id: "overview", index: "01", label: "总览" },
+  { id: "pairing", index: "02", label: "设备与配对" },
+  { id: "games", index: "03", label: "游戏设置" },
+  { id: "dashboard", index: "04", label: "仪表盘" },
+  { id: "network", index: "05", label: "网络" },
+  { id: "system", index: "06", label: "系统与诊断" },
 ];
 
 const GAME_TABS: readonly { id: SetupGame; label: string; detail: string }[] = [
@@ -209,7 +209,6 @@ export function App() {
       id: "overview" as const,
       index: "01",
       label: "总览",
-      detail: "LIVE SYSTEM",
     };
 
   return (
@@ -223,14 +222,12 @@ export function App() {
           </div>
           <div>
             <strong>OPEN<span>CARPANEL</span></strong>
-            <small>PIT WALL / {data.version}</small>
           </div>
         </div>
 
         <div class="rail-runtime" data-live={live}>
           <span class="live-orbit" aria-hidden="true"><i /></span>
           <div>
-            <small>{live ? "TELEMETRY LIVE" : "HOST ARMED"}</small>
             <strong>{profile.shortLabel}</strong>
           </div>
         </div>
@@ -244,10 +241,7 @@ export function App() {
               type="button"
             >
               <span class="nav-index">{item.index}</span>
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </span>
+              <strong>{item.label}</strong>
               <i aria-hidden="true" />
             </button>
           ))}
@@ -256,7 +250,6 @@ export function App() {
         <div class="rail-footer">
           <span class="host-led" data-ok={data.diagnostics.status === "ok"} />
           <span>
-            <small>EMBEDDED HOST</small>
             <strong>{data.endpoints.udpAddress}</strong>
           </span>
         </div>
@@ -265,14 +258,12 @@ export function App() {
       <main class="workspace">
         <header class="topline">
           <div>
-            <p class="section-code">{activeNavigation.index} / {activeNavigation.detail}</p>
             <h1>{activeNavigation.label}</h1>
           </div>
           <div class="game-ident">
             <span data-live={live}>{live ? "LIVE" : "STANDBY"}</span>
             <div>
               <strong>{profile.label}</strong>
-              <small>{profile.detail}</small>
             </div>
           </div>
         </header>
@@ -379,7 +370,6 @@ function BootScreen({ error }: { error: string | null }) {
   return (
     <main class="boot-shell">
       <div class="boot-mark" aria-hidden="true"><span /><span /><span /></div>
-      <p class="eyebrow">OpenCarpanel / Pit Wall</p>
       <h1>{error ? "控制中心未能就绪" : "正在启动桌面控制中心"}</h1>
       {error && <p>{error}</p>}
     </main>
@@ -432,7 +422,6 @@ function Overview({
       {!data.settings.desktop.onboardingComplete && (
         <section class="commissioning-strip">
           <div>
-            <span>FIRST RUN / 3 LAPS</span>
             <strong>把第一块仪表盘送上赛道</strong>
           </div>
           <ol>
@@ -449,7 +438,6 @@ function Overview({
 
       <section class="hero-telemetry">
         <div class="hero-copy">
-          <p class="eyebrow">ACTIVE SIGNAL</p>
           <h2>{live ? profileLabel : "监听已就绪"}</h2>
           <p class="hero-status">
             {live
@@ -478,7 +466,7 @@ function Overview({
 
       <section class="data-route" aria-label="当前数据链路">
         <div class="route-heading">
-          <p>LOCAL DATA ROUTE</p>
+          <h3>当前数据链路</h3>
           <span>{live ? "链路在线" : "等待源数据"}</span>
         </div>
         <div class="route-steps">
@@ -502,7 +490,7 @@ function Overview({
 
       <section class="adapter-board">
         <div class="panel-heading">
-          <div><p>ADAPTER GRID</p><h3>已编译游戏输入</h3></div>
+          <h3>已编译游戏输入</h3>
           <button class="text-action" type="button" onClick={() => onNavigate("games")}>打开游戏设置 →</button>
         </div>
         <div class="adapter-table">
@@ -545,7 +533,7 @@ function PairingView({
     <div class="split-view pairing-view">
       <section class="pair-console">
         <div class="panel-heading">
-          <div><p>ONE-TIME LINK</p><h2>同一局域网内扫描配对</h2></div>
+          <h2>同一局域网内扫描配对</h2>
           <span class="security-tag">LOCAL ONLY</span>
         </div>
         <div class={pairing ? "qr-stage is-ready" : "qr-stage"}>
@@ -568,7 +556,7 @@ function PairingView({
 
       <section class="device-console">
         <div class="panel-heading">
-          <div><p>REMEMBERED DISPLAYS</p><h2>已配对设备</h2></div>
+          <h2>已配对设备</h2>
           <strong class="count-badge">{data.devices.length.toString().padStart(2, "0")}</strong>
         </div>
         {data.devices.length === 0 ? (
@@ -641,7 +629,7 @@ function GamesView({
       <div class="split-view game-setup">
         <section class="setup-main">
           <div class="panel-heading">
-            <div><p>INPUT COMMISSIONING</p><h2>{adapter?.displayName ?? selected}</h2></div>
+            <h2>{adapter?.displayName ?? selected}</h2>
             <span class="protocol-tag">{adapter?.protocolVersion ?? "COMPILED"}</span>
           </div>
           {isScs ? (
@@ -659,7 +647,7 @@ function GamesView({
         </section>
 
         <aside class="setup-aside">
-          <div class="panel-heading"><div><p>SOURCE POLICY</p><h3>输入选择</h3></div></div>
+          <div class="panel-heading"><h3>输入选择</h3></div>
           <div class="selection-readout">
             <small>CURRENT MODE</small>
             <strong>{data.settings.host.adapterSelection === "auto" ? "自动识别" : data.settings.host.adapterSelection}</strong>
@@ -748,7 +736,6 @@ function DashboardView({
     <div class="dashboard-view">
       <section class="dashboard-launcher">
         <div class="launcher-copy">
-          <p class="eyebrow">DRIVER DISPLAY</p>
           <h2>仪表盘随游戏自动切换</h2>
           <div class="hero-actions">
             <button class="button-signal" type="button" onClick={() => onOpen("dashboard")}>打开驾驶页 <span>↗</span></button>
@@ -759,7 +746,7 @@ function DashboardView({
         <DashboardMiniature />
       </section>
       <section class="profile-lanes">
-        <div class="panel-heading"><div><p>GAME-AWARE PROFILES</p><h3>四套隔离的用户布局</h3></div><span>SWITCH ON GAME ID</span></div>
+        <div class="panel-heading"><h3>四套隔离的用户布局</h3></div>
         {GAME_TABS.map((game, index) => (
           <div class="profile-lane" key={game.id}>
             <span>{String(index + 1).padStart(2, "0")}</span>
@@ -811,7 +798,7 @@ function NetworkView({
   return (
     <div class="split-view network-view">
       <form class="network-form" onSubmit={submit}>
-        <div class="panel-heading"><div><p>LISTENER CONTROL</p><h2>本地端口与发布频率</h2></div><span class="security-tag">VALIDATED</span></div>
+        <div class="panel-heading"><h2>本地端口与发布频率</h2><span class="security-tag">VALIDATED</span></div>
         <label class="field-row">
           <strong>游戏遥测 UDP</strong>
           <input value={draft.host.udpBind} onInput={(event) => updateHost("udpBind", event.currentTarget.value)} spellcheck={false} />
@@ -842,7 +829,7 @@ function NetworkView({
         </div>
       </form>
       <aside class="network-map">
-        <div class="panel-heading"><div><p>TRUST BOUNDARY</p><h3>本地数据面</h3></div></div>
+        <div class="panel-heading"><h3>本地数据面</h3></div>
         <div class="map-stack">
           <div><span>GAME</span><strong>UDP / {data.endpoints.udpAddress.split(":").at(-1)}</strong><small>untrusted datagrams</small></div>
           <i />
@@ -885,7 +872,7 @@ function SystemView({
       )}
       <div class="split-view">
         <section class="preference-panel">
-          <div class="panel-heading"><div><p>DESKTOP BEHAVIOUR</p><h2>常驻与系统集成</h2></div></div>
+          <div class="panel-heading"><h2>常驻与系统集成</h2></div>
           <Toggle
             checked={data.settings.desktop.closeToTray}
             detail={data.trayAvailable ? undefined : "系统托盘不可用，关闭窗口将退出。"}
@@ -914,7 +901,7 @@ function SystemView({
         </section>
 
         <section class="update-panel">
-          <div class="panel-heading"><div><p>SECURE UPDATE</p><h2>软件更新</h2></div><span class="security-tag">SIGNED</span></div>
+          <div class="panel-heading"><h2>软件更新</h2><span class="security-tag">SIGNED</span></div>
           <div class="version-lockup"><small>{updateInfo?.available ? "UPDATE READY" : "INSTALLED"}</small><strong>v{updateInfo?.version ?? data.version}</strong><span>{updateInfo?.available ? `当前 v${data.version}` : "Release channel / GitHub"}</span></div>
           {updateInfo?.notes && <p>{updateInfo.notes}</p>}
           {updateInfo?.available ? (
@@ -927,7 +914,7 @@ function SystemView({
 
       <section class="diagnostic-panel">
         <div class="panel-heading">
-          <div><p>SERVICE TELEMETRY</p><h2>诊断快照</h2></div>
+          <h2>诊断快照</h2>
           <div class="diagnostic-actions">
             <button class="button-quiet" type="button" onClick={onOpenLogs}>打开日志目录</button>
             <button class="button-quiet" type="button" onClick={onOpenDiagnostics}>打开完整 JSON ↗</button>

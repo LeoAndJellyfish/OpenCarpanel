@@ -6,7 +6,6 @@ export interface GameProfile {
   id: GameId;
   shortLabel: string;
   label: string;
-  detail: string;
   accent: string;
   family: "formula" | "truck" | "neutral";
 }
@@ -16,7 +15,6 @@ const PROFILES: Record<GameId, GameProfile> = {
     id: "f1-24",
     shortLabel: "F1 24",
     label: "EA Sports F1 24",
-    detail: "FORMULA · UDP 2024",
     accent: "#d9ff43",
     family: "formula",
   },
@@ -24,7 +22,6 @@ const PROFILES: Record<GameId, GameProfile> = {
     id: "f1-25",
     shortLabel: "F1 25",
     label: "F1 25 · 2026 Season Pack",
-    detail: "FORMULA · UDP 2025 + 2026",
     accent: "#40e6d2",
     family: "formula",
   },
@@ -32,7 +29,6 @@ const PROFILES: Record<GameId, GameProfile> = {
     id: "ets2",
     shortLabel: "ETS2",
     label: "Euro Truck Simulator 2",
-    detail: "LONG HAUL · SCS SDK",
     accent: "#ffb74a",
     family: "truck",
   },
@@ -40,7 +36,6 @@ const PROFILES: Record<GameId, GameProfile> = {
     id: "ats",
     shortLabel: "ATS",
     label: "American Truck Simulator",
-    detail: "INTERSTATE · SCS SDK",
     accent: "#ff6b62",
     family: "truck",
   },
@@ -48,7 +43,6 @@ const PROFILES: Record<GameId, GameProfile> = {
     id: "waiting",
     shortLabel: "AUTO",
     label: "等待游戏遥测",
-    detail: "AUTO DETECTION ARMED",
     accent: "#aab4af",
     family: "neutral",
   },

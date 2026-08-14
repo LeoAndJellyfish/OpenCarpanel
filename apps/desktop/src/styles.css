@@ -53,43 +53,38 @@ code { font-family: "Cascadia Mono", "SFMono-Regular", monospace; }
 .brand-lockup { display: flex; min-height: 108px; align-items: center; gap: 14px; padding: 24px 22px; border-bottom: 1px solid var(--line); }
 .brand-lockup strong { display: block; font-size: 0.98rem; letter-spacing: -0.03em; }
 .brand-lockup strong span { color: var(--signal); }
-.brand-lockup small, .rail-footer small, .rail-runtime small { display: block; margin-top: 5px; color: var(--muted); font: 0.58rem/1.2 "Cascadia Mono", monospace; letter-spacing: 0.12em; }
 .brand-glyph { position: relative; width: 35px; height: 35px; border: 1px solid color-mix(in srgb, var(--signal) 60%, var(--line)); transform: rotate(45deg); }
 .brand-glyph i { position: absolute; height: 3px; background: var(--signal); transform: rotate(-45deg); transform-origin: left center; }
 .brand-glyph i:nth-child(1) { top: 10px; left: 6px; width: 18px; }
 .brand-glyph i:nth-child(2) { top: 16px; left: 6px; width: 24px; }
 .brand-glyph i:nth-child(3) { top: 22px; left: 6px; width: 12px; }
 .rail-runtime { display: flex; align-items: center; gap: 12px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
-.rail-runtime strong { display: block; margin-top: 3px; font-size: 0.92rem; letter-spacing: 0.04em; }
+.rail-runtime strong { display: block; font-size: 0.92rem; letter-spacing: 0.04em; }
 .live-orbit { position: relative; display: grid; width: 32px; height: 32px; border: 1px solid #3a4140; border-radius: 50%; place-items: center; }
 .live-orbit::after { position: absolute; inset: 4px; border: 1px dashed color-mix(in srgb, var(--signal) 45%, transparent); border-radius: 50%; content: ""; animation: orbit 8s linear infinite; }
 .live-orbit i { width: 6px; height: 6px; border-radius: 50%; background: #78817e; box-shadow: 0 0 0 4px rgb(120 129 126 / 10%); }
 .rail-runtime[data-live="true"] .live-orbit i { background: var(--signal); box-shadow: 0 0 15px var(--signal); }
 .side-rail nav { display: grid; padding: 18px 0; }
-.nav-item { position: relative; display: grid; min-height: 70px; grid-template-columns: 30px 1fr 4px; align-items: center; gap: 8px; padding: 0 0 0 20px; border: 0; background: transparent; cursor: pointer; text-align: left; transition: background 180ms ease, color 180ms ease; }
+.nav-item { position: relative; display: grid; min-height: 58px; grid-template-columns: 30px 1fr 4px; align-items: center; gap: 8px; padding: 0 0 0 20px; border: 0; background: transparent; cursor: pointer; text-align: left; transition: background 180ms ease, color 180ms ease; }
 .nav-item:hover { background: rgb(255 255 255 / 3%); }
 .nav-item.is-active { background: linear-gradient(90deg, color-mix(in srgb, var(--signal) 9%, transparent), transparent); }
 .nav-index { color: #545d5a; font: 0.62rem "Cascadia Mono", monospace; }
 .nav-item strong { display: block; color: #b9c0bd; font-size: 0.88rem; font-weight: 600; }
-.nav-item small { display: block; margin-top: 5px; color: #59625f; font: 0.54rem "Cascadia Mono", monospace; letter-spacing: 0.12em; }
 .nav-item i { align-self: stretch; background: transparent; }
 .nav-item.is-active strong, .nav-item.is-active .nav-index { color: var(--signal); }
-.nav-item.is-active small { color: #939d99; }
 .nav-item.is-active i { background: var(--signal); box-shadow: 0 0 20px color-mix(in srgb, var(--signal) 42%, transparent); }
 .rail-footer { display: flex; align-items: center; gap: 11px; margin-top: auto; padding: 19px 22px; border-top: 1px solid var(--line); }
-.rail-footer strong { display: block; margin-top: 4px; color: #aeb6b2; font: 0.67rem "Cascadia Mono", monospace; }
+.rail-footer strong { display: block; color: #aeb6b2; font: 0.67rem "Cascadia Mono", monospace; }
 .host-led { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
 .host-led[data-ok="true"] { background: #6ee7a0; box-shadow: 0 0 10px #6ee7a0; }
 
 .workspace { grid-column: 2; min-width: 0; padding: 0 clamp(28px, 4vw, 62px) 60px; }
 .topline { display: flex; min-height: 108px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
-.section-code, .panel-heading p, .route-heading p { margin: 0 0 7px; color: var(--signal); font: 0.61rem "Cascadia Mono", monospace; letter-spacing: 0.16em; }
 .topline h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.035em; }
 .game-ident { display: flex; align-items: center; gap: 13px; text-align: right; }
 .game-ident > span { padding: 5px 7px; border: 1px solid #3b4341; color: #6d7773; font: 0.56rem "Cascadia Mono", monospace; letter-spacing: 0.1em; }
 .game-ident > span[data-live="true"] { border-color: color-mix(in srgb, var(--signal) 45%, transparent); color: var(--signal); background: color-mix(in srgb, var(--signal) 7%, transparent); }
 .game-ident strong { display: block; font-size: 0.84rem; }
-.game-ident small { display: block; margin-top: 4px; color: var(--muted); font: 0.57rem "Cascadia Mono", monospace; letter-spacing: 0.08em; }
 .view-stage { padding-top: 28px; animation: view-enter 420ms var(--ease-out) both; }
 .notice { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--signal) 32%, var(--line)); background: color-mix(in srgb, var(--signal) 6%, var(--surface)); }
 .notice > span { display: grid; width: 23px; height: 23px; place-items: center; background: var(--signal); color: #07100a; font-weight: 900; }
@@ -99,8 +94,7 @@ code { font-family: "Cascadia Mono", "SFMono-Regular", monospace; }
 .notice-error > span { background: var(--danger); color: #fff; }
 
 .commissioning-strip { display: grid; grid-template-columns: minmax(190px, .8fr) 1.1fr auto; align-items: center; gap: 24px; margin-bottom: 20px; padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--signal) 30%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--signal) 6%, transparent), transparent 45%), var(--surface); }
-.commissioning-strip > div:first-child span { color: var(--signal); font: 0.56rem "Cascadia Mono", monospace; letter-spacing: .14em; }
-.commissioning-strip > div:first-child strong { display: block; margin-top: 5px; font-size: .82rem; }
+.commissioning-strip > div:first-child strong { display: block; font-size: .82rem; }
 .commissioning-strip ol { display: flex; margin: 0; padding: 0; list-style: none; counter-reset: laps; }
 .commissioning-strip li { position: relative; flex: 1; color: #727c78; font-size: .7rem; }
 .commissioning-strip li::before { display: inline-grid; width: 18px; height: 18px; margin-right: 7px; border: 1px solid #414947; border-radius: 50%; content: ""; vertical-align: middle; place-items: center; }
@@ -113,7 +107,6 @@ code { font-family: "Cascadia Mono", "SFMono-Regular", monospace; }
 .hero-telemetry { position: relative; display: grid; min-height: 330px; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); overflow: hidden; border: 1px solid var(--line); background: linear-gradient(110deg, color-mix(in srgb, var(--signal) 5%, transparent), transparent 42%), var(--surface); }
 .hero-telemetry::before { position: absolute; inset: 0; opacity: .18; background: repeating-linear-gradient(90deg, transparent 0 71px, #66706c 72px), repeating-linear-gradient(0deg, transparent 0 71px, #66706c 72px); content: ""; mask-image: linear-gradient(90deg, transparent 10%, #000 80%); }
 .hero-copy { position: relative; z-index: 1; align-self: center; padding: 48px clamp(32px, 5vw, 72px); }
-.eyebrow { margin: 0 0 16px; color: var(--signal); font: 0.64rem "Cascadia Mono", monospace; font-weight: 700; letter-spacing: 0.18em; }
 .hero-copy h2, .pair-console h2, .device-console h2, .setup-main h2, .network-form h2, .preference-panel h2, .update-panel h2, .diagnostic-panel h2 { margin: 0; font-size: clamp(2rem, 4.2vw, 4.6rem); letter-spacing: -0.055em; line-height: .94; }
 .hero-status { max-width: 660px; margin: 20px 0 0; color: #9da7a2; font: .72rem "Cascadia Mono", monospace; letter-spacing: .04em; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
@@ -145,7 +138,7 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 
 .data-route { margin-top: 20px; border: 1px solid var(--line); background: var(--surface); }
 .route-heading { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
-.route-heading p { margin: 0; }.route-heading span { color: var(--muted); font: .58rem "Cascadia Mono", monospace; }
+.route-heading h3 { margin: 0; font-size: .78rem; }.route-heading span { color: var(--muted); font: .58rem "Cascadia Mono", monospace; }
 .route-steps { display: grid; grid-template-columns: repeat(5, 1fr); padding: 24px 12px 22px; }
 .route-step { position: relative; min-width: 0; padding: 0 16px; }
 .step-node { position: relative; z-index: 1; display: grid; width: 22px; height: 22px; margin-bottom: 13px; border: 1px solid #414a47; border-radius: 50%; background: var(--surface); place-items: center; }
@@ -162,7 +155,7 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .metric small { display: block; color: var(--muted); font-size: .67rem; }.metric strong { display: block; margin-top: 10px; font: clamp(1.6rem, 3vw, 2.7rem)/1 "Cascadia Mono", monospace; letter-spacing: -.08em; }.metric span { display: block; margin-top: 9px; color: #5d6763; font: .52rem "Cascadia Mono", monospace; letter-spacing: .11em; }
 .adapter-board, .pair-console, .device-console, .setup-main, .setup-aside, .network-form, .network-map, .preference-panel, .update-panel, .diagnostic-panel, .profile-lanes { margin-top: 20px; border: 1px solid var(--line); background: var(--surface); }
 .panel-heading { display: flex; min-height: 75px; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
-.panel-heading p { margin-bottom: 5px; }.panel-heading h2, .panel-heading h3 { margin: 0; font-size: 1.08rem; letter-spacing: -.025em; }
+.panel-heading h2, .panel-heading h3 { margin: 0; font-size: 1.08rem; letter-spacing: -.025em; }
 .adapter-table { display: grid; }
 .adapter-row { display: grid; min-height: 62px; grid-template-columns: 18px minmax(170px, 1.3fr) minmax(150px, 1fr) 90px 70px; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); color: #7e8984; }
 .adapter-row:last-child { border: 0; }.adapter-light { width: 6px; height: 6px; border-radius: 50%; background: #4a5350; }.adapter-row[data-active="true"] .adapter-light { background: var(--signal); box-shadow: 0 0 12px var(--signal); }
