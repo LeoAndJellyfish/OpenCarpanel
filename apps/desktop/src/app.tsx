@@ -745,16 +745,6 @@ function DashboardView({
         </div>
         <DashboardMiniature />
       </section>
-      <section class="profile-lanes">
-        <div class="panel-heading"><h3>四套隔离的用户布局</h3></div>
-        {GAME_TABS.map((game, index) => (
-          <div class="profile-lane" key={game.id}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <div><strong>{game.label}</strong><small>{game.detail}</small></div>
-            <code>game-{game.id}</code>
-          </div>
-        ))}
-      </section>
     </div>
   );
 }
@@ -796,7 +786,7 @@ function NetworkView({
     onSave(draft);
   }
   return (
-    <div class="split-view network-view">
+    <div class="network-view">
       <form class="network-form" onSubmit={submit}>
         <div class="panel-heading"><h2>本地端口与发布频率</h2><span class="security-tag">VALIDATED</span></div>
         <label class="field-row">
@@ -828,17 +818,6 @@ function NetworkView({
           <button class="button-signal" disabled={busy === "settings"} type="submit">{busy === "settings" ? "正在切换…" : "应用设置"}</button>
         </div>
       </form>
-      <aside class="network-map">
-        <div class="panel-heading"><h3>本地数据面</h3></div>
-        <div class="map-stack">
-          <div><span>GAME</span><strong>UDP / {data.endpoints.udpAddress.split(":").at(-1)}</strong><small>untrusted datagrams</small></div>
-          <i />
-          <div class="active"><span>RUST HOST</span><strong>VALIDATE + NORMALIZE</strong><small>single process</small></div>
-          <i />
-          <div><span>MOBILE</span><strong>PAIRED WEBSOCKET</strong><small>{data.diagnostics.connections.active} active client(s)</small></div>
-        </div>
-        <div class="network-facts"><p><span>REMOTE SERVER</span><strong>NONE</strong></p><p><span>PROTOCOL</span><strong>v{data.diagnostics.protocolVersion}</strong></p><p><span>CLIENT LIMIT</span><strong>{data.diagnostics.connections.limit}</strong></p></div>
-      </aside>
     </div>
   );
 }
