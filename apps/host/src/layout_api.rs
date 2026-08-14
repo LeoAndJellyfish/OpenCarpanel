@@ -210,8 +210,9 @@ fn load_or_create(
     id: &LayoutId,
 ) -> Result<Option<LayoutEnvelope>, ConfigError> {
     if let Some(loaded) = repository.load(id)? {
+        let document = upgrade_previous_builtin_layout(repository, id, loaded.document)?;
         return Ok(Some(LayoutEnvelope {
-            document: loaded.document,
+            document,
             recovered: loaded.recovered,
         }));
     }
@@ -232,6 +233,65 @@ fn load_or_create(
         }),
         Err(error) => Err(error),
     }
+}
+
+fn upgrade_previous_builtin_layout(
+    repository: &LayoutRepository,
+    id: &LayoutId,
+    document: LayoutDocument,
+) -> Result<LayoutDocument, ConfigError> {
+    if !is_v0_3_builtin_layout(id, &document) {
+        return Ok(document);
+    }
+    let Some(current) = built_in_layout(id).map_err(ConfigError::Validation)? else {
+        return Ok(document);
+    };
+    match repository.save(&current, document.revision()) {
+        Ok(saved) => Ok(saved),
+        Err(ConfigError::Conflict { .. }) => {
+            repository.load_required(id).map(|loaded| loaded.document)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn is_v0_3_builtin_layout(id: &LayoutId, document: &LayoutDocument) -> bool {
+    let Some(spec) = built_in_layout_spec(id) else {
+        return false;
+    };
+    if document.revision() != 1
+        || document.id() != id
+        || document.name() != spec.name
+        || document.widgets().len() != 4
+        || document.theme().background != spec.background
+        || document.theme().foreground != spec.foreground
+        || document.theme().accent != spec.accent
+        || document.theme().warning != spec.warning
+    {
+        return false;
+    }
+
+    let expected = [
+        ("tachometer", "core.tachometer"),
+        ("gear", "core.gear"),
+        ("speed", "core.speed"),
+        ("status", "core.status"),
+    ];
+    document
+        .widgets()
+        .iter()
+        .zip(expected)
+        .all(|(widget, (instance_id, component_type))| {
+            widget.instance_id.as_str() == instance_id
+                && widget.component_type.as_str() == component_type
+                && match component_type {
+                    "core.tachometer" => {
+                        widget.settings == json!({"fallbackRpmMax": spec.fallback_rpm_max})
+                    }
+                    "core.speed" => widget.settings == json!({"unit": "km/h"}),
+                    _ => widget.settings == json!({}),
+                }
+        })
 }
 
 fn layout_for_new_id(
@@ -274,6 +334,7 @@ enum BuiltInLayoutFamily {
     Truck,
 }
 
+#[derive(Clone, Copy)]
 struct BuiltInLayoutSpec {
     name: &'static str,
     family: BuiltInLayoutFamily,
@@ -284,7 +345,7 @@ struct BuiltInLayoutSpec {
     fallback_rpm_max: u64,
 }
 
-fn built_in_layout(id: &LayoutId) -> Result<Option<LayoutDocument>, ValidationError> {
+fn built_in_layout_spec(id: &LayoutId) -> Option<BuiltInLayoutSpec> {
     let spec = match id.as_str() {
         DEFAULT_LAYOUT_ID => BuiltInLayoutSpec {
             name: "OpenCarpanel Default",
@@ -331,7 +392,14 @@ fn built_in_layout(id: &LayoutId) -> Result<Option<LayoutDocument>, ValidationEr
             warning: "#ffcf54",
             fallback_rpm_max: 2_500,
         },
-        _ => return Ok(None),
+        _ => return None,
+    };
+    Some(spec)
+}
+
+fn built_in_layout(id: &LayoutId) -> Result<Option<LayoutDocument>, ValidationError> {
+    let Some(spec) = built_in_layout_spec(id) else {
+        return Ok(None);
     };
 
     let mut document = LayoutDocument::empty(LayoutId::new(id.as_str())?, spec.name)?;
@@ -396,6 +464,28 @@ fn formula_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, Validat
             ],
             json!({}),
         )?,
+        widget(
+            "race",
+            "core.race",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 15, 7, 3)),
+                (BreakpointName::PhoneLandscape, placement(0, 8, 7, 2)),
+                (BreakpointName::Tablet, placement(0, 9, 7, 3)),
+                (BreakpointName::Desktop, placement(0, 9, 7, 3)),
+            ],
+            json!({}),
+        )?,
+        widget(
+            "tyres",
+            "core.tyres",
+            [
+                (BreakpointName::PhonePortrait, placement(7, 15, 5, 3)),
+                (BreakpointName::PhoneLandscape, placement(7, 8, 5, 2)),
+                (BreakpointName::Tablet, placement(7, 9, 5, 3)),
+                (BreakpointName::Desktop, placement(7, 9, 5, 3)),
+            ],
+            json!({}),
+        )?,
     ])
 }
 
@@ -405,7 +495,7 @@ fn truck_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, Validatio
             "tachometer",
             "core.tachometer",
             [
-                (BreakpointName::PhonePortrait, placement(5, 8, 7, 3)),
+                (BreakpointName::PhonePortrait, placement(5, 7, 7, 3)),
                 (BreakpointName::PhoneLandscape, placement(0, 7, 7, 3)),
                 (BreakpointName::Tablet, placement(0, 8, 7, 4)),
                 (BreakpointName::Desktop, placement(0, 8, 7, 4)),
@@ -416,10 +506,10 @@ fn truck_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, Validatio
             "gear",
             "core.gear",
             [
-                (BreakpointName::PhonePortrait, placement(0, 8, 5, 5)),
-                (BreakpointName::PhoneLandscape, placement(7, 0, 5, 5)),
-                (BreakpointName::Tablet, placement(7, 0, 5, 5)),
-                (BreakpointName::Desktop, placement(7, 0, 5, 5)),
+                (BreakpointName::PhonePortrait, placement(0, 7, 5, 5)),
+                (BreakpointName::PhoneLandscape, placement(7, 0, 5, 4)),
+                (BreakpointName::Tablet, placement(7, 0, 5, 4)),
+                (BreakpointName::Desktop, placement(7, 0, 5, 4)),
             ],
             json!({}),
         )?,
@@ -427,7 +517,7 @@ fn truck_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, Validatio
             "speed",
             "core.speed",
             [
-                (BreakpointName::PhonePortrait, placement(0, 0, 12, 8)),
+                (BreakpointName::PhonePortrait, placement(0, 0, 12, 7)),
                 (BreakpointName::PhoneLandscape, placement(0, 0, 7, 7)),
                 (BreakpointName::Tablet, placement(0, 0, 7, 8)),
                 (BreakpointName::Desktop, placement(0, 0, 7, 8)),
@@ -438,10 +528,21 @@ fn truck_widgets(fallback_rpm_max: u64) -> Result<Vec<WidgetInstance>, Validatio
             "status",
             "core.status",
             [
-                (BreakpointName::PhonePortrait, placement(5, 11, 7, 4)),
-                (BreakpointName::PhoneLandscape, placement(7, 5, 5, 5)),
-                (BreakpointName::Tablet, placement(7, 5, 5, 7)),
-                (BreakpointName::Desktop, placement(7, 5, 5, 7)),
+                (BreakpointName::PhonePortrait, placement(5, 10, 7, 2)),
+                (BreakpointName::PhoneLandscape, placement(7, 4, 5, 2)),
+                (BreakpointName::Tablet, placement(7, 4, 5, 2)),
+                (BreakpointName::Desktop, placement(7, 4, 5, 2)),
+            ],
+            json!({}),
+        )?,
+        widget(
+            "route",
+            "core.route",
+            [
+                (BreakpointName::PhonePortrait, placement(0, 12, 12, 6)),
+                (BreakpointName::PhoneLandscape, placement(7, 6, 5, 4)),
+                (BreakpointName::Tablet, placement(7, 6, 5, 6)),
+                (BreakpointName::Desktop, placement(7, 6, 5, 6)),
             ],
             json!({}),
         )?,
@@ -477,7 +578,9 @@ fn validate_builtin_widgets(document: &LayoutDocument) -> Result<(), LayoutApiEr
             LayoutApiError::InvalidLayout("widget settings must be a JSON object".into())
         })?;
         let valid = match widget.component_type.as_str() {
-            "core.gear" | "core.status" => settings.is_empty(),
+            "core.gear" | "core.race" | "core.route" | "core.status" | "core.tyres" => {
+                settings.is_empty()
+            }
             "core.speed" => {
                 settings.keys().all(|key| key == "unit")
                     && settings

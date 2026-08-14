@@ -23,5 +23,6 @@
 - [`releases/v0.2.1.md`](releases/v0.2.1.md)：SCS 游戏目录选择修复、兼容性与验证说明。
 - [`releases/v0.2.2.md`](releases/v0.2.2.md)：桌面控制中心文案精简、兼容性与验证说明。
 - [`releases/v0.3.0.md`](releases/v0.3.0.md)：F1 与 SCS 遥测扩展、bridge v2、兼容性与验证说明。
+- [`releases/v0.3.1.md`](releases/v0.3.1.md)：游戏自适应遥测面板、默认布局安全迁移与响应式验证说明。
 
 架构设计描述“系统应当是什么样”，实施计划描述“按什么顺序把它建出来”，ADR 解释“为什么选择该方案”。

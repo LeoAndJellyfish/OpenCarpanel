@@ -54,11 +54,19 @@ export interface LayoutDocument
   readonly theme: ThemeSettings;
 }
 
-type DefaultPlacements = Readonly<
-  Record<"tachometer" | "gear" | "speed" | "status", Record<BreakpointName, GridPlacement>>
+type PlacementSet<Names extends string> = Readonly<
+  Record<Names, Record<BreakpointName, GridPlacement>>
 >;
 
-const FORMULA_PLACEMENTS: DefaultPlacements = {
+type FormulaPlacements = PlacementSet<
+  "tachometer" | "gear" | "speed" | "status" | "race" | "tyres"
+>;
+type TruckPlacements = PlacementSet<
+  "tachometer" | "gear" | "speed" | "status" | "route"
+>;
+type DefaultPlacements = FormulaPlacements | TruckPlacements;
+
+const FORMULA_PLACEMENTS: FormulaPlacements = {
   tachometer: {
     phonePortrait: { x: 0, y: 0, width: 12, height: 3 },
     phoneLandscape: { x: 0, y: 0, width: 12, height: 3 },
@@ -83,32 +91,50 @@ const FORMULA_PLACEMENTS: DefaultPlacements = {
     tablet: { x: 8, y: 3, width: 4, height: 6 },
     desktop: { x: 8, y: 3, width: 4, height: 6 },
   },
+  race: {
+    phonePortrait: { x: 0, y: 15, width: 7, height: 3 },
+    phoneLandscape: { x: 0, y: 8, width: 7, height: 2 },
+    tablet: { x: 0, y: 9, width: 7, height: 3 },
+    desktop: { x: 0, y: 9, width: 7, height: 3 },
+  },
+  tyres: {
+    phonePortrait: { x: 7, y: 15, width: 5, height: 3 },
+    phoneLandscape: { x: 7, y: 8, width: 5, height: 2 },
+    tablet: { x: 7, y: 9, width: 5, height: 3 },
+    desktop: { x: 7, y: 9, width: 5, height: 3 },
+  },
 };
 
-const TRUCK_PLACEMENTS: DefaultPlacements = {
+const TRUCK_PLACEMENTS: TruckPlacements = {
   speed: {
-    phonePortrait: { x: 0, y: 0, width: 12, height: 8 },
+    phonePortrait: { x: 0, y: 0, width: 12, height: 7 },
     phoneLandscape: { x: 0, y: 0, width: 7, height: 7 },
     tablet: { x: 0, y: 0, width: 7, height: 8 },
     desktop: { x: 0, y: 0, width: 7, height: 8 },
   },
   gear: {
-    phonePortrait: { x: 0, y: 8, width: 5, height: 5 },
-    phoneLandscape: { x: 7, y: 0, width: 5, height: 5 },
-    tablet: { x: 7, y: 0, width: 5, height: 5 },
-    desktop: { x: 7, y: 0, width: 5, height: 5 },
+    phonePortrait: { x: 0, y: 7, width: 5, height: 5 },
+    phoneLandscape: { x: 7, y: 0, width: 5, height: 4 },
+    tablet: { x: 7, y: 0, width: 5, height: 4 },
+    desktop: { x: 7, y: 0, width: 5, height: 4 },
   },
   tachometer: {
-    phonePortrait: { x: 5, y: 8, width: 7, height: 3 },
+    phonePortrait: { x: 5, y: 7, width: 7, height: 3 },
     phoneLandscape: { x: 0, y: 7, width: 7, height: 3 },
     tablet: { x: 0, y: 8, width: 7, height: 4 },
     desktop: { x: 0, y: 8, width: 7, height: 4 },
   },
   status: {
-    phonePortrait: { x: 5, y: 11, width: 7, height: 4 },
-    phoneLandscape: { x: 7, y: 5, width: 5, height: 5 },
-    tablet: { x: 7, y: 5, width: 5, height: 7 },
-    desktop: { x: 7, y: 5, width: 5, height: 7 },
+    phonePortrait: { x: 5, y: 10, width: 7, height: 2 },
+    phoneLandscape: { x: 7, y: 4, width: 5, height: 2 },
+    tablet: { x: 7, y: 4, width: 5, height: 2 },
+    desktop: { x: 7, y: 4, width: 5, height: 2 },
+  },
+  route: {
+    phonePortrait: { x: 0, y: 12, width: 12, height: 6 },
+    phoneLandscape: { x: 7, y: 6, width: 5, height: 4 },
+    tablet: { x: 7, y: 6, width: 5, height: 6 },
+    desktop: { x: 7, y: 6, width: 5, height: 6 },
   },
 };
 
@@ -146,7 +172,31 @@ function builtInLayout(
   placements: DefaultPlacements,
   theme: ThemeSettings,
   fallbackRpmMax: number,
+  family: "formula" | "truck",
 ): LayoutDocument {
+  const supplementalWidgets: WidgetInstance[] = family === "formula"
+    ? [
+        {
+          instanceId: "race",
+          componentType: "core.race",
+          placements: (placements as FormulaPlacements).race,
+          settings: {},
+        },
+        {
+          instanceId: "tyres",
+          componentType: "core.tyres",
+          placements: (placements as FormulaPlacements).tyres,
+          settings: {},
+        },
+      ]
+    : [
+        {
+          instanceId: "route",
+          componentType: "core.route",
+          placements: (placements as TruckPlacements).route,
+          settings: {},
+        },
+      ];
   return {
     schemaVersion: LAYOUT_SCHEMA_VERSION,
     revision: 0,
@@ -177,6 +227,7 @@ function builtInLayout(
         placements: placements.status,
         settings: {},
       },
+      ...supplementalWidgets,
     ],
     theme,
   };
@@ -188,6 +239,7 @@ export const DEFAULT_LAYOUT = builtInLayout(
   FORMULA_PLACEMENTS,
   SIGNAL_THEME,
   12_000,
+  "formula",
 );
 
 export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument>> = {
@@ -197,6 +249,7 @@ export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument
     FORMULA_PLACEMENTS,
     SIGNAL_THEME,
     12_000,
+    "formula",
   ),
   "f1-25": builtInLayout(
     "game-f1-25",
@@ -204,6 +257,7 @@ export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument
     FORMULA_PLACEMENTS,
     CYAN_THEME,
     12_000,
+    "formula",
   ),
   ets2: builtInLayout(
     "game-ets2",
@@ -211,6 +265,7 @@ export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument
     TRUCK_PLACEMENTS,
     AMBER_THEME,
     2_500,
+    "truck",
   ),
   ats: builtInLayout(
     "game-ats",
@@ -218,6 +273,7 @@ export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument
     TRUCK_PLACEMENTS,
     ROAD_THEME,
     2_500,
+    "truck",
   ),
 };
 

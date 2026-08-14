@@ -67,8 +67,96 @@ export function useTelemetryRuntime(): TelemetryRuntime {
                 throttle: 0.78 + wave * 0.2,
                 brake: 0,
                 gear: { forward: truck ? 10 : 7 },
-                ...(truck ? {} : { drs: wave > 0.72 ? "active" : "available" as const }),
+                ...(truck
+                  ? {
+                      fuelCapacityLiters: 800,
+                      fuelLiters: 318 + wave * 8,
+                      fuelRangeKm: 612,
+                      fuelWarning: false,
+                    }
+                  : {
+                      drs: wave > 0.72 ? "active" as const : "available" as const,
+                      fuelCapacityKg: 110,
+                      fuelKg: 37.4 - wave * 2,
+                      fuelRemainingLaps: 8.4 - wave * 0.3,
+                      fuelWarning: false,
+                    }),
               },
+              ...(truck
+                ? {
+                    navigation: {
+                      distanceM: 286_400 - (elapsedMs % 120_000) * 0.02,
+                      speedLimitMps: 22.22,
+                      timeS: 15_120,
+                    },
+                    job: {
+                      active: true,
+                      cargo: "Electronics",
+                      cargoLoaded: true,
+                      cargoMassKg: 18_200,
+                      destinationCity: demoGameId === "ats" ? "Denver" : "Prague",
+                      plannedDistanceKm: 412,
+                      sourceCity: demoGameId === "ats" ? "Salt Lake City" : "Berlin",
+                      special: false,
+                    },
+                    lights: {
+                      highBeam: false,
+                      leftIndicator: wave > 0.82,
+                      lowBeam: true,
+                      rightIndicator: false,
+                    },
+                  }
+                : {
+                    lap: {
+                      current: 12,
+                      currentTimeMs: 64_100 + (elapsedMs % 27_000),
+                      deltaToBestMs: Math.round((wave - 0.5) * 460),
+                      invalid: false,
+                      lastTimeMs: 91_422,
+                      penaltiesSeconds: 0,
+                      position: 4,
+                      sector: 2,
+                    },
+                    session: {
+                      raceFlag: "green" as const,
+                      remainingTimeMs: 2_412_000,
+                      safetyCarStatus: "none" as const,
+                      sessionType: "race",
+                      totalLaps: 57,
+                      trackId: "bahrain",
+                    },
+                    conditions: {
+                      airTemperatureC: 28,
+                      trackTemperatureC: 37,
+                      weather: "clear" as const,
+                    },
+                    tyres: {
+                      ageLaps: 7,
+                      visualCompound: 17,
+                      frontLeft: tyreDemo(92 + wave * 3, 0.12),
+                      frontRight: tyreDemo(94 + wave * 2, 0.14),
+                      rearLeft: tyreDemo(88 + wave * 4, 0.17),
+                      rearRight: tyreDemo(89 + wave * 3, 0.18),
+                    },
+                    damage: {
+                      engine: 0.03,
+                      floor: 0.01,
+                      frontLeftWing: 0,
+                      frontRightWing: 0,
+                      gearbox: 0.02,
+                    },
+                    ...(demoGameId === "f1-25"
+                      ? {
+                          aero: {
+                            available: true,
+                            mode: wave > 0.45 ? "straight" as const : "corner" as const,
+                            overtakeActive: wave > 0.82,
+                            overtakeAvailable: true,
+                            regulations2026: true,
+                          },
+                        }
+                      : {}),
+                  }),
             },
           },
           elapsedMs,
@@ -135,6 +223,16 @@ export function useTelemetryRuntime(): TelemetryRuntime {
   }, [demoGameId, demoMode, loop, store]);
 
   return { connection, gameId, hasConnected, loop };
+}
+
+function tyreDemo(temperatureC: number, wear: number) {
+  return {
+    damage: 0,
+    innerTemperatureC: temperatureC,
+    pressurePa: 145_000,
+    surfaceTemperatureC: temperatureC - 2,
+    wear,
+  };
 }
 
 function readDemoGameId(value: string | null): BuiltinGameId {

@@ -90,11 +90,25 @@ async fn built_in_games_receive_independent_default_layouts() -> Result<(), Box<
     let session = host.session().await?;
     let authorization = format!("Bearer {session}");
 
-    for (id, name, accent, tachometer_x) in [
-        ("game-f1-24", "F1 24 Trackside", "#d9ff43", 0),
-        ("game-f1-25", "F1 25 Electric Grid", "#42e8ff", 0),
-        ("game-ets2", "ETS2 Long Haul", "#ffbd45", 5),
-        ("game-ats", "ATS Interstate", "#ff6a3d", 5),
+    for (id, name, accent, tachometer_x, widget_count, supplemental) in [
+        (
+            "game-f1-24",
+            "F1 24 Trackside",
+            "#d9ff43",
+            0,
+            6,
+            "core.race",
+        ),
+        (
+            "game-f1-25",
+            "F1 25 Electric Grid",
+            "#42e8ff",
+            0,
+            6,
+            "core.race",
+        ),
+        ("game-ets2", "ETS2 Long Haul", "#ffbd45", 5, 5, "core.route"),
+        ("game-ats", "ATS Interstate", "#ff6a3d", 5, 5, "core.route"),
     ] {
         let response = request(
             address,
@@ -111,6 +125,15 @@ async fn built_in_games_receive_independent_default_layouts() -> Result<(), Box<
         assert_eq!(document["revision"], 1);
         assert_eq!(document["theme"]["accent"], accent);
         assert_eq!(
+            document["widgets"].as_array().map(Vec::len),
+            Some(widget_count)
+        );
+        assert!(document["widgets"].as_array().is_some_and(|widgets| {
+            widgets
+                .iter()
+                .any(|widget| widget["componentType"] == supplemental)
+        }));
+        assert_eq!(
             document["widgets"][0]["placements"]["phonePortrait"]["x"],
             tachometer_x
         );
@@ -125,6 +148,84 @@ async fn built_in_games_receive_independent_default_layouts() -> Result<(), Box<
     )
     .await?;
     assert_eq!(unknown.status, 404);
+
+    host.running.shutdown().await?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn untouched_v0_3_builtin_layouts_upgrade_without_overwriting_custom_revisions()
+-> Result<(), Box<dyn Error>> {
+    let host = TestHost::start().await?;
+    let old = json!({
+        "schemaVersion": 1,
+        "revision": 0,
+        "id": "game-f1-25",
+        "name": "F1 25 Electric Grid",
+        "widgets": [
+            {"instanceId": "tachometer", "componentType": "core.tachometer", "placements": {}, "settings": {"fallbackRpmMax": 12000}},
+            {"instanceId": "gear", "componentType": "core.gear", "placements": {}, "settings": {}},
+            {"instanceId": "speed", "componentType": "core.speed", "placements": {}, "settings": {"unit": "km/h"}},
+            {"instanceId": "status", "componentType": "core.status", "placements": {}, "settings": {}}
+        ],
+        "theme": {"background": "#061015", "foreground": "#eefcff", "accent": "#42e8ff", "warning": "#ff5e6c"}
+    });
+    let old_document: LayoutDocument = serde_json::from_value(old.clone())?;
+    host.repository.save(&old_document, 0)?;
+    let session = host.session().await?;
+    let authorization = format!("Bearer {session}");
+
+    let upgraded = request(
+        host.running.http_address(),
+        "GET",
+        "/api/v1/layouts/game-f1-25",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?
+    .json()?;
+    assert_eq!(upgraded["document"]["revision"], 2);
+    assert_eq!(
+        upgraded["document"]["widgets"].as_array().map(Vec::len),
+        Some(6)
+    );
+    assert!(
+        upgraded["document"]["widgets"]
+            .as_array()
+            .is_some_and(|widgets| widgets
+                .iter()
+                .any(|widget| widget["componentType"] == "core.tyres"))
+    );
+
+    let custom_id = LayoutId::new("game-f1-24")?;
+    let mut custom: LayoutDocument = serde_json::from_value(json!({
+        "schemaVersion": 1,
+        "revision": 0,
+        "id": "game-f1-24",
+        "name": "F1 24 Trackside",
+        "widgets": old["widgets"].clone(),
+        "theme": {"background": "#07090c", "foreground": "#f2f0e9", "accent": "#d9ff43", "warning": "#ff4b3e"}
+    }))?;
+    custom = host.repository.save(&custom, 0)?;
+    custom.set_name("My compact F1 layout");
+    host.repository.save(&custom, 1)?;
+
+    let preserved = request(
+        host.running.http_address(),
+        "GET",
+        "/api/v1/layouts/game-f1-24",
+        &[("Authorization", authorization.as_str())],
+        &[],
+    )
+    .await?
+    .json()?;
+    assert_eq!(preserved["document"]["id"], custom_id.as_str());
+    assert_eq!(preserved["document"]["revision"], 2);
+    assert_eq!(preserved["document"]["name"], "My compact F1 layout");
+    assert_eq!(
+        preserved["document"]["widgets"].as_array().map(Vec::len),
+        Some(4)
+    );
 
     host.running.shutdown().await?;
     Ok(())
@@ -248,7 +349,7 @@ async fn authenticated_layouts_save_atomically_and_report_revision_conflicts()
     assert_eq!(initial_json["document"]["revision"], 1);
     assert_eq!(
         initial_json["document"]["widgets"].as_array().map(Vec::len),
-        Some(4)
+        Some(6)
     );
 
     let mut changed = initial_json["document"].clone();

@@ -245,6 +245,337 @@ body {
   color: var(--redline);
 }
 
+.race-widget,
+.tyres-widget,
+.route-widget {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(6px, 4cqh, 14px) clamp(7px, 2.2cqw, 16px);
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--signal) 35%, var(--line));
+  background: linear-gradient(110deg, color-mix(in srgb, var(--signal) 5%, transparent), transparent 58%);
+  contain: layout paint;
+}
+
+.telemetry-panel-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: clamp(6px, 1.5cqw, 14px);
+  min-width: 0;
+}
+
+.telemetry-panel-header > output {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: clamp(0.58rem, 2.8cqh, 0.78rem);
+  font-weight: 680;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.telemetry-panel-header > output:last-child {
+  color: var(--ink-muted);
+  font-size: clamp(0.5rem, 2.3cqh, 0.67rem);
+  font-weight: 580;
+}
+
+.race-widget {
+  grid-template-rows: auto 1fr auto auto;
+  gap: clamp(3px, 2.2cqh, 8px);
+}
+
+.race-metrics,
+.route-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  min-width: 0;
+}
+
+.telemetry-metric {
+  display: grid;
+  min-width: 0;
+  padding-inline: clamp(4px, 1.4cqw, 10px);
+  border-left: 1px solid var(--line);
+}
+
+.telemetry-metric:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.telemetry-metric > span {
+  color: var(--ink-muted);
+  font-size: clamp(0.43rem, 2.2cqh, 0.62rem);
+  font-weight: 650;
+  letter-spacing: 0.13em;
+}
+
+.telemetry-metric > output {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: clamp(0.72rem, 7.2cqh, 1.55rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.race-metrics .telemetry-metric:first-child > output,
+.route-metrics .telemetry-metric:last-child > output {
+  color: var(--signal);
+}
+
+.telemetry-panel-meta {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: clamp(0.43rem, 2.2cqh, 0.63rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 590;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.telemetry-panel-meta output {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.telemetry-panel-meta output + output::before {
+  margin-inline: clamp(5px, 1.2cqw, 10px);
+  color: var(--line);
+  content: "/";
+}
+
+.telemetry-panel-meta [data-active="true"] {
+  color: var(--signal);
+}
+
+.race-widget[data-warning="true"] [data-value="penalty"],
+.race-widget[data-warning="true"] [data-value="fuel"] {
+  color: var(--redline);
+}
+
+.tyres-widget {
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(3px, 2.2cqh, 8px);
+}
+
+.tyre-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  min-height: 0;
+}
+
+.tyre-corner {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  align-items: center;
+  min-width: 0;
+  padding-inline: clamp(3px, 1.6cqw, 8px);
+  border-left: 1px solid var(--line);
+  text-align: center;
+}
+
+.tyre-corner:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.tyre-corner > span,
+.tyre-health > span {
+  color: var(--ink-muted);
+  font-size: clamp(0.43rem, 2.1cqh, 0.61rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.tyre-corner > output {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tyre-temperature {
+  align-self: center;
+  color: var(--ink);
+  font-size: clamp(0.82rem, 7cqh, 1.5rem);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.tyre-wear,
+.tyre-pressure {
+  color: var(--ink-muted);
+  font-size: clamp(0.42rem, 2.3cqh, 0.62rem);
+}
+
+.tyre-health {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 2px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: clamp(0.46rem, 2.3cqh, 0.65rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.tyres-widget[data-warning="true"] .tyre-health output {
+  color: var(--redline);
+}
+
+.route-widget {
+  grid-template-rows: auto 1fr auto auto;
+  gap: clamp(5px, 2.8cqh, 12px);
+}
+
+.route-header > output:nth-child(2) {
+  color: var(--signal);
+  font-size: clamp(0.65rem, 4.2cqh, 1.05rem);
+}
+
+.route-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(4px, 2cqh, 10px) 0;
+}
+
+.route-metrics .telemetry-metric:nth-child(odd) {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.route-job {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-top: clamp(3px, 1.6cqh, 8px);
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: clamp(0.44rem, 2.3cqh, 0.65rem);
+  font-weight: 590;
+  letter-spacing: 0.05em;
+}
+
+.route-job output {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-job output:first-child {
+  color: var(--ink);
+}
+
+.route-lights {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.route-lights output {
+  display: grid;
+  min-width: 0;
+  height: clamp(14px, 5cqh, 23px);
+  padding-inline: clamp(3px, 1cqw, 7px);
+  border: 1px solid var(--line);
+  color: color-mix(in srgb, var(--ink-muted) 55%, transparent);
+  font-size: clamp(0.42rem, 2.1cqh, 0.58rem);
+  font-weight: 700;
+  place-items: center;
+}
+
+.route-lights output[data-active="true"] {
+  border-color: color-mix(in srgb, var(--signal) 72%, var(--line));
+  color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 9%, transparent);
+}
+
+.route-widget[data-fuel="low"] [data-value="fuel"] {
+  color: var(--redline);
+}
+
+.route-widget[data-fuel="medium"] [data-value="fuel"] {
+  color: var(--warning);
+}
+
+@container (min-width: 360px) {
+  .route-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .route-metrics .telemetry-metric:nth-child(3) {
+    padding-left: clamp(4px, 1.4cqw, 10px);
+    border-left: 1px solid var(--line);
+  }
+}
+
+@container (max-height: 110px) {
+  .race-widget {
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .race-timing {
+    display: none;
+  }
+
+  .tyre-pressure,
+  .tyre-health {
+    display: none;
+  }
+}
+
+@container (max-width: 300px) {
+  .race-context [data-value="penalty"] {
+    display: none;
+  }
+}
+
+@container (max-width: 190px) {
+  .tyre-pressure {
+    display: none;
+  }
+}
+
+@container (max-height: 76px) {
+  .race-widget,
+  .tyres-widget {
+    grid-template-rows: auto 1fr;
+    gap: 2px;
+    padding-block: 3px;
+  }
+
+  .race-context,
+  .tyre-wear,
+  .tyre-health {
+    display: none;
+  }
+
+  .telemetry-panel-header > output:last-child {
+    display: none;
+  }
+}
+
+@container (max-height: 100px) {
+  .status-rail {
+    gap: 4px;
+  }
+
+  .status-rail .status-line:first-child {
+    display: none;
+  }
+}
+
 .drive-footer {
   display: flex;
   justify-content: space-between;

@@ -16,10 +16,40 @@ export const ALL_DASHBOARD_FIELDS = [
   "vehicle.brake",
   "vehicle.gear",
   "vehicle.drs",
+  "vehicle.fuel",
+  "lap",
+  "session",
+  "tyres",
+  "conditions",
+  "damage",
+  "aero",
+  "navigation",
+  "lights",
+  "job",
   "meta.gameId",
   "meta.sessionId",
   "system.stale",
 ] as const;
+
+export interface FuelState {
+  readonly capacityKg: number | undefined;
+  readonly capacityLiters: number | undefined;
+  readonly kg: number | undefined;
+  readonly liters: number | undefined;
+  readonly rangeKm: number | undefined;
+  readonly remainingLaps: number | undefined;
+  readonly warning: boolean | undefined;
+}
+
+type LapState = NonNullable<TelemetrySnapshot["lap"]>;
+type SessionState = NonNullable<TelemetrySnapshot["session"]>;
+type TyreState = NonNullable<TelemetrySnapshot["tyres"]>;
+type ConditionsState = NonNullable<TelemetrySnapshot["conditions"]>;
+type DamageState = NonNullable<TelemetrySnapshot["damage"]>;
+type AeroState = NonNullable<TelemetrySnapshot["aero"]>;
+type NavigationState = NonNullable<TelemetrySnapshot["navigation"]>;
+type LightsState = NonNullable<TelemetrySnapshot["lights"]>;
+type JobState = NonNullable<TelemetrySnapshot["job"]>;
 
 export interface TelemetryValueMap {
   "vehicle.speedMps": number | undefined;
@@ -30,6 +60,16 @@ export interface TelemetryValueMap {
   "vehicle.brake": number | undefined;
   "vehicle.gear": Gear | undefined;
   "vehicle.drs": DrsState | undefined;
+  "vehicle.fuel": FuelState | undefined;
+  lap: LapState | undefined;
+  session: SessionState | undefined;
+  tyres: TyreState | undefined;
+  conditions: ConditionsState | undefined;
+  damage: DamageState | undefined;
+  aero: AeroState | undefined;
+  navigation: NavigationState | undefined;
+  lights: LightsState | undefined;
+  job: JobState | undefined;
   "meta.gameId": string | undefined;
   "meta.sessionId": string | undefined;
   "system.stale": boolean;
@@ -99,6 +139,16 @@ export class TelemetryStore {
     this.#updateDiscrete("vehicle.brake", values["vehicle.brake"], changed);
     this.#updateDiscrete("vehicle.gear", values["vehicle.gear"], changed);
     this.#updateDiscrete("vehicle.drs", values["vehicle.drs"], changed);
+    this.#updateDiscrete("vehicle.fuel", values["vehicle.fuel"], changed);
+    this.#updateDiscrete("lap", values.lap, changed);
+    this.#updateDiscrete("session", values.session, changed);
+    this.#updateDiscrete("tyres", values.tyres, changed);
+    this.#updateDiscrete("conditions", values.conditions, changed);
+    this.#updateDiscrete("damage", values.damage, changed);
+    this.#updateDiscrete("aero", values.aero, changed);
+    this.#updateDiscrete("navigation", values.navigation, changed);
+    this.#updateDiscrete("lights", values.lights, changed);
+    this.#updateDiscrete("job", values.job, changed);
     this.#updateDiscrete("meta.gameId", nextGame, changed);
     this.#updateDiscrete("meta.sessionId", nextSession, changed);
     this.#updateDiscrete("system.stale", values["system.stale"], changed);
@@ -241,11 +291,41 @@ function snapshotValues(snapshot: TelemetrySnapshot): TelemetryValueMap {
     "vehicle.brake": finiteNumber(vehicle?.brake),
     "vehicle.gear": validGear(vehicle?.gear),
     "vehicle.drs": validDrs(vehicle?.drs),
+    "vehicle.fuel": fuelState(vehicle),
+    "lap": objectState(snapshot.lap),
+    "session": objectState(snapshot.session),
+    "tyres": objectState(snapshot.tyres),
+    "conditions": objectState(snapshot.conditions),
+    "damage": objectState(snapshot.damage),
+    "aero": objectState(snapshot.aero),
+    "navigation": objectState(snapshot.navigation),
+    "lights": objectState(snapshot.lights),
+    "job": objectState(snapshot.job),
     "meta.gameId":
       typeof snapshot.meta?.gameId === "string" ? snapshot.meta.gameId : undefined,
     "meta.sessionId": typeof snapshot.meta?.sessionId === "string" ? snapshot.meta.sessionId : undefined,
     "system.stale": finiteNumber(snapshot.meta?.capturedAt) === undefined,
   };
+}
+
+function fuelState(vehicle: TelemetrySnapshot["vehicle"]): FuelState | undefined {
+  if (!vehicle) {
+    return undefined;
+  }
+  const state: FuelState = {
+    capacityKg: finiteNumber(vehicle.fuelCapacityKg),
+    capacityLiters: finiteNumber(vehicle.fuelCapacityLiters),
+    kg: finiteNumber(vehicle.fuelKg),
+    liters: finiteNumber(vehicle.fuelLiters),
+    rangeKm: finiteNumber(vehicle.fuelRangeKm),
+    remainingLaps: finiteNumber(vehicle.fuelRemainingLaps),
+    warning: typeof vehicle.fuelWarning === "boolean" ? vehicle.fuelWarning : undefined,
+  };
+  return Object.values(state).some((value) => value !== undefined) ? state : undefined;
+}
+
+function objectState<State extends object>(value: State | null | undefined): State | undefined {
+  return value && Object.keys(value).length > 0 ? value : undefined;
 }
 
 function finiteNumber(value: unknown): number | undefined {

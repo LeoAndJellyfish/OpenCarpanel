@@ -4,8 +4,11 @@ import type { ConnectionView } from "../connection/client";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";
 import type { StatusMode } from "./game-profile";
 import { GearWidget } from "../widgets/gear";
+import { RaceWidget } from "../widgets/race";
+import { RouteWidget } from "../widgets/route";
 import { SpeedWidget } from "../widgets/speed";
 import { TachometerWidget } from "../widgets/tachometer";
+import { TyresWidget } from "../widgets/tyres";
 import { StatusRail } from "./status-rail";
 
 export interface WidgetViewProps {
@@ -19,10 +22,16 @@ export function WidgetView({ widget, loop, connection, statusMode }: WidgetViewP
   switch (widget.componentType) {
     case "core.gear":
       return <GearWidget loop={loop} />;
+    case "core.race":
+      return <RaceWidget loop={loop} />;
+    case "core.route":
+      return <RouteWidget loop={loop} />;
     case "core.speed":
       return <SpeedWidget loop={loop} />;
     case "core.tachometer":
       return <TachometerWidget loop={loop} />;
+    case "core.tyres":
+      return <TyresWidget loop={loop} />;
     case "core.status":
       return <StatusRail loop={loop} connection={connection} mode={statusMode} />;
     default:

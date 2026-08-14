@@ -125,7 +125,10 @@ function validateSettings(widget: WidgetInstance): void {
   let valid = false;
   switch (widget.componentType) {
     case "core.gear":
+    case "core.race":
+    case "core.route":
     case "core.status":
+    case "core.tyres":
       valid = keys.length === 0;
       break;
     case "core.speed":
