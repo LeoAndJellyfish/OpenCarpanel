@@ -381,7 +381,7 @@ function BootScreen({ error }: { error: string | null }) {
       <div class="boot-mark" aria-hidden="true"><span /><span /><span /></div>
       <p class="eyebrow">OpenCarpanel / Pit Wall</p>
       <h1>{error ? "控制中心未能就绪" : "正在启动桌面控制中心"}</h1>
-      <p>{error ?? "Rust Host、局域网与游戏适配器正在完成自检。"}</p>
+      {error && <p>{error}</p>}
     </main>
   );
 }
@@ -451,10 +451,10 @@ function Overview({
         <div class="hero-copy">
           <p class="eyebrow">ACTIVE SIGNAL</p>
           <h2>{live ? profileLabel : "监听已就绪"}</h2>
-          <p>
+          <p class="hero-status">
             {live
-              ? `最新游戏数据距现在 ${formatAge(diagnostics.telemetry.lastPacketAgeMs)}，正在通过本地链路发布。`
-              : `Host 正在 ${data.endpoints.udpAddress} 等待受支持的游戏数据，不访问远程运行服务。`}
+              ? `最新数据 ${formatAge(diagnostics.telemetry.lastPacketAgeMs)}`
+              : `等待游戏数据 · ${data.endpoints.udpAddress}`}
           </p>
           <div class="hero-actions">
             <button class="button-signal" type="button" onClick={() => onOpen("dashboard")}>
@@ -545,10 +545,9 @@ function PairingView({
     <div class="split-view pairing-view">
       <section class="pair-console">
         <div class="panel-heading">
-          <div><p>ONE-TIME LINK</p><h2>扫描并接入驾驶屏</h2></div>
+          <div><p>ONE-TIME LINK</p><h2>同一局域网内扫描配对</h2></div>
           <span class="security-tag">LOCAL ONLY</span>
         </div>
-        <p class="lede">手机或 iPad 与电脑连接同一局域网。配对凭据只在二维码 URL 片段中出现，一次使用后立即失效。</p>
         <div class={pairing ? "qr-stage is-ready" : "qr-stage"}>
           {qrSource ? (
             <img src={qrSource} alt="OpenCarpanel 一次性配对二维码" />
@@ -557,14 +556,14 @@ function PairingView({
           )}
           <div class="qr-meta">
             <small>{pairing ? "PAIRING WINDOW OPEN" : "NO ACTIVE TICKET"}</small>
-            <strong>{pairing ? `${Math.round(pairing.expiresInSeconds / 60)} 分钟内一次有效` : "需要时再生成，凭据不会写入磁盘"}</strong>
+            <strong>{pairing ? `${Math.round(pairing.expiresInSeconds / 60)} 分钟内一次有效` : "尚未生成二维码"}</strong>
           </div>
         </div>
         {pairing && <code class="pair-url">{pairing.url}</code>}
         <button class="button-signal full-button" type="button" disabled={busy === "pairing"} onClick={onIssue}>
           {busy === "pairing" ? "正在创建安全凭据…" : pairing ? "换一个新二维码" : "生成配对二维码"}
         </button>
-        <p class="microcopy">仪表盘地址：<span>{data.endpoints.dashboardUrl}</span></p>
+        <p class="microcopy">驾驶页：<span>{data.endpoints.dashboardUrl}</span></p>
       </section>
 
       <section class="device-console">
@@ -573,7 +572,7 @@ function PairingView({
           <strong class="count-badge">{data.devices.length.toString().padStart(2, "0")}</strong>
         </div>
         {data.devices.length === 0 ? (
-          <div class="empty-state"><span>00</span><strong>还没有已配对的显示设备</strong><p>生成左侧二维码并用手机浏览器扫描。</p></div>
+          <div class="empty-state"><span>00</span><strong>暂无已配对设备</strong></div>
         ) : (
           <div class="device-list">
             {data.devices.map((device, index) => (
@@ -595,7 +594,6 @@ function PairingView({
             ))}
           </div>
         )}
-        <div class="device-footnote"><span>SECURITY</span><p>电脑仅保存会话凭据的 SHA-256 摘要；原始会话只保存在该设备浏览器中。</p></div>
       </section>
     </div>
   );
@@ -665,20 +663,19 @@ function GamesView({
           <div class="selection-readout">
             <small>CURRENT MODE</small>
             <strong>{data.settings.host.adapterSelection === "auto" ? "自动识别" : data.settings.host.adapterSelection}</strong>
-            <p>自动模式会锁定最近活动来源 2 秒，避免多游戏数据来回抢占。</p>
           </div>
           <button
             class={data.settings.host.adapterSelection === "auto" ? "choice-button selected" : "choice-button"}
             disabled={busy === "settings"}
             type="button"
             onClick={() => onSetSelection("auto")}
-          ><span>AUTO</span><div><strong>自动识别</strong><small>大众默认选择</small></div></button>
+          ><span>AUTO</span><strong>自动识别</strong></button>
           <button
             class={data.settings.host.adapterSelection === selected ? "choice-button selected" : "choice-button"}
             disabled={busy === "settings"}
             type="button"
             onClick={() => onSetSelection(selected)}
-          ><span>LOCK</span><div><strong>固定 {selected}</strong><small>排障或多游戏并行</small></div></button>
+          ><span>LOCK</span><strong>固定到 {selected}</strong></button>
           <div class="capability-list">
             <small>CANONICAL FIELDS</small>
             <div>{adapter?.capabilities.map((field) => <span key={field}>{field}</span>)}</div>
@@ -693,16 +690,12 @@ function F1Setup({ game, udpPort }: { game: "f1-24" | "f1-25"; udpPort: string }
   const mode = game === "f1-24" ? "F1 24 / 2024" : "F1 25 / 2025 或 2026 Season Pack";
   return (
     <div class="wizard-body">
-      <p class="lede">F1 系列直接使用游戏内置 UDP，不需要安装插件。进入游戏的 Telemetry Settings 并逐项核对。</p>
       <ol class="setup-steps">
-        <li><span>01</span><div><strong>开启 UDP Telemetry</strong><p>把 UDP Telemetry 设置为 <code>On</code>。</p></div><b>ON</b></li>
-        <li><span>02</span><div><strong>设置本机目标</strong><p>UDP IP Address 使用当前游戏电脑的回环地址。</p></div><b>127.0.0.1</b></li>
-        <li><span>03</span><div><strong>对齐端口与频率</strong><p>发送端口必须与 Host 监听一致，建议 60 Hz。</p></div><b>{udpPort} / 60 HZ</b></li>
-        <li><span>04</span><div><strong>选择精确 UDP 格式</strong><p>适配器按官方包头和精确包长识别，不猜测相邻版本。</p></div><b>{mode}</b></li>
+        <li><span>01</span><strong>UDP Telemetry</strong><b>ON</b></li>
+        <li><span>02</span><strong>UDP IP Address</strong><b>127.0.0.1</b></li>
+        <li><span>03</span><strong>UDP Port / Send Rate</strong><b>{udpPort} / 60 HZ</b></li>
+        <li><span>04</span><strong>UDP Format</strong><b>{mode}</b></li>
       </ol>
-      {game === "f1-25" && (
-        <div class="season-note"><span>2026</span><p><strong>Season Pack 已兼容</strong>新用户可保留默认 2026 UDP mode；原始 2025 mode 也继续支持。</p></div>
-      )}
     </div>
   );
 }
@@ -724,7 +717,6 @@ function ScsSetup({
 }) {
   return (
     <div class="wizard-body">
-      <p class="lede">SCS 游戏通过项目随附的原生 SDK bridge 读取遥测，再以固定本地数据包送到同一个 UDP 入口。</p>
       <div class="folder-picker">
         <div><small>GAME ROOT / {game.toUpperCase()}</small><strong>{status?.gameDirectory ?? "尚未选择游戏目录"}</strong></div>
         <button class="button-quiet" type="button" disabled={busy === "scs-folder"} onClick={onChooseDirectory}>
@@ -732,15 +724,15 @@ function ScsSetup({
         </button>
       </div>
       <ol class="setup-steps compact">
-        <li><span>01</span><div><strong>选择游戏根目录</strong><p>控制中心只从原生目录选择器接受路径。</p></div><b>{status ? "SELECTED" : "WAITING"}</b></li>
-        <li><span>02</span><div><strong>检查并安装 Bridge</strong><p>插件进入 <code>bin/win_x64/plugins</code> 或对应 macOS 目录。</p></div><b>{status?.state.toUpperCase() ?? "SAFE COPY"}</b></li>
-        <li><span>03</span><div><strong>重启游戏并确认 SDK</strong><p>SCS 首次载入时会显示 SDK 提示，必须由玩家确认。</p></div><b>RESTART</b></li>
-        <li><span>04</span><div><strong>验证本地遥测</strong><p>Bridge 仅向回环地址的 UDP {udpPort} 发送 44 字节数据包。</p></div><b>127.0.0.1</b></li>
+        <li><span>01</span><strong>游戏目录</strong><b>{status ? "SELECTED" : "WAITING"}</b></li>
+        <li><span>02</span><strong>SCS Bridge</strong><b>{status?.state.toUpperCase() ?? "NOT INSTALLED"}</b></li>
+        <li><span>03</span><strong>重启游戏并确认 SDK</strong><b>RESTART</b></li>
+        <li><span>04</span><strong>遥测目标</strong><b>127.0.0.1:{udpPort}</b></li>
       </ol>
       <button class="button-signal full-button" type="button" disabled={!status || status.state === "current" || busy === "scs-install"} onClick={onInstall}>
         {busy === "scs-install" ? "正在备份、安装并校验…" : status?.state === "current" ? "SCS Bridge 已是当前版本" : "检查并安装 SCS Bridge"}
       </button>
-      <p class="microcopy">{status ? `目标：${status.pluginPath}` : "当前界面已限制为系统文件夹选择；安装器会校验随包 artifact、备份旧插件并原子替换。"}</p>
+      {status && <p class="microcopy">安装位置：<span>{status.pluginPath}</span></p>}
     </div>
   );
 }
@@ -757,8 +749,7 @@ function DashboardView({
       <section class="dashboard-launcher">
         <div class="launcher-copy">
           <p class="eyebrow">DRIVER DISPLAY</p>
-          <h2>一块屏幕，跟随游戏自动换挡</h2>
-          <p>手机驾驶页从可信的 <code>gameId</code> 切换视觉与独立布局。速度、RPM 等高频数值继续由单一渲染循环更新，不让 Preact 全树跟着 60 Hz 重绘。</p>
+          <h2>仪表盘随游戏自动切换</h2>
           <div class="hero-actions">
             <button class="button-signal" type="button" onClick={() => onOpen("dashboard")}>打开驾驶页 <span>↗</span></button>
             <button class="button-quiet" type="button" onClick={() => onOpen("editor")}>打开布局编辑器 <span>↗</span></button>
@@ -774,7 +765,6 @@ function DashboardView({
             <span>{String(index + 1).padStart(2, "0")}</span>
             <div><strong>{game.label}</strong><small>{game.detail}</small></div>
             <code>game-{game.id}</code>
-            <p>{game.id.startsWith("f1") ? "方程式布局 · 转速灯 · DRS" : "卡车布局 · 速度优先 · SCS 状态"}</p>
           </div>
         ))}
       </section>
@@ -822,24 +812,23 @@ function NetworkView({
     <div class="split-view network-view">
       <form class="network-form" onSubmit={submit}>
         <div class="panel-heading"><div><p>LISTENER CONTROL</p><h2>本地端口与发布频率</h2></div><span class="security-tag">VALIDATED</span></div>
-        <p class="lede">保存前会验证地址。影响 Host 的变更会监督重启；新端口无法绑定时自动恢复原设置。</p>
         <label class="field-row">
-          <span><strong>游戏遥测 UDP</strong><small>游戏或 SCS bridge 的目标监听地址</small></span>
+          <strong>游戏遥测 UDP</strong>
           <input value={draft.host.udpBind} onInput={(event) => updateHost("udpBind", event.currentTarget.value)} spellcheck={false} />
         </label>
         <label class="field-row">
-          <span><strong>Dashboard HTTP</strong><small>手机浏览器与 WebSocket 的局域网入口</small></span>
+          <strong>仪表盘 HTTP</strong>
           <input value={draft.host.httpBind} onInput={(event) => updateHost("httpBind", event.currentTarget.value)} spellcheck={false} />
         </label>
         <label class="field-row">
-          <span><strong>Snapshot 上限</strong><small>每个手机客户端的最新状态发布上限</small></span>
+          <strong>发布频率上限</strong>
           <select
             value={draft.host.snapshotHz}
             onChange={(event) => updateHost("snapshotHz", Number(event.currentTarget.value) as 20 | 30 | 60)}
           ><option value="20">20 Hz</option><option value="30">30 Hz</option><option value="60">60 Hz</option></select>
         </label>
         <label class="field-row">
-          <span><strong>游戏来源</strong><small>自动识别或固定一条已编译 adapter</small></span>
+          <strong>游戏数据源</strong>
           <select
             value={draft.host.adapterSelection}
             onChange={(event) => updateHost("adapterSelection", event.currentTarget.value as AppSettings["host"]["adapterSelection"])}
@@ -899,28 +888,25 @@ function SystemView({
           <div class="panel-heading"><div><p>DESKTOP BEHAVIOUR</p><h2>常驻与系统集成</h2></div></div>
           <Toggle
             checked={data.settings.desktop.closeToTray}
-            detail={data.trayAvailable ? "关闭窗口后 Host 继续接收遥测；从系统托盘重新打开。" : "本次启动未能注册系统托盘；关闭窗口将正常退出。"}
+            detail={data.trayAvailable ? undefined : "系统托盘不可用，关闭窗口将退出。"}
             disabled={busy === "settings" || !data.trayAvailable}
             label="关闭到系统托盘"
             onChange={(value) => toggle("closeToTray", value, "托盘行为已更新")}
           />
           <Toggle
             checked={data.autostartEnabled}
-            detail="使用操作系统登录项启动桌面控制中心。"
             disabled={busy === "settings"}
             label="登录时自动启动"
             onChange={(value) => toggle("launchAtLogin", value, "开机启动设置已同步到操作系统")}
           />
           <Toggle
             checked={data.settings.desktop.notificationsEnabled}
-            detail="仅报告本地游戏切换、Host 故障和更新结果。"
             disabled={busy === "settings"}
             label="桌面通知"
             onChange={(value) => toggle("notificationsEnabled", value, "通知偏好已保存")}
           />
           <Toggle
             checked={data.settings.desktop.automaticUpdates}
-            detail="允许每天最多一次访问 GitHub Release 签名清单。"
             disabled={busy === "settings"}
             label="自动检查签名更新"
             onChange={(value) => toggle("automaticUpdates", value, "自动更新偏好已保存")}
@@ -930,13 +916,12 @@ function SystemView({
         <section class="update-panel">
           <div class="panel-heading"><div><p>SECURE UPDATE</p><h2>软件更新</h2></div><span class="security-tag">SIGNED</span></div>
           <div class="version-lockup"><small>{updateInfo?.available ? "UPDATE READY" : "INSTALLED"}</small><strong>v{updateInfo?.version ?? data.version}</strong><span>{updateInfo?.available ? `当前 v${data.version}` : "Release channel / GitHub"}</span></div>
-          <p>{updateInfo?.notes ?? "更新包必须通过编译进应用的公钥验证。下载或验签失败时不会运行安装器，当前版本继续工作。"}</p>
+          {updateInfo?.notes && <p>{updateInfo.notes}</p>}
           {updateInfo?.available ? (
             <button class="button-signal full-button" disabled={busy === "update-install"} type="button" onClick={onInstallUpdate}>{busy === "update-install" ? "正在下载、验签并安装…" : `安装 v${updateInfo.version}`}</button>
           ) : (
             <button class="button-quiet full-button" disabled={busy === "update-check"} type="button" onClick={onCheckUpdate}>{busy === "update-check" ? "正在访问签名发布清单…" : "手动检查更新"}</button>
           )}
-          <small class="microcopy">仅检查时访问互联网；驾驶与配置始终本地运行。</small>
         </section>
       </div>
 
@@ -971,14 +956,14 @@ function Toggle({
 }: {
   checked: boolean;
   label: string;
-  detail: string;
+  detail?: string | undefined;
   disabled: boolean;
   onChange: (value: boolean) => void;
 }) {
   return (
     <div class="toggle-row">
-      <div><strong>{label}</strong><p>{detail}</p></div>
-      <button type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)}><i /></button>
+      <div><strong>{label}</strong>{detail && <p>{detail}</p>}</div>
+      <button aria-label={label} type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)}><i /></button>
     </div>
   );
 }
