@@ -5,7 +5,7 @@ use opencarpanel_adapter_f1::{
     F1_25_2026_CAR_TELEMETRY_PACKET_LEN, F1_25_2026_PACKET_FORMAT, PACKET_HEADER_LEN,
 };
 use opencarpanel_adapter_scs::{
-    ATS_GAME_ID, BRIDGE_MAGIC, BRIDGE_PACKET_LEN, BRIDGE_PROTOCOL_VERSION, ETS2_GAME_ID,
+    ATS_GAME_ID, BRIDGE_MAGIC, BRIDGE_PROTOCOL_V1, BRIDGE_V1_PACKET_LEN, ETS2_GAME_ID,
 };
 use opencarpanel_host::{AdapterSelection, spawn_host, spawn_host_with_adapter_selection};
 use tokio::net::{TcpListener, UdpSocket};
@@ -137,9 +137,9 @@ fn f1_packet_with_frame(packet_format: u16, game_year: u8, overall_frame: u32) -
 }
 
 fn scs_packet(game: u8) -> Vec<u8> {
-    let mut packet = Vec::with_capacity(BRIDGE_PACKET_LEN);
+    let mut packet = Vec::with_capacity(BRIDGE_V1_PACKET_LEN);
     packet.extend_from_slice(&BRIDGE_MAGIC);
-    packet.extend_from_slice(&[BRIDGE_PROTOCOL_VERSION, game, 0, 0]);
+    packet.extend_from_slice(&[BRIDGE_PROTOCOL_V1, game, 0, 0]);
     packet.extend_from_slice(&0x1112_1314_1516_1718_u64.to_le_bytes());
     packet.extend_from_slice(&42_u32.to_le_bytes());
     packet.extend_from_slice(&(-20.0_f32).to_le_bytes());
@@ -148,6 +148,6 @@ fn scs_packet(game: u8) -> Vec<u8> {
     packet.extend_from_slice(&6_i32.to_le_bytes());
     packet.extend_from_slice(&0.75_f32.to_le_bytes());
     packet.extend_from_slice(&0.1_f32.to_le_bytes());
-    assert_eq!(packet.len(), BRIDGE_PACKET_LEN);
+    assert_eq!(packet.len(), BRIDGE_V1_PACKET_LEN);
     packet
 }

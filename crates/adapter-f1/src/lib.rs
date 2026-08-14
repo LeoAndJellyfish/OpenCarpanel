@@ -10,15 +10,22 @@ mod packets;
 
 use cursor::Cursor;
 use mapping::map_player_sample;
-use packets::{CarTelemetryLayout, CarTelemetrySample, decode_player_sample};
+use packets::{F1Layout, decode_player_car_telemetry as decode_car_telemetry_sample};
 
 pub use adapter::{F1_24Adapter, F1_25Adapter};
 pub use error::DecodeError;
 pub use header::{PACKET_HEADER_LEN, PacketHeader};
 pub use packets::{
+    CAR_DAMAGE_PACKET_ID, CAR_STATUS_DATA_LEN, CAR_STATUS_PACKET_ID, CAR_STATUS_PACKET_LEN,
     CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_ID, CAR_TELEMETRY_PACKET_LEN,
-    CAR_TELEMETRY_PACKET_VERSION, F1_25_2026_CAR_COUNT, F1_25_2026_CAR_TELEMETRY_DATA_LEN,
-    F1_25_2026_CAR_TELEMETRY_PACKET_LEN, F1_CAR_COUNT,
+    CAR_TELEMETRY_PACKET_VERSION, CAR_TELEMETRY2_DATA_LEN, CAR_TELEMETRY2_PACKET_ID,
+    CAR_TELEMETRY2_PACKET_LEN, EVENT_PACKET_ID, EVENT_PACKET_LEN, F1_24_CAR_DAMAGE_DATA_LEN,
+    F1_24_CAR_DAMAGE_PACKET_LEN, F1_25_2026_CAR_COUNT, F1_25_2026_CAR_DAMAGE_PACKET_LEN,
+    F1_25_2026_CAR_STATUS_DATA_LEN, F1_25_2026_CAR_STATUS_PACKET_LEN,
+    F1_25_2026_CAR_TELEMETRY_DATA_LEN, F1_25_2026_CAR_TELEMETRY_PACKET_LEN,
+    F1_25_2026_LAP_DATA_PACKET_LEN, F1_25_2026_SESSION_PACKET_LEN, F1_25_CAR_DAMAGE_DATA_LEN,
+    F1_25_CAR_DAMAGE_PACKET_LEN, F1_CAR_COUNT, LAP_DATA_LEN, LAP_DATA_PACKET_ID,
+    LAP_DATA_PACKET_LEN, SESSION_PACKET_ID, SESSION_PACKET_LEN,
 };
 
 /// Stable identifier exposed by the F1 24 adapter.
@@ -42,31 +49,55 @@ struct F1Protocol {
     display_name: &'static str,
     protocol_version: &'static str,
     packet_formats: &'static [u16],
-    car_telemetry_layouts: &'static [CarTelemetryLayout],
+    layouts: &'static [F1Layout],
 }
 
 const F1_24_PACKET_FORMATS: &[u16] = &[F1_24_PACKET_FORMAT];
 const F1_25_PACKET_FORMATS: &[u16] = &[F1_25_PACKET_FORMAT, F1_25_2026_PACKET_FORMAT];
 
-const F1_24_CAR_TELEMETRY_LAYOUTS: &[CarTelemetryLayout] = &[CarTelemetryLayout {
+const F1_24_LAYOUTS: &[F1Layout] = &[F1Layout {
     packet_format: F1_24_PACKET_FORMAT,
     car_count: F1_CAR_COUNT,
+    session_packet_len: packets::SESSION_PACKET_LEN,
+    lap_packet_len: packets::LAP_DATA_PACKET_LEN,
     car_telemetry_data_len: CAR_TELEMETRY_DATA_LEN,
-    packet_len: CAR_TELEMETRY_PACKET_LEN,
+    car_telemetry_packet_len: CAR_TELEMETRY_PACKET_LEN,
+    car_status_data_len: packets::CAR_STATUS_DATA_LEN,
+    car_status_packet_len: packets::CAR_STATUS_PACKET_LEN,
+    car_damage_data_len: packets::F1_24_CAR_DAMAGE_DATA_LEN,
+    car_damage_packet_len: packets::F1_24_CAR_DAMAGE_PACKET_LEN,
+    car_telemetry2: None,
 }];
 
-const F1_25_CAR_TELEMETRY_LAYOUTS: &[CarTelemetryLayout] = &[
-    CarTelemetryLayout {
+const F1_25_LAYOUTS: &[F1Layout] = &[
+    F1Layout {
         packet_format: F1_25_PACKET_FORMAT,
         car_count: F1_CAR_COUNT,
+        session_packet_len: packets::SESSION_PACKET_LEN,
+        lap_packet_len: packets::LAP_DATA_PACKET_LEN,
         car_telemetry_data_len: CAR_TELEMETRY_DATA_LEN,
-        packet_len: CAR_TELEMETRY_PACKET_LEN,
+        car_telemetry_packet_len: CAR_TELEMETRY_PACKET_LEN,
+        car_status_data_len: packets::CAR_STATUS_DATA_LEN,
+        car_status_packet_len: packets::CAR_STATUS_PACKET_LEN,
+        car_damage_data_len: packets::F1_25_CAR_DAMAGE_DATA_LEN,
+        car_damage_packet_len: packets::F1_25_CAR_DAMAGE_PACKET_LEN,
+        car_telemetry2: None,
     },
-    CarTelemetryLayout {
+    F1Layout {
         packet_format: F1_25_2026_PACKET_FORMAT,
         car_count: F1_25_2026_CAR_COUNT,
+        session_packet_len: packets::F1_25_2026_SESSION_PACKET_LEN,
+        lap_packet_len: packets::F1_25_2026_LAP_DATA_PACKET_LEN,
         car_telemetry_data_len: F1_25_2026_CAR_TELEMETRY_DATA_LEN,
-        packet_len: F1_25_2026_CAR_TELEMETRY_PACKET_LEN,
+        car_telemetry_packet_len: F1_25_2026_CAR_TELEMETRY_PACKET_LEN,
+        car_status_data_len: packets::F1_25_2026_CAR_STATUS_DATA_LEN,
+        car_status_packet_len: packets::F1_25_2026_CAR_STATUS_PACKET_LEN,
+        car_damage_data_len: packets::F1_25_CAR_DAMAGE_DATA_LEN,
+        car_damage_packet_len: packets::F1_25_2026_CAR_DAMAGE_PACKET_LEN,
+        car_telemetry2: Some((
+            packets::CAR_TELEMETRY2_DATA_LEN,
+            packets::CAR_TELEMETRY2_PACKET_LEN,
+        )),
     },
 ];
 
@@ -75,7 +106,7 @@ const F1_24_PROTOCOL: F1Protocol = F1Protocol {
     display_name: "EA Sports F1 24",
     protocol_version: "2024/v27.2x",
     packet_formats: F1_24_PACKET_FORMATS,
-    car_telemetry_layouts: F1_24_CAR_TELEMETRY_LAYOUTS,
+    layouts: F1_24_LAYOUTS,
 };
 
 const F1_25_PROTOCOL: F1Protocol = F1Protocol {
@@ -83,7 +114,7 @@ const F1_25_PROTOCOL: F1Protocol = F1Protocol {
     display_name: "EA Sports F1 25",
     protocol_version: "2025/v3 + 2026/v10",
     packet_formats: F1_25_PACKET_FORMATS,
-    car_telemetry_layouts: F1_25_CAR_TELEMETRY_LAYOUTS,
+    layouts: F1_25_LAYOUTS,
 };
 
 /// Decodes one F1 24 Car Telemetry datagram into a canonical player update.
@@ -118,17 +149,22 @@ fn decode_player_car_telemetry(
     protocol: F1Protocol,
 ) -> Result<opencarpanel_telemetry_core::TelemetryUpdate, DecodeError> {
     let (header, payload, layout) = decode_header_and_layout(datagram, protocol)?;
-    let sample = decode_player_sample(&header, payload, datagram.len(), layout)?;
-    map_player_sample(&header, sample, received_at)
+    let sample = decode_car_telemetry_sample(&header, payload, datagram.len(), layout)?;
+    let drs = if sample.drs_active {
+        opencarpanel_telemetry_core::DrsState::Active
+    } else {
+        opencarpanel_telemetry_core::DrsState::Unknown
+    };
+    map_player_sample(&header, sample, received_at, drs)
 }
 
 fn decode_header_and_layout(
     datagram: &[u8],
     protocol: F1Protocol,
-) -> Result<(PacketHeader, &[u8], CarTelemetryLayout), DecodeError> {
+) -> Result<(PacketHeader, &[u8], F1Layout), DecodeError> {
     let (header, payload) = PacketHeader::decode_any_format(datagram)?;
     let layout = protocol
-        .car_telemetry_layouts
+        .layouts
         .iter()
         .copied()
         .find(|layout| layout.packet_format == header.packet_format)

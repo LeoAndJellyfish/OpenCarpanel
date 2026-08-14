@@ -1,6 +1,6 @@
-# 游戏数据链路与 SCS 44 字节协议图解
+# 游戏数据链路与 SCS 数据包协议图解
 
-本文用两张可缩放的教材式图示说明 OpenCarpanel `0.1.x` 支持的四款游戏如何把遥测送到手机，以及 ETS2/ATS 原生桥接插件发出的 44 字节数据包如何排列。图中所有连接都是本机或同一局域网连接；运行时不经过云端服务。
+本文用可缩放的教材式图示说明四款游戏如何把遥测送到手机，以及 ETS2/ATS 原生桥接插件的 v1 44-byte 兼容包和当前 v2 188-byte 数据包如何排列。图中所有连接都是本机或同一局域网连接；运行时不经过云端服务。
 
 ## 四款游戏如何进入同一个 Dashboard
 
@@ -11,11 +11,11 @@
 链路分为两种：
 
 1. **F1 24 / F1 25：游戏原生 UDP。** 游戏按官方格式直接把数据报发到 Host 的 UDP `20777`。F1 24 adapter 只接受 format `2024`；F1 25 adapter 依据公共头精确选择原始 `2025` 或 Season Pack `2026` 布局，不按相近偏移猜测。
-2. **ETS2 / ATS：SCS SDK 回调桥接。** 游戏加载随包插件，在未暂停帧的 `FRAME_END` 回调中，把必要字段编码为固定 44 字节报文，并非阻塞地发到同机 `127.0.0.1:20777`。
+2. **ETS2 / ATS：SCS SDK 回调桥接。** 游戏加载随包插件，在未暂停帧的 `FRAME_END` 回调中，把当前状态编码为固定 188-byte v2 报文，并非阻塞地发到同机 `127.0.0.1:20777`。Host 仍接受旧插件的 44-byte v1 报文。
 
 四条输入在 `AdapterRegistry` 中都有独立 adapter/reducer。自动模式对当前来源保持两秒粘性，防止同时运行多款游戏时画面来回切换；也可以用 `OPENCARPANEL_GAME=f1-24|f1-25|ets2|ats` 固定来源。随后 Host 把统一遥测通过已配对的 HTTP/WebSocket 送到手机或 iPad；Dashboard 使用统一模型中的 `meta.gameId` 自动选择游戏视觉与独立用户布局，不从某个速度/RPM 字段反向猜游戏。
 
-## 44 字节数据包：像数组一样逐段看
+## v1：44 字节基础包逐 byte 看
 
 <p align="center">
   <img src="./assets/scs-bridge-v1-packet.svg" width="100%" alt="OpenCarpanel SCS bridge v1 固定 44 字节数据包的逐字节数组与字段说明">
@@ -39,17 +39,38 @@
 | `36` | 4 | `f32` | effective throttle | 必须有限且处于 `0..1` |
 | `40` | 4 | `f32` | effective brake | 必须有限且处于 `0..1` |
 
-选择固定长度而不是直接发送 C++ struct，能避开编译器 padding、alignment 与 ABI 差异。Rust Host 会逐字段读取，并严格拒绝错误 magic、长度、版本、游戏 ID、保留位、`NaN`/`Infinity` 和越界踏板值；原始数据报不会被保留。
+选择固定长度而不是直接发送 C++ struct，能避开编译器 padding、alignment 与 ABI 差异。Rust Host 会逐字段读取，并严格拒绝错误 magic、长度、版本、游戏 ID、保留位、`NaN`/`Infinity` 和越界踏板值；原始数据报不会被保留。v1 现作为向后兼容输入保留。
+
+## v2：188 字节扩展包分段图
+
+<p align="center">
+  <img src="./assets/scs-bridge-v2-packet.svg" width="100%" alt="OpenCarpanel SCS bridge v2 固定 188 字节数据包的分段数组与字段说明">
+</p>
+
+v2 保留 offset `0..43` 的所有 v1 字段，把 version 改为 `2`，再追加以下区域：
+
+| Offset | 长度 | 内容 |
+| ---: | ---: | --- |
+| `44..55` | 12 | 剩余导航距离、时间和当前道路限速，均为 `f32` |
+| `56..67` | 12 | 当前油量、油箱容量和预计续航，均为 `f32` |
+| `68..71` | 4 | 9 个灯光 bits 与 4 个状态 bits |
+| `72..91` | 20 | 交付期限、计划里程、收入、货物质量 |
+| `92..123` | 32 | 货物名称，UTF-8 + NUL padding |
+| `124..155` | 32 | 起点城市，UTF-8 + NUL padding |
+| `156..187` | 32 | 目的地城市，UTF-8 + NUL padding |
+
+灯光 bits 覆盖示宽、近光、远光、警示灯、刹车灯、倒车灯、左右转向和双闪；状态 bits 表示低油量、任务有效、货物已装载和特殊运输。精确 offset、wire type、SDK channel 与校验规则见 [SCS bridge v2 协议](protocols/scs-bridge-v2.md)。
 
 ## 为什么没有直接复用 ETS2LA 的共享内存
 
 ETS2LA 随包使用 `truckermudgeon/scs-sdk-plugin` 的 RenCloud fork，把 SCS callback 写入 32 KiB `SCSTelemetry` shared memory，并由主程序约以 60 Hz 读取。这是成熟且字段丰富的方案，但默认依赖第三方布局会把版本和故障边界交给外部项目。
 
-OpenCarpanel 首版选择自有、最小、版本化的 loopback UDP bridge：游戏进程内只保留固定状态和非阻塞发送，解析、诊断与网络服务都留在 Rust Host。未来可以把 ETS2LA 共享内存兼容作为可选 ingress，让已安装该插件的用户避免重复安装，而不改变当前协议。
+OpenCarpanel 选择自有、版本化的 loopback UDP bridge：游戏进程内只保留固定状态和非阻塞发送，解析、诊断与网络服务都留在 Rust Host。v2 直接从同一套官方 SDK callbacks/configuration attributes 提供 Dashboard 需要的导航、油量、灯光和任务字段。未来仍可以把 ETS2LA 共享内存兼容作为可选 ingress，让已安装该插件的用户避免重复安装，而不改变当前协议。
 
 ## 延伸阅读
 
 - [SCS bridge v1 完整协议边界](protocols/scs-bridge-v1.md)
+- [SCS bridge v2 完整协议边界](protocols/scs-bridge-v2.md)
 - [多游戏输入与适配器设计](plans/2026-08-12-multi-game-adapters-design.md)
 - [ADR-0007：版本化本机游戏桥接](adr/0007-versioned-local-game-input-bridges.md)
 - [SCS Telemetry SDK 官方文档](https://modding.scssoft.com/wiki/Documentation/Engine/SDK/Telemetry)

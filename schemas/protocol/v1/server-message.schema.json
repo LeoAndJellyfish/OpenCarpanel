@@ -114,6 +114,91 @@
     "v"
   ],
   "$defs": {
+    "ActiveAeroMode": {
+      "description": "2026 active-aerodynamics mode.",
+      "oneOf": [
+        {
+          "description": "High-downforce corner mode.",
+          "type": "string",
+          "const": "corner"
+        },
+        {
+          "description": "Low-drag straight mode.",
+          "type": "string",
+          "const": "straight"
+        }
+      ]
+    },
+    "AeroState": {
+      "description": "2026 active-aerodynamics and overtake state.",
+      "type": "object",
+      "properties": {
+        "activationDistanceM": {
+          "description": "Distance until active aero becomes available in metres.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "available": {
+          "description": "Whether active aero is currently available.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "drivingWrongWay": {
+          "description": "Whether the game reports the car is driving the wrong way.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "mode": {
+          "description": "Current active-aero mode.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActiveAeroMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overtakeActivationDistanceM": {
+          "description": "Distance until overtake mode becomes available in metres.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "overtakeActive": {
+          "description": "Whether overtake mode is active.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "overtakeAvailable": {
+          "description": "Whether overtake mode is available.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "regulations2026": {
+          "description": "Whether the car uses the 2026 regulations.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
     "CapabilitiesMessage": {
       "description": "Active adapter capabilities.",
       "type": "object",
@@ -136,6 +221,257 @@
       "required": [
         "fields",
         "extensions"
+      ]
+    },
+    "ConditionsState": {
+      "description": "Current ambient and track conditions.",
+      "type": "object",
+      "properties": {
+        "airTemperatureC": {
+          "description": "Air temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "trackTemperatureC": {
+          "description": "Track temperature in degrees Celsius.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "weather": {
+          "description": "Current weather category.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WeatherCondition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "DamageState": {
+      "description": "Player-vehicle damage not naturally represented by one tyre corner.",
+      "type": "object",
+      "properties": {
+        "diffuser": {
+          "description": "Diffuser damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "drsFault": {
+          "description": "DRS system fault state.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "engine": {
+          "description": "Overall engine damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineBlown": {
+          "description": "Whether the engine has blown.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "engineCeWear": {
+          "description": "Control-electronics wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineEsWear": {
+          "description": "Energy-store wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineIceWear": {
+          "description": "Internal-combustion-engine wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineMguhWear": {
+          "description": "MGU-H wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineMgukWear": {
+          "description": "MGU-K wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engineSeized": {
+          "description": "Whether the engine has seized.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "engineTcWear": {
+          "description": "Turbocharger wear.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ersFault": {
+          "description": "ERS system fault state.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "floor": {
+          "description": "Floor damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frontLeftWing": {
+          "description": "Front-left wing damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frontRightWing": {
+          "description": "Front-right wing damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gearbox": {
+          "description": "Gearbox damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rearWing": {
+          "description": "Rear-wing damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sidepod": {
+          "description": "Sidepod damage.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "DriverStatus": {
+      "description": "Player activity within the current lap.",
+      "oneOf": [
+        {
+          "description": "In the garage.",
+          "type": "string",
+          "const": "in_garage"
+        },
+        {
+          "description": "On a flying lap.",
+          "type": "string",
+          "const": "flying_lap"
+        },
+        {
+          "description": "On an in lap.",
+          "type": "string",
+          "const": "in_lap"
+        },
+        {
+          "description": "On an out lap.",
+          "type": "string",
+          "const": "out_lap"
+        },
+        {
+          "description": "Driving on track outside a special lap phase.",
+          "type": "string",
+          "const": "on_track"
+        }
       ]
     },
     "DrsState": {
@@ -282,10 +618,103 @@
         }
       ]
     },
+    "JobState": {
+      "description": "Active truck-delivery job.",
+      "type": "object",
+      "properties": {
+        "active": {
+          "description": "Whether a job is active.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "cargo": {
+          "description": "Localized cargo name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cargoLoaded": {
+          "description": "Whether cargo is loaded.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "cargoMassKg": {
+          "description": "Cargo mass in kilograms.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "deliveryTime": {
+          "description": "Absolute in-game delivery deadline.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "destinationCity": {
+          "description": "Localized destination city.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "income": {
+          "description": "Expected income in the game's native currency.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "plannedDistanceKm": {
+          "description": "Planned distance in simulated kilometres.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "sourceCity": {
+          "description": "Localized source city.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "special": {
+          "description": "Whether this is a special-transport job.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
     "LapState": {
       "description": "Current lap and race-position state.",
       "type": "object",
       "properties": {
+        "cornerCuttingWarnings": {
+          "description": "Accumulated corner-cutting warnings.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
         "current": {
           "description": "Current one-based lap number.",
           "type": [
@@ -313,6 +742,53 @@
           ],
           "format": "int32"
         },
+        "deltaToCarInFrontMs": {
+          "description": "Delta to the car immediately ahead in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "deltaToRaceLeaderMs": {
+          "description": "Delta to the race leader in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "distanceM": {
+          "description": "Distance around the current lap in metres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "driverStatus": {
+          "description": "Current driver activity.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DriverStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gridPosition": {
+          "description": "Starting grid position.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
         "invalid": {
           "description": "Whether the current lap has been invalidated.",
           "type": [
@@ -329,6 +805,62 @@
           "format": "uint32",
           "minimum": 0
         },
+        "penaltiesSeconds": {
+          "description": "Accumulated time penalties in seconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "pitLaneTimeMs": {
+          "description": "Time spent in the pit lane in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "pitStatus": {
+          "description": "Current pit state.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PitStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pitStopShouldServePenalty": {
+          "description": "Whether a penalty should be served during the current pit stop.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "pitStopTimeMs": {
+          "description": "Current pit-stop time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "pitStops": {
+          "description": "Pit stops completed in the current race.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
         "position": {
           "description": "Current one-based race position.",
           "type": [
@@ -338,6 +870,160 @@
           "format": "uint8",
           "maximum": 255,
           "minimum": 0
+        },
+        "resultStatus": {
+          "description": "Current classification state.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResultStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "safetyCarDeltaMs": {
+          "description": "Signed safety-car delta in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int32"
+        },
+        "sector": {
+          "description": "Current one-based sector number.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "sector1TimeMs": {
+          "description": "Completed sector-one time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "sector2TimeMs": {
+          "description": "Completed sector-two time in milliseconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "totalDistanceM": {
+          "description": "Total distance travelled in the session in metres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "unservedDriveThroughPenalties": {
+          "description": "Unserved drive-through penalties.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "unservedStopGoPenalties": {
+          "description": "Unserved stop-go penalties.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "warnings": {
+          "description": "Accumulated warnings.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        }
+      }
+    },
+    "LightsState": {
+      "description": "Exterior-light state for truck simulators.",
+      "type": "object",
+      "properties": {
+        "beacon": {
+          "description": "Beacon lights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "brake": {
+          "description": "Brake lights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "hazard": {
+          "description": "Hazard-warning state.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "highBeam": {
+          "description": "High-beam headlights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "leftIndicator": {
+          "description": "Logical left indicator state.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "lowBeam": {
+          "description": "Low-beam headlights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "parking": {
+          "description": "Parking lights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reverse": {
+          "description": "Reverse lights.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "rightIndicator": {
+          "description": "Logical right indicator state.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
@@ -393,12 +1079,137 @@
       "format": "uint64",
       "minimum": 0
     },
+    "NavigationState": {
+      "description": "Route-advisor state for truck simulators.",
+      "type": "object",
+      "properties": {
+        "distanceM": {
+          "description": "Remaining route distance in metres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "speedLimitMps": {
+          "description": "Current navigation speed limit in metres per second.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "timeS": {
+          "description": "Estimated route time in seconds.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        }
+      }
+    },
     "Normalized": {
       "description": "A finite value in the inclusive range `0.0..=1.0`.",
       "type": "number",
       "format": "float",
       "maximum": 1.0,
       "minimum": 0.0
+    },
+    "PitStatus": {
+      "description": "Player pit state.",
+      "oneOf": [
+        {
+          "description": "The vehicle is not pitting.",
+          "type": "string",
+          "const": "none"
+        },
+        {
+          "description": "The vehicle is entering or approaching the pits.",
+          "type": "string",
+          "const": "pitting"
+        },
+        {
+          "description": "The vehicle is inside the pit area.",
+          "type": "string",
+          "const": "in_pit_area"
+        }
+      ]
+    },
+    "RaceFlag": {
+      "description": "Race-control flag applying to the player vehicle.",
+      "oneOf": [
+        {
+          "description": "No flag is active.",
+          "type": "string",
+          "const": "none"
+        },
+        {
+          "description": "Green flag.",
+          "type": "string",
+          "const": "green"
+        },
+        {
+          "description": "Blue flag.",
+          "type": "string",
+          "const": "blue"
+        },
+        {
+          "description": "Yellow flag.",
+          "type": "string",
+          "const": "yellow"
+        },
+        {
+          "description": "Red flag.",
+          "type": "string",
+          "const": "red"
+        }
+      ]
+    },
+    "ResultStatus": {
+      "description": "Classification state for the player vehicle.",
+      "oneOf": [
+        {
+          "description": "Invalid or unavailable result.",
+          "type": "string",
+          "const": "invalid"
+        },
+        {
+          "description": "Inactive participant.",
+          "type": "string",
+          "const": "inactive"
+        },
+        {
+          "description": "Active participant.",
+          "type": "string",
+          "const": "active"
+        },
+        {
+          "description": "Finished the session.",
+          "type": "string",
+          "const": "finished"
+        },
+        {
+          "description": "Did not finish.",
+          "type": "string",
+          "const": "did_not_finish"
+        },
+        {
+          "description": "Disqualified.",
+          "type": "string",
+          "const": "disqualified"
+        },
+        {
+          "description": "Not classified.",
+          "type": "string",
+          "const": "not_classified"
+        },
+        {
+          "description": "Retired.",
+          "type": "string",
+          "const": "retired"
+        }
+      ]
     },
     "ResyncRequiredMessage": {
       "description": "Reliable-event history can no longer satisfy the requested sequence.",
@@ -420,6 +1231,31 @@
       "required": [
         "oldestAvailableEventSeq",
         "newestEventSeq"
+      ]
+    },
+    "SafetyCarStatus": {
+      "description": "Safety-car state for the current session.",
+      "oneOf": [
+        {
+          "description": "No safety car is active.",
+          "type": "string",
+          "const": "none"
+        },
+        {
+          "description": "Full safety car.",
+          "type": "string",
+          "const": "full"
+        },
+        {
+          "description": "Virtual safety car.",
+          "type": "string",
+          "const": "virtual"
+        },
+        {
+          "description": "Formation-lap safety car.",
+          "type": "string",
+          "const": "formation_lap"
+        }
       ]
     },
     "ServerHello": {
@@ -454,6 +1290,25 @@
       "description": "Current session state that is meaningful across games.",
       "type": "object",
       "properties": {
+        "pitSpeedLimitMps": {
+          "description": "Pit-lane speed limit in metres per second.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "raceFlag": {
+          "description": "Current FIA or race-control flag for the player vehicle.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RaceFlag"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "remainingTimeMs": {
           "description": "Remaining session time in milliseconds.",
           "type": [
@@ -462,6 +1317,24 @@
           ],
           "format": "uint64",
           "minimum": 0
+        },
+        "safetyCarStatus": {
+          "description": "Current safety-car state.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SafetyCarStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessionType": {
+          "description": "Human-readable stable session type, such as `race` or `qualifying_1`.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "totalLaps": {
           "description": "Scheduled total number of laps when known.",
@@ -479,6 +1352,15 @@
             "string",
             "null"
           ]
+        },
+        "trackLengthM": {
+          "description": "Track length in metres.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
         }
       }
     },
@@ -615,6 +1497,16 @@
           "const": "vehicle.drs"
         },
         {
+          "description": "Fuel state in game-native mass or volume units.",
+          "type": "string",
+          "const": "vehicle.fuel"
+        },
+        {
+          "description": "Pit-lane limiter state.",
+          "type": "string",
+          "const": "vehicle.pitLimiter"
+        },
+        {
           "description": "Current lap number.",
           "type": "string",
           "const": "lap.current"
@@ -645,6 +1537,11 @@
           "const": "lap.invalid"
         },
         {
+          "description": "Extended sector timing and race-position state.",
+          "type": "string",
+          "const": "lap.raceState"
+        },
+        {
           "description": "Track identifier.",
           "type": "string",
           "const": "session.trackId"
@@ -660,9 +1557,44 @@
           "const": "session.totalLaps"
         },
         {
+          "description": "Extended session and race-control state.",
+          "type": "string",
+          "const": "session.raceState"
+        },
+        {
           "description": "Four-corner tyre state.",
           "type": "string",
           "const": "tyres"
+        },
+        {
+          "description": "Ambient and track conditions.",
+          "type": "string",
+          "const": "conditions"
+        },
+        {
+          "description": "Vehicle damage state.",
+          "type": "string",
+          "const": "damage"
+        },
+        {
+          "description": "Active-aerodynamics state.",
+          "type": "string",
+          "const": "aero"
+        },
+        {
+          "description": "Route-advisor state.",
+          "type": "string",
+          "const": "navigation"
+        },
+        {
+          "description": "Exterior-light state.",
+          "type": "string",
+          "const": "lights"
+        },
+        {
+          "description": "Delivery-job state.",
+          "type": "string",
+          "const": "job"
         }
       ]
     },
@@ -670,15 +1602,35 @@
       "description": "A complete, game-neutral view of the latest known telemetry state.",
       "type": "object",
       "properties": {
+        "aero": {
+          "description": "Active-aerodynamics state.",
+          "$ref": "#/$defs/AeroState"
+        },
+        "conditions": {
+          "description": "Ambient and track conditions.",
+          "$ref": "#/$defs/ConditionsState"
+        },
+        "damage": {
+          "description": "Player-vehicle damage.",
+          "$ref": "#/$defs/DamageState"
+        },
         "extensions": {
           "description": "Adapter-specific values that do not yet have stable cross-game semantics.",
           "type": "object",
           "additionalProperties": true
         },
+        "job": {
+          "description": "Active delivery job.",
+          "$ref": "#/$defs/JobState"
+        },
         "lap": {
           "description": "Lap and race-position state.",
           "$ref": "#/$defs/LapState",
           "default": {}
+        },
+        "lights": {
+          "description": "Exterior-light state.",
+          "$ref": "#/$defs/LightsState"
         },
         "meta": {
           "description": "Snapshot metadata.",
@@ -687,6 +1639,10 @@
             "schemaVersion": 1,
             "sequence": 0
           }
+        },
+        "navigation": {
+          "description": "Route-advisor state.",
+          "$ref": "#/$defs/NavigationState"
         },
         "session": {
           "description": "Session state.",
@@ -709,6 +1665,39 @@
       "description": "State for one tyre corner.",
       "type": "object",
       "properties": {
+        "blister": {
+          "description": "Tyre blistering in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "brakeDamage": {
+          "description": "Brake damage at this corner in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "damage": {
+          "description": "Tyre damage in the inclusive unit interval.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Normalized"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "innerTemperatureC": {
           "description": "Tyre inner temperature in degrees Celsius.",
           "type": [
@@ -750,6 +1739,26 @@
       "description": "State for all four tyre corners.",
       "type": "object",
       "properties": {
+        "actualCompound": {
+          "description": "Game-defined actual compound identifier.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "ageLaps": {
+          "description": "Age of the fitted tyre set in laps.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
         "frontLeft": {
           "description": "Front-left tyre.",
           "anyOf": [
@@ -793,6 +1802,16 @@
               "type": "null"
             }
           ]
+        },
+        "visualCompound": {
+          "description": "Game-defined visual compound identifier.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
         }
       }
     },
@@ -823,6 +1842,22 @@
           ],
           "format": "float"
         },
+        "fuelCapacityKg": {
+          "description": "Fuel-tank capacity in kilograms when the game reports fuel by mass.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelCapacityLiters": {
+          "description": "Fuel-tank capacity in litres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
         "fuelKg": {
           "description": "Remaining fuel mass in kilograms.",
           "type": [
@@ -831,9 +1866,47 @@
           ],
           "format": "float"
         },
+        "fuelLiters": {
+          "description": "Remaining fuel volume in litres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelRangeKm": {
+          "description": "Estimated remaining fuel range in kilometres.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelRemainingLaps": {
+          "description": "Estimated laps remaining on the current fuel load.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "fuelWarning": {
+          "description": "Whether the game is showing a low-fuel warning.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "gear": {
           "description": "Selected gear.",
           "$ref": "#/$defs/Gear"
+        },
+        "pitLimiter": {
+          "description": "Whether the pit-lane speed limiter is active.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "revLights": {
           "description": "Game-provided shift-light progression in the inclusive unit interval.",
@@ -886,6 +1959,41 @@
           ]
         }
       }
+    },
+    "WeatherCondition": {
+      "description": "Weather reported for the current session.",
+      "oneOf": [
+        {
+          "description": "Clear sky.",
+          "type": "string",
+          "const": "clear"
+        },
+        {
+          "description": "Light cloud cover.",
+          "type": "string",
+          "const": "light_cloud"
+        },
+        {
+          "description": "Overcast conditions.",
+          "type": "string",
+          "const": "overcast"
+        },
+        {
+          "description": "Light rain.",
+          "type": "string",
+          "const": "light_rain"
+        },
+        {
+          "description": "Heavy rain.",
+          "type": "string",
+          "const": "heavy_rain"
+        },
+        {
+          "description": "Storm conditions.",
+          "type": "string",
+          "const": "storm"
+        }
+      ]
     }
   }
 }

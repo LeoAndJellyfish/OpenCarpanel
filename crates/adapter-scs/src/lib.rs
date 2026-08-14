@@ -10,7 +10,8 @@ use cursor::Cursor;
 pub use adapter::{AtsAdapter, Ets2Adapter};
 pub use error::DecodeError;
 pub use protocol::{
-    ATS_GAME_ID, BRIDGE_MAGIC, BRIDGE_PACKET_LEN, BRIDGE_PROTOCOL_VERSION, BridgeGame,
+    ATS_GAME_ID, BRIDGE_JOB_TEXT_LEN, BRIDGE_MAGIC, BRIDGE_PACKET_LEN, BRIDGE_PROTOCOL_V1,
+    BRIDGE_PROTOCOL_VERSION, BRIDGE_V1_PACKET_LEN, BridgeGame, BridgeJob, BridgeLights,
     BridgePacket, ETS2_GAME_ID,
 };
 

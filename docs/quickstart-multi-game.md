@@ -6,8 +6,8 @@ OpenCarpanel 桌面控制中心内嵌的 Host 默认在 UDP `20777` 上自动识
 | --- | --- | --- |
 | F1 24 | 游戏原生 UDP | Format `2024` |
 | F1 25 | 游戏原生 UDP | 原始 **2025** 与 **2026 Season Pack** UDP 模式均可 |
-| Euro Truck Simulator 2 | 随包原生 SCS 插件 → loopback UDP | 安装 `opencarpanel-scs-telemetry` 插件 |
-| American Truck Simulator | 随包原生 SCS 插件 → loopback UDP | 安装同一插件 |
+| Euro Truck Simulator 2 | 随包原生 SCS 插件 → loopback UDP | 安装 v2 插件；支持导航、油量、灯光与任务 |
+| American Truck Simulator | 随包原生 SCS 插件 → loopback UDP | 安装同一插件；Host 仍兼容旧 v1 插件 |
 
 各游戏详细步骤：
 

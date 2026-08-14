@@ -296,7 +296,7 @@ pub(crate) enum RegistryOutcome {
 mod tests {
     use opencarpanel_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
     use opencarpanel_adapter_scs::{
-        BRIDGE_MAGIC, BRIDGE_PACKET_LEN, BRIDGE_PROTOCOL_VERSION, ETS2_GAME_ID,
+        BRIDGE_MAGIC, BRIDGE_PROTOCOL_V1, BRIDGE_V1_PACKET_LEN, ETS2_GAME_ID,
     };
 
     use super::*;
@@ -390,9 +390,9 @@ mod tests {
     }
 
     fn scs_packet() -> Vec<u8> {
-        let mut packet = Vec::with_capacity(BRIDGE_PACKET_LEN);
+        let mut packet = Vec::with_capacity(BRIDGE_V1_PACKET_LEN);
         packet.extend_from_slice(&BRIDGE_MAGIC);
-        packet.extend_from_slice(&[BRIDGE_PROTOCOL_VERSION, ETS2_GAME_ID, 0, 0]);
+        packet.extend_from_slice(&[BRIDGE_PROTOCOL_V1, ETS2_GAME_ID, 0, 0]);
         packet.extend_from_slice(&2_u64.to_le_bytes());
         packet.extend_from_slice(&2_u32.to_le_bytes());
         packet.extend_from_slice(&10.0_f32.to_le_bytes());

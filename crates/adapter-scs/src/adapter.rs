@@ -2,7 +2,8 @@ use opencarpanel_adapter_api::{
     AdapterDescriptor, AdapterError, AdapterId, AdapterOutput, CapabilitySet, GameAdapter,
 };
 use opencarpanel_telemetry_core::{
-    DrsState, Gear, MonotonicTimestamp, Normalized, TelemetryField, TelemetryUpdate, VehicleUpdate,
+    DrsState, Gear, JobState, LightsState, MonotonicTimestamp, NavigationState, Normalized,
+    TelemetryField, TelemetryUpdate, VehicleUpdate,
 };
 
 use crate::{ATS_ADAPTER_ID, BridgeGame, BridgePacket, DecodeError, ETS2_ADAPTER_ID};
@@ -27,12 +28,16 @@ impl ScsAdapter {
             TelemetryField::VehicleThrottle,
             TelemetryField::VehicleBrake,
             TelemetryField::VehicleDrs,
+            TelemetryField::VehicleFuel,
+            TelemetryField::Navigation,
+            TelemetryField::Lights,
+            TelemetryField::Job,
         ]);
         Ok(Self {
             descriptor: AdapterDescriptor::new(
                 AdapterId::new(adapter_id)?,
                 display_name,
-                "scs-bridge/v1 (SDK 1.14)",
+                "scs-bridge/v1+v2 (SDK 1.14)",
                 capabilities,
             ),
             game,
@@ -119,6 +124,31 @@ fn map_packet(
         .map_err(|error| AdapterError::malformed_packet(error.to_string()))?;
     let brake = Normalized::new(packet.brake)
         .map_err(|error| AdapterError::malformed_packet(error.to_string()))?;
+    let lights = packet
+        .lights
+        .map_or_else(LightsState::default, |lights| LightsState {
+            parking: Some(lights.parking),
+            low_beam: Some(lights.low_beam),
+            high_beam: Some(lights.high_beam),
+            beacon: Some(lights.beacon),
+            brake: Some(lights.brake),
+            reverse: Some(lights.reverse),
+            left_indicator: Some(lights.left_indicator),
+            right_indicator: Some(lights.right_indicator),
+            hazard: Some(lights.hazard),
+        });
+    let job = packet.job.map_or_else(JobState::default, |job| JobState {
+        active: Some(job.active),
+        cargo: job.cargo,
+        cargo_mass_kg: job.active.then_some(job.cargo_mass_kg),
+        source_city: job.source_city,
+        destination_city: job.destination_city,
+        income: job.active.then_some(job.income),
+        delivery_time: job.active.then_some(job.delivery_time),
+        planned_distance_km: job.active.then_some(job.planned_distance_km),
+        cargo_loaded: job.active.then_some(job.cargo_loaded),
+        special: job.active.then_some(job.special),
+    });
 
     Ok(TelemetryUpdate {
         received_at,
@@ -132,8 +162,23 @@ fn map_packet(
             throttle: Some(throttle),
             brake: Some(brake),
             drs: Some(DrsState::Unavailable),
+            fuel_liters: packet.fuel_liters,
+            fuel_capacity_liters: packet.fuel_capacity_liters,
+            fuel_range_km: packet.fuel_range_km,
+            fuel_warning: packet.fuel_warning,
             ..VehicleUpdate::default()
         },
+        navigation: NavigationState {
+            distance_m: packet.navigation_distance_m,
+            time_s: packet.navigation_time_s,
+            // The SCS traffic subsystem uses non-positive values for special
+            // states such as no limit, wrong-way travel, or fast travel.
+            speed_limit_mps: packet
+                .navigation_speed_limit_mps
+                .filter(|speed_limit| *speed_limit > 0.0),
+        },
+        lights,
+        job,
         ..TelemetryUpdate::default()
     })
 }

@@ -3,17 +3,39 @@ use crate::{Cursor, DecodeError};
 /// Signature of every `OpenCarpanel` SCS bridge datagram.
 pub const BRIDGE_MAGIC: [u8; 4] = *b"OCP\0";
 
-/// Current major version of the SCS bridge wire protocol.
-pub const BRIDGE_PROTOCOL_VERSION: u8 = 1;
+/// Current SCS bridge wire-protocol version emitted by the bundled plugin.
+pub const BRIDGE_PROTOCOL_VERSION: u8 = 2;
+/// Legacy protocol version retained as a Host decode input.
+pub const BRIDGE_PROTOCOL_V1: u8 = 1;
 
 /// Wire identifier for Euro Truck Simulator 2.
 pub const ETS2_GAME_ID: u8 = 1;
-
 /// Wire identifier for American Truck Simulator.
 pub const ATS_GAME_ID: u8 = 2;
 
-/// Exact byte length of a v1 bridge datagram.
-pub const BRIDGE_PACKET_LEN: usize = 44;
+/// Exact byte length of a legacy v1 bridge datagram.
+pub const BRIDGE_V1_PACKET_LEN: usize = 44;
+/// Exact byte length of a v2 bridge datagram.
+pub const BRIDGE_PACKET_LEN: usize = 188;
+/// Fixed UTF-8 byte capacity of each v2 job label, including zero padding.
+pub const BRIDGE_JOB_TEXT_LEN: usize = 32;
+
+const LIGHT_PARKING: u16 = 1 << 0;
+const LIGHT_LOW_BEAM: u16 = 1 << 1;
+const LIGHT_HIGH_BEAM: u16 = 1 << 2;
+const LIGHT_BEACON: u16 = 1 << 3;
+const LIGHT_BRAKE: u16 = 1 << 4;
+const LIGHT_REVERSE: u16 = 1 << 5;
+const LIGHT_LEFT_INDICATOR: u16 = 1 << 6;
+const LIGHT_RIGHT_INDICATOR: u16 = 1 << 7;
+const LIGHT_HAZARD: u16 = 1 << 8;
+const KNOWN_LIGHT_BITS: u16 = (1 << 9) - 1;
+
+const STATE_FUEL_WARNING: u16 = 1 << 0;
+const STATE_JOB_ACTIVE: u16 = 1 << 1;
+const STATE_CARGO_LOADED: u16 = 1 << 2;
+const STATE_SPECIAL_JOB: u16 = 1 << 3;
+const KNOWN_STATE_BITS: u16 = (1 << 4) - 1;
 
 /// SCS game carried by one bridge packet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,7 +47,7 @@ pub enum BridgeGame {
 }
 
 impl BridgeGame {
-    /// Returns the stable v1 wire value.
+    /// Returns the stable wire value.
     #[must_use]
     pub const fn wire_id(self) -> u8 {
         match self {
@@ -46,9 +68,60 @@ impl BridgeGame {
     }
 }
 
-/// Fully validated v1 state emitted by the bundled SCS SDK plugin.
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Exterior-light bits decoded from a v2 bridge datagram.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct BridgeLights {
+    pub parking: bool,
+    pub low_beam: bool,
+    pub high_beam: bool,
+    pub beacon: bool,
+    pub brake: bool,
+    pub reverse: bool,
+    pub left_indicator: bool,
+    pub right_indicator: bool,
+    pub hazard: bool,
+}
+
+impl BridgeLights {
+    fn decode(bits: u16) -> Result<Self, DecodeError> {
+        if bits & !KNOWN_LIGHT_BITS != 0 {
+            return Err(DecodeError::UnsupportedLightBits { bits });
+        }
+        Ok(Self {
+            parking: bits & LIGHT_PARKING != 0,
+            low_beam: bits & LIGHT_LOW_BEAM != 0,
+            high_beam: bits & LIGHT_HIGH_BEAM != 0,
+            beacon: bits & LIGHT_BEACON != 0,
+            brake: bits & LIGHT_BRAKE != 0,
+            reverse: bits & LIGHT_REVERSE != 0,
+            left_indicator: bits & LIGHT_LEFT_INDICATOR != 0,
+            right_indicator: bits & LIGHT_RIGHT_INDICATOR != 0,
+            hazard: bits & LIGHT_HAZARD != 0,
+        })
+    }
+}
+
+/// Delivery-job fields decoded from a v2 bridge datagram.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BridgeJob {
+    pub active: bool,
+    pub cargo_loaded: bool,
+    pub special: bool,
+    pub delivery_time: u32,
+    pub planned_distance_km: u32,
+    pub income: u64,
+    pub cargo_mass_kg: f32,
+    pub cargo: Option<String>,
+    pub source_city: Option<String>,
+    pub destination_city: Option<String>,
+}
+
+/// Fully validated v1 or v2 state emitted by the bundled SCS SDK plugin.
+#[derive(Debug, Clone, PartialEq)]
 pub struct BridgePacket {
+    /// Wire version used by this packet.
+    pub protocol_version: u8,
     /// Game that loaded the plugin.
     pub game: BridgeGame,
     /// Per-plugin-initialization session nonce.
@@ -67,15 +140,33 @@ pub struct BridgePacket {
     pub throttle: f32,
     /// Effective simulation brake in 0..=1.
     pub brake: f32,
+    /// Route-advisor distance in metres, available in v2.
+    pub navigation_distance_m: Option<f32>,
+    /// Route-advisor ETA in seconds, available in v2.
+    pub navigation_time_s: Option<f32>,
+    /// Route-advisor speed limit in metres per second, available in v2.
+    pub navigation_speed_limit_mps: Option<f32>,
+    /// Remaining fuel volume in litres, available in v2.
+    pub fuel_liters: Option<f32>,
+    /// Fuel capacity in litres, available in v2.
+    pub fuel_capacity_liters: Option<f32>,
+    /// Estimated fuel range in kilometres, available in v2.
+    pub fuel_range_km: Option<f32>,
+    /// Low-fuel warning, available in v2.
+    pub fuel_warning: Option<bool>,
+    /// Exterior lights, available in v2.
+    pub lights: Option<BridgeLights>,
+    /// Delivery job, available in v2.
+    pub job: Option<BridgeJob>,
 }
 
 impl BridgePacket {
-    /// Decodes and validates one exact v1 datagram.
+    /// Decodes and validates one exact v1 or v2 datagram.
     ///
     /// # Errors
     ///
-    /// Rejects unsupported signatures, versions, games, flags, lengths, and
-    /// any invalid numeric field without retaining raw bytes.
+    /// Rejects unsupported signatures, versions, games, flags, lengths, UTF-8,
+    /// reserved bits, and invalid numeric fields without retaining raw bytes.
     pub fn decode(datagram: &[u8]) -> Result<Self, DecodeError> {
         let mut cursor = Cursor::new(datagram);
         let magic = cursor.read_array()?;
@@ -83,28 +174,32 @@ impl BridgePacket {
             return Err(DecodeError::UnsupportedMagic { actual: magic });
         }
 
-        let version = cursor.read_u8()?;
-        if version != BRIDGE_PROTOCOL_VERSION {
-            return Err(DecodeError::UnsupportedVersion {
-                expected: BRIDGE_PROTOCOL_VERSION,
-                actual: version,
-            });
-        }
-
+        let protocol_version = cursor.read_u8()?;
+        let expected_len = match protocol_version {
+            BRIDGE_PROTOCOL_V1 => BRIDGE_V1_PACKET_LEN,
+            BRIDGE_PROTOCOL_VERSION => BRIDGE_PACKET_LEN,
+            actual => {
+                return Err(DecodeError::UnsupportedVersion {
+                    expected: BRIDGE_PROTOCOL_VERSION,
+                    actual,
+                });
+            }
+        };
         let game = BridgeGame::from_wire(cursor.read_u8()?)?;
         let flags = cursor.read_u8()?;
         let reserved = cursor.read_u8()?;
         if flags != 0 || reserved != 0 {
             return Err(DecodeError::UnsupportedFlags { flags, reserved });
         }
-        if datagram.len() != BRIDGE_PACKET_LEN {
+        if datagram.len() != expected_len {
             return Err(DecodeError::InvalidLength {
-                expected: BRIDGE_PACKET_LEN,
+                expected: expected_len,
                 actual: datagram.len(),
             });
         }
 
-        let packet = Self {
+        let mut packet = Self {
+            protocol_version,
             game,
             session_nonce: cursor.read_u64_le()?,
             frame_sequence: cursor.read_u32_le()?,
@@ -114,23 +209,123 @@ impl BridgePacket {
             displayed_gear: cursor.read_i32_le()?,
             throttle: cursor.read_f32_le()?,
             brake: cursor.read_f32_le()?,
+            navigation_distance_m: None,
+            navigation_time_s: None,
+            navigation_speed_limit_mps: None,
+            fuel_liters: None,
+            fuel_capacity_liters: None,
+            fuel_range_km: None,
+            fuel_warning: None,
+            lights: None,
+            job: None,
         };
+
+        if protocol_version == BRIDGE_PROTOCOL_VERSION {
+            let navigation_distance_m = cursor.read_f32_le()?;
+            let navigation_time_s = cursor.read_f32_le()?;
+            let navigation_speed_limit_mps = cursor.read_f32_le()?;
+            let fuel_liters = cursor.read_f32_le()?;
+            let fuel_capacity_liters = cursor.read_f32_le()?;
+            let fuel_range_km = cursor.read_f32_le()?;
+            let lights = BridgeLights::decode(cursor.read_u16_le()?)?;
+            let state_flags = cursor.read_u16_le()?;
+            if state_flags & !KNOWN_STATE_BITS != 0 {
+                return Err(DecodeError::UnsupportedStateBits { bits: state_flags });
+            }
+            let delivery_time = cursor.read_u32_le()?;
+            let planned_distance_km = cursor.read_u32_le()?;
+            let income = cursor.read_u64_le()?;
+            let cargo_mass_kg = cursor.read_f32_le()?;
+            let cargo = decode_text("cargo", cursor.read_array()?)?;
+            let source_city = decode_text("source_city", cursor.read_array()?)?;
+            let destination_city = decode_text("destination_city", cursor.read_array()?)?;
+
+            packet.navigation_distance_m = Some(navigation_distance_m);
+            packet.navigation_time_s = Some(navigation_time_s);
+            packet.navigation_speed_limit_mps = Some(navigation_speed_limit_mps);
+            packet.fuel_liters = Some(fuel_liters);
+            packet.fuel_capacity_liters = Some(fuel_capacity_liters);
+            packet.fuel_range_km = Some(fuel_range_km);
+            packet.fuel_warning = Some(state_flags & STATE_FUEL_WARNING != 0);
+            packet.lights = Some(lights);
+            packet.job = Some(BridgeJob {
+                active: state_flags & STATE_JOB_ACTIVE != 0,
+                cargo_loaded: state_flags & STATE_CARGO_LOADED != 0,
+                special: state_flags & STATE_SPECIAL_JOB != 0,
+                delivery_time,
+                planned_distance_km,
+                income,
+                cargo_mass_kg,
+                cargo,
+                source_city,
+                destination_city,
+            });
+        }
+
         packet.validate_numbers()?;
         Ok(packet)
     }
 
-    fn validate_numbers(self) -> Result<(), DecodeError> {
+    fn validate_numbers(&self) -> Result<(), DecodeError> {
         finite("speed_mps", self.speed_mps)?;
         rpm("rpm", self.rpm)?;
         rpm("rpm_max", self.rpm_max)?;
         normalized("throttle", self.throttle)?;
-        normalized("brake", self.brake)
+        normalized("brake", self.brake)?;
+        if let Some(value) = self.navigation_speed_limit_mps {
+            finite("navigation_speed_limit_mps", value)?;
+        }
+        for (field, value) in [
+            ("navigation_distance_m", self.navigation_distance_m),
+            ("navigation_time_s", self.navigation_time_s),
+            ("fuel_liters", self.fuel_liters),
+            ("fuel_capacity_liters", self.fuel_capacity_liters),
+            ("fuel_range_km", self.fuel_range_km),
+            (
+                "cargo_mass_kg",
+                self.job.as_ref().map(|job| job.cargo_mass_kg),
+            ),
+        ] {
+            if let Some(value) = value {
+                non_negative_finite(field, value)?;
+            }
+        }
+        Ok(())
     }
+}
+
+fn decode_text(
+    field: &'static str,
+    bytes: [u8; BRIDGE_JOB_TEXT_LEN],
+) -> Result<Option<String>, DecodeError> {
+    let length = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .ok_or(DecodeError::InvalidTextPadding { field })?;
+    if bytes[length + 1..].iter().any(|byte| *byte != 0) {
+        return Err(DecodeError::InvalidTextPadding { field });
+    }
+    if length == 0 {
+        return Ok(None);
+    }
+    let value =
+        std::str::from_utf8(&bytes[..length]).map_err(|_| DecodeError::InvalidUtf8 { field })?;
+    Ok(Some(value.to_owned()))
 }
 
 fn finite(field: &'static str, value: f32) -> Result<(), DecodeError> {
     if value.is_finite() {
         Ok(())
+    } else {
+        Err(DecodeError::NonFiniteValue { field })
+    }
+}
+
+fn non_negative_finite(field: &'static str, value: f32) -> Result<(), DecodeError> {
+    if value.is_finite() && value >= 0.0 {
+        Ok(())
+    } else if value.is_finite() {
+        Err(DecodeError::NegativeValue { field, value })
     } else {
         Err(DecodeError::NonFiniteValue { field })
     }

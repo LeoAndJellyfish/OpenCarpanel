@@ -1,8 +1,6 @@
 use crate::{Cursor, DecodeError, PacketHeader};
 
-use super::{CAR_TELEMETRY_PACKET_ID, CAR_TELEMETRY_PACKET_VERSION, CarTelemetryLayout};
-
-const MAPPED_PLAYER_FIELDS_LEN: usize = 20;
+use super::{CAR_TELEMETRY_PACKET_ID, F1Layout, player_entry, validate_packet};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct CarTelemetrySample {
@@ -11,28 +9,35 @@ pub(crate) struct CarTelemetrySample {
     pub(crate) brake: f32,
     pub(crate) gear: i8,
     pub(crate) engine_rpm: u16,
-    pub(crate) drs: u8,
+    pub(crate) drs_active: bool,
     pub(crate) rev_lights_percent: u8,
+    /// Official array order is rear-left, rear-right, front-left, front-right.
+    pub(crate) tyre_surface_temperature_c: [u8; 4],
+    /// Official array order is rear-left, rear-right, front-left, front-right.
+    pub(crate) tyre_inner_temperature_c: [u8; 4],
+    /// Official array order is rear-left, rear-right, front-left, front-right.
+    pub(crate) tyre_pressure_psi: [f32; 4],
 }
 
-pub(crate) fn decode_player_sample(
+pub(crate) fn decode_player_car_telemetry(
     header: &PacketHeader,
     payload: &[u8],
     datagram_len: usize,
-    layout: CarTelemetryLayout,
+    layout: F1Layout,
 ) -> Result<CarTelemetrySample, DecodeError> {
-    validate_header_and_length(header, datagram_len, layout)?;
-
-    let player_index = usize::from(header.player_car_index);
-    if player_index >= layout.car_count {
-        return Err(DecodeError::InvalidPlayerIndex {
-            index: header.player_car_index,
-            car_count: layout.car_count,
-        });
-    }
-
-    let mut cursor = Cursor::new(payload);
-    cursor.skip(player_index * layout.car_telemetry_data_len)?;
+    validate_packet(
+        header,
+        datagram_len,
+        CAR_TELEMETRY_PACKET_ID,
+        layout.car_telemetry_packet_len,
+    )?;
+    let entry = player_entry(
+        header,
+        payload,
+        layout.car_count,
+        layout.car_telemetry_data_len,
+    )?;
+    let mut cursor = Cursor::new(entry);
     let speed_kph = cursor.read_u16_le()?;
     let throttle = cursor.read_f32_le()?;
     let _steer = cursor.read_f32_le()?;
@@ -41,8 +46,45 @@ pub(crate) fn decode_player_sample(
     let gear = cursor.read_i8()?;
     let engine_rpm = cursor.read_u16_le()?;
     let drs = cursor.read_u8()?;
+    if drs > 1 {
+        return Err(DecodeError::InvalidEnumValue {
+            field: "drs",
+            actual: drs,
+        });
+    }
     let rev_lights_percent = cursor.read_u8()?;
-    cursor.skip(layout.car_telemetry_data_len - MAPPED_PLAYER_FIELDS_LEN)?;
+    let _rev_lights_bit_value = cursor.read_u16_le()?;
+    for _ in 0..4 {
+        let _brake_temperature = cursor.read_u16_le()?;
+    }
+
+    let mut tyre_surface_temperature_c = [0; 4];
+    let mut tyre_inner_temperature_c = [0; 4];
+    let mut tyre_pressure_psi = [0.0; 4];
+    for value in &mut tyre_surface_temperature_c {
+        *value = cursor.read_u8()?;
+    }
+    for value in &mut tyre_inner_temperature_c {
+        *value = cursor.read_u8()?;
+    }
+    if layout.car_telemetry_data_len == super::F1_25_2026_CAR_TELEMETRY_DATA_LEN {
+        let _engine_temperature = cursor.read_u8()?;
+    } else {
+        let _engine_temperature = cursor.read_u16_le()?;
+    }
+    for value in &mut tyre_pressure_psi {
+        *value = cursor.read_f32_le()?;
+        if !value.is_finite() || *value < 0.0 {
+            return Err(DecodeError::InvalidNumericValue {
+                field: "tyres_pressure",
+                value: *value,
+            });
+        }
+    }
+    for _ in 0..4 {
+        let _surface_type = cursor.read_u8()?;
+    }
+    debug_assert!(cursor.remaining().is_empty());
 
     Ok(CarTelemetrySample {
         speed_kph,
@@ -50,35 +92,10 @@ pub(crate) fn decode_player_sample(
         brake,
         gear,
         engine_rpm,
-        drs,
+        drs_active: drs == 1,
         rev_lights_percent,
+        tyre_surface_temperature_c,
+        tyre_inner_temperature_c,
+        tyre_pressure_psi,
     })
-}
-
-fn validate_header_and_length(
-    header: &PacketHeader,
-    datagram_len: usize,
-    layout: CarTelemetryLayout,
-) -> Result<(), DecodeError> {
-    if header.packet_id != CAR_TELEMETRY_PACKET_ID {
-        return Err(DecodeError::UnexpectedPacketId {
-            expected: CAR_TELEMETRY_PACKET_ID,
-            actual: header.packet_id,
-        });
-    }
-    if header.packet_version != CAR_TELEMETRY_PACKET_VERSION {
-        return Err(DecodeError::UnsupportedPacketVersion {
-            packet_id: header.packet_id,
-            expected: CAR_TELEMETRY_PACKET_VERSION,
-            actual: header.packet_version,
-        });
-    }
-    if datagram_len != layout.packet_len {
-        return Err(DecodeError::InvalidPacketLength {
-            packet_id: header.packet_id,
-            expected: layout.packet_len,
-            actual: datagram_len,
-        });
-    }
-    Ok(())
 }

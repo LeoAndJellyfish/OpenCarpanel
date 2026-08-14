@@ -35,24 +35,41 @@ pub enum DecodeError {
         /// Game identifier observed in the packet.
         actual: u8,
     },
-    /// The bridge packet is not the exact v1 length.
+    /// The bridge packet is not the exact length for its version.
     InvalidLength {
-        /// Required v1 datagram length.
+        /// Required datagram length for the decoded version.
         expected: usize,
         /// Received datagram length.
         actual: usize,
     },
-    /// A v1 flags or reserved field was non-zero.
+    /// A header flags or reserved field was non-zero.
     UnsupportedFlags {
         /// Rejected flags byte.
         flags: u8,
         /// Rejected reserved byte.
         reserved: u8,
     },
+    /// A v2 light bit outside the defined mask was set.
+    UnsupportedLightBits {
+        /// Rejected light bit mask.
+        bits: u16,
+    },
+    /// A v2 state bit outside the defined mask was set.
+    UnsupportedStateBits {
+        /// Rejected state bit mask.
+        bits: u16,
+    },
     /// A floating-point measurement was not finite.
     NonFiniteValue {
         /// Stable field name.
         field: &'static str,
+    },
+    /// A measurement that must be non-negative was negative.
+    NegativeValue {
+        /// Stable field name.
+        field: &'static str,
+        /// Rejected value.
+        value: f32,
     },
     /// An RPM field was negative or outside the canonical u16 range.
     InvalidRpm {
@@ -67,6 +84,16 @@ pub enum DecodeError {
         field: &'static str,
         /// Rejected value.
         value: f32,
+    },
+    /// A fixed-width v2 job label was not valid UTF-8.
+    InvalidUtf8 {
+        /// Stable field name.
+        field: &'static str,
+    },
+    /// A fixed-width v2 job label was not NUL-terminated and zero-padded.
+    InvalidTextPadding {
+        /// Stable field name.
+        field: &'static str,
     },
 }
 
@@ -100,9 +127,19 @@ impl Display for DecodeError {
                 formatter,
                 "unsupported SCS bridge flags {flags:#04x} or reserved byte {reserved:#04x}"
             ),
+            Self::UnsupportedLightBits { bits } => {
+                write!(formatter, "unsupported SCS bridge light bits {bits:#06x}")
+            }
+            Self::UnsupportedStateBits { bits } => {
+                write!(formatter, "unsupported SCS bridge state bits {bits:#06x}")
+            }
             Self::NonFiniteValue { field } => {
                 write!(formatter, "SCS bridge field {field} must be finite")
             }
+            Self::NegativeValue { field, value } => write!(
+                formatter,
+                "SCS bridge field {field} must be non-negative, got {value}"
+            ),
             Self::InvalidRpm { field, value } => write!(
                 formatter,
                 "invalid SCS bridge {field} value {value}; expected 0..=65535"
@@ -110,6 +147,13 @@ impl Display for DecodeError {
             Self::InvalidNormalizedValue { field, value } => write!(
                 formatter,
                 "invalid SCS bridge {field} value {value}; expected 0.0..=1.0"
+            ),
+            Self::InvalidUtf8 { field } => {
+                write!(formatter, "SCS bridge field {field} must be valid UTF-8")
+            }
+            Self::InvalidTextPadding { field } => write!(
+                formatter,
+                "SCS bridge field {field} must be NUL-terminated and zero-padded"
             ),
         }
     }

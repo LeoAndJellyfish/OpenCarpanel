@@ -16,6 +16,10 @@ impl<'a> Cursor<'a> {
         Ok(self.take::<1>()?[0])
     }
 
+    pub(crate) fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], DecodeError> {
+        self.take()
+    }
+
     pub(crate) fn read_i8(&mut self) -> Result<i8, DecodeError> {
         Ok(i8::from_le_bytes(self.take()?))
     }

@@ -205,9 +205,9 @@ function f1Packet(format, gameYear) {
 }
 
 function scsPacket(gameId) {
-  const packet = Buffer.alloc(44);
+  const packet = Buffer.alloc(188);
   Buffer.from([0x4f, 0x43, 0x50, 0]).copy(packet, 0);
-  packet.writeUInt8(1, 4);
+  packet.writeUInt8(2, 4);
   packet.writeUInt8(gameId, 5);
   packet.writeBigUInt64LE(0x1112_1314_1516_1718n, 8);
   packet.writeUInt32LE(42, 16);
@@ -217,6 +217,21 @@ function scsPacket(gameId) {
   packet.writeInt32LE(6, 32);
   packet.writeFloatLE(0.75, 36);
   packet.writeFloatLE(0.1, 40);
+  packet.writeFloatLE(12_500, 44);
+  packet.writeFloatLE(600, 48);
+  packet.writeFloatLE(25, 52);
+  packet.writeFloatLE(275, 56);
+  packet.writeFloatLE(400, 60);
+  packet.writeFloatLE(900, 64);
+  packet.writeUInt16LE(0x01d3, 68);
+  packet.writeUInt16LE(0x000f, 70);
+  packet.writeUInt32LE(11_000, 72);
+  packet.writeUInt32LE(650, 76);
+  packet.writeBigUInt64LE(85_000n, 80);
+  packet.writeFloatLE(22_000, 88);
+  packet.write("Medical Vaccines", 92, "utf8");
+  packet.write("Hamburg", 124, "utf8");
+  packet.write("Oslo", 156, "utf8");
   return packet;
 }
 

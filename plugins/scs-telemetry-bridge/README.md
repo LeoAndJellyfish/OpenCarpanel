@@ -1,8 +1,9 @@
 # OpenCarpanel SCS telemetry bridge
 
-This native SCS Telemetry SDK plugin sends a fixed 44-byte versioned datagram to
+This native SCS Telemetry SDK plugin sends a fixed 188-byte v2 datagram to
 `127.0.0.1:20777` after each unpaused game frame. It supports Euro Truck
-Simulator 2 and American Truck Simulator.
+Simulator 2 and American Truck Simulator. The Rust Host also accepts legacy
+44-byte v1 packets from older plugin builds.
 
 The frame callback performs no dynamic allocation, locking, DNS lookup, file
 I/O, or blocking network operation. It sends only to the IPv4 loopback address.
@@ -35,14 +36,15 @@ listen on its default telemetry port, UDP 20777.
 The plugin has a distinct filename and can coexist with ETS2LA's
 `scs-telemetry` shared-memory plugin.
 
-## Wire protocol v1
+## Wire protocol v2
 
-All integers and IEEE-754 floats are little-endian. The exact layout is:
+All integers and IEEE-754 floats are little-endian. Bytes 0–43 retain the v1
+base layout; the exact v2 layout is:
 
 | Offset | Bytes | Field |
 |---:|---:|---|
 | 0 | 4 | Magic `OCP\0` |
-| 4 | 1 | Protocol version (`1`) |
+| 4 | 1 | Protocol version (`2`) |
 | 5 | 1 | Game (`1` ETS2, `2` ATS) |
 | 6 | 2 | Flags and reserved bytes (`0`) |
 | 8 | 8 | Session nonce |
@@ -53,8 +55,25 @@ All integers and IEEE-754 floats are little-endian. The exact layout is:
 | 32 | 4 | Displayed gear |
 | 36 | 4 | Effective throttle, 0–1 |
 | 40 | 4 | Effective brake, 0–1 |
+| 44 | 4 | Navigation distance, m |
+| 48 | 4 | Navigation time, s |
+| 52 | 4 | Navigation speed limit, m/s |
+| 56 | 4 | Fuel amount, L |
+| 60 | 4 | Fuel capacity, L |
+| 64 | 4 | Fuel range, km |
+| 68 | 2 | Parking/headlight/beacon/brake/reverse/indicator/hazard bits |
+| 70 | 2 | Fuel warning/job active/cargo loaded/special-job bits |
+| 72 | 4 | Delivery time |
+| 76 | 4 | Planned distance, simulated km |
+| 80 | 8 | Job income |
+| 88 | 4 | Cargo mass, kg |
+| 92 | 32 | Cargo name, UTF-8 with zero padding |
+| 124 | 32 | Source city, UTF-8 with zero padding |
+| 156 | 32 | Destination city, UTF-8 with zero padding |
 
-The corresponding defensive decoder lives in `crates/adapter-scs`.
+The corresponding defensive decoder lives in `crates/adapter-scs`. It selects
+v1 or v2 from the version byte, requires the exact associated length, and
+rejects unknown bits, invalid text padding/UTF-8, and invalid numeric values.
 
 ## Licensing
 

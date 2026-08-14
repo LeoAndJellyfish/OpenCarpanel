@@ -69,6 +69,13 @@ pub enum DecodeError {
         /// Rejected value.
         value: f32,
     },
+    /// A floating-point measurement was non-finite or outside its physical range.
+    InvalidNumericValue {
+        /// Official field name without the `m_` prefix.
+        field: &'static str,
+        /// Rejected value.
+        value: f32,
+    },
     /// An integer is not a documented member of an enum-like field.
     InvalidEnumValue {
         /// Official field name without the `m_` prefix.
@@ -136,6 +143,9 @@ impl Display for DecodeError {
                 formatter,
                 "invalid {field} value {value}; expected a finite value in 0.0..=1.0"
             ),
+            Self::InvalidNumericValue { field, value } => {
+                write!(formatter, "invalid {field} numeric value {value}")
+            }
             Self::InvalidEnumValue { field, actual } => {
                 write!(formatter, "invalid {field} enum value {actual}")
             }

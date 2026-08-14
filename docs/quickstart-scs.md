@@ -1,6 +1,6 @@
 # OpenCarpanel ETS2 / ATS 快速开始
 
-Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向外发送仪表 UDP。OpenCarpanel 随包提供一个最小 SCS Telemetry SDK 插件：游戏调用插件，插件把当前帧的必要仪表数据以固定 44 字节报文发送到同机 `127.0.0.1:20777`，随后由 Rust Host 转发给手机/iPad。
+Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向外发送仪表 UDP。OpenCarpanel 随包提供一个最小 SCS Telemetry SDK 插件：游戏调用插件，插件把驾驶、导航、油量、灯光与任务状态编码为固定 188-byte v2 报文，发送到同机 `127.0.0.1:20777`，随后由 Rust Host 转发给手机/iPad。Host 也兼容旧插件的 44-byte v1 基础报文。
 
 ## 1. 使用桌面安装向导（推荐）
 
@@ -55,9 +55,9 @@ $env:OPENCARPANEL_GAME = "ets2" # 美卡改为 ats
 | --- | --- |
 | `packetsReceived` 始终为 0 | 文件是否在正确的 64 位 `plugins` 目录；是否重启游戏并接受 SDK 提示；Host 是否监听默认 20777 |
 | 游戏没有 SDK 提示 | 插件路径/扩展名/CPU 架构不正确，或游戏尚未完全重启 |
-| `packetsReceived` 增长但不识别 | 固定选择是否选错；是否安装了当前 OpenCarpanel 插件而非同名旧文件 |
+| `packetsReceived` 增长但不识别 | 固定选择是否选错；插件是否损坏或来自不受支持的协议版本 |
 | RPM 上限暂时为空 | 车辆配置事件尚未到达；进入车辆并开始驾驶后会更新 |
 | 仪表显示 `DATA STALE` | 游戏暂停或进入菜单时插件有意停止发送；回到驾驶后自动恢复 |
 | 插件初始化失败 | 在游戏的 `game.log.txt` 中搜索 `OpenCarpanel:`；插件会记录 socket 或 SDK callback 注册错误 |
 
-插件不监听端口、不接受网络输入、不读取存档，只向 IPv4 loopback 发送；手机仍只连接 Host 的配对 HTTP/WebSocket。协议和安全边界见 [SCS bridge v1](protocols/scs-bridge-v1.md)。
+插件不监听端口、不接受网络输入、不读取存档，只向 IPv4 loopback 发送；手机仍只连接 Host 的配对 HTTP/WebSocket。协议和安全边界见 [SCS bridge v2](protocols/scs-bridge-v2.md)，旧版兼容布局见 [v1](protocols/scs-bridge-v1.md)。

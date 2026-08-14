@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
   <title id="title">OpenCarpanel supported game data paths</title>
-  <desc id="desc">F1 24 and F1 25 send native UDP directly to the Host. ETS2 and ATS invoke the SCS SDK bridge plugin, which sends a fixed loopback datagram to the same Host ingress. Every source becomes canonical telemetry and is published over a paired local WebSocket to a phone or iPad.</desc>
+  <desc id="desc">F1 24 and F1 25 send native UDP directly to the Host. ETS2 and ATS invoke the SCS SDK bridge plugin, which sends a fixed 188-byte v2 loopback datagram to the same Host ingress while the Host retains v1 compatibility. Every source becomes canonical telemetry and is published over a paired local WebSocket to a phone or iPad.</desc>
   <defs>
     <marker id="green-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
       <path d="M0 0L9 4.5L0 9Z" fill="#d9ff43"/>
@@ -34,7 +34,7 @@
   <path d="M129 503V527H205M281 503V527H205" fill="none" stroke="#ffbd45" stroke-width="3"/>
   <rect x="84" y="527" width="242" height="58" rx="12" fill="#18130b" stroke="#7b5d25"/>
   <text x="205" y="551" fill="#ffcf73" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="700" text-anchor="middle">OpenCarpanel SCS plugin</text>
-  <text x="205" y="575" fill="#c7ac79" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" text-anchor="middle">FRAME_END / 44 bytes</text>
+  <text x="205" y="575" fill="#c7ac79" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" text-anchor="middle">FRAME_END / v2 · 188 bytes</text>
 
   <rect x="430" y="132" width="484" height="480" rx="22" fill="#0d1115" stroke="#2a3033" stroke-width="2"/>
   <text x="454" y="169" fill="#899195" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">RUST HOST / ONE PROCESS</text>

@@ -19,6 +19,10 @@ impl<'a> Cursor<'a> {
         Ok(self.take::<1>()?[0])
     }
 
+    pub(crate) fn read_u16_le(&mut self) -> Result<u16, DecodeError> {
+        Ok(u16::from_le_bytes(self.take()?))
+    }
+
     pub(crate) fn read_u32_le(&mut self) -> Result<u32, DecodeError> {
         Ok(u32::from_le_bytes(self.take()?))
     }

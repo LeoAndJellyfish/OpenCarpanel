@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest">下载预览版</a>
   · <a href="./docs/quickstart-multi-game.md">快速开始</a>
-  · <a href="./docs/data-paths-and-scs-packet.md">数据链路与 44 字节图解</a>
+  · <a href="./docs/data-paths-and-scs-packet.md">数据链路与协议图解</a>
   · <a href="./docs/README.md">文档</a>
   · <a href="./LICENSE">Apache-2.0</a>
 </p>
@@ -21,12 +21,12 @@
 
 ## 现在支持什么
 
-| 游戏 | 电脑端输入 | 首版字段 | 需要注意 |
+| 游戏 | 电脑端输入 | 主要字段 | 需要注意 |
 | --- | --- | --- | --- |
-| **F1 24** | 游戏原生 UDP，format `2024` | 速度、档位、RPM、转速灯、油门、刹车、DRS | 当前只解析玩家车辆 packet id 6 |
-| **F1 25 + 2026 Season Pack** | 游戏原生 UDP，format `2025` 或 `2026` | 与 F1 24 相同 | 两种 UDP mode 均严格按各自包长解析；2026 默认模式可直接使用 |
-| **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 速度、档位、RPM/RPM 上限、油门、刹车 | 首次使用需复制插件并接受游戏 SDK 提示 |
-| **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | 插件只向 `127.0.0.1:20777` 非阻塞发送 |
+| **F1 24** | 游戏原生 UDP，format `2024` | 驾驶、圈速/比赛状态、赛事事件、燃油/ERS、轮胎、损伤、天气与处罚 | 严格解析 packet `1/2/3/6/7/10` |
+| **F1 25 + 2026 Season Pack** | 游戏原生 UDP，format `2025` 或 `2026` | 与 F1 24 相同；2026 另含主动空气动力学与超车状态 | 两种 mode 按各自车辆数与精确包长解析；2026 支持 packet `16` |
+| **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 驾驶、导航、道路限速、油量/续航、灯光与配送任务 | 首次使用需复制插件并接受游戏 SDK 提示 |
+| **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | v2 插件只向 `127.0.0.1:20777` 非阻塞发送；Host 兼容 v1 |
 
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
@@ -71,9 +71,9 @@ npm run build:host
   <a href="./docs/data-paths-and-scs-packet.md"><img src="./docs/assets/supported-game-data-paths.svg" width="100%" alt="F1 24、F1 25、ETS2、ATS 经本地 Host 到手机或 iPad 的完整数据链路"></a>
 </p>
 
-F1 直接发送官方 UDP；ETS2/ATS 由游戏加载最小 SCS 插件，把 callback 编码为固定 44 字节的本机数据报。Host 逐字段安全解析，并交给每游戏独立 reducer；连续状态只保留最新值，离散事件进入有界 ring，最终通过已配对的本地 WebSocket 发布。
+F1 直接发送官方 UDP；ETS2/ATS 由游戏加载最小 SCS 插件，把 callback 编码为固定 188-byte v2 本机数据报（Host 仍接受 44-byte v1）。Host 逐字段安全解析，并交给每游戏独立 reducer；连续状态只保留最新值，离散事件进入有界 ring，最终通过已配对的本地 WebSocket 发布。
 
-[打开教材式图解：四游戏链路、44 字节逐 byte 阵列、字段表与 ETS2LA 方案对照 →](./docs/data-paths-and-scs-packet.md)
+[打开教材式图解：四游戏链路、v1/v2 数据包阵列、字段表与 ETS2LA 方案对照 →](./docs/data-paths-and-scs-packet.md)
 
 ## 为驾驶场景做的取舍
 
@@ -136,14 +136,14 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 
 推荐阅读：
 
-- [游戏数据链路与 SCS 44 字节协议图解](./docs/data-paths-and-scs-packet.md)
+- [游戏数据链路与 SCS 数据包协议图解](./docs/data-paths-and-scs-packet.md)
 - [多游戏输入与适配器设计](./docs/plans/2026-08-12-multi-game-adapters-design.md)
 - [F1 25 2026 Season Pack 与按游戏前端设计](./docs/plans/2026-08-12-f1-25-2026-season-pack-design.md)
 - [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)
 - [视觉与动效设计](./docs/plans/2026-08-11-f1-dashboard-visual-design.md)
 - [ADR：为什么采用版本化本机桥接](./docs/adr/0007-versioned-local-game-input-bridges.md)
 - [ADR：为什么桌面端嵌入同一个 Host](./docs/adr/0008-tauri-desktop-embedded-host.md)
-- [F1 24](./docs/protocols/f1-24.md)、[F1 25](./docs/protocols/f1-25.md) 与 [SCS bridge v1](./docs/protocols/scs-bridge-v1.md) 协议边界
+- [F1 24](./docs/protocols/f1-24.md)、[F1 25](./docs/protocols/f1-25.md)、[SCS bridge v1](./docs/protocols/scs-bridge-v1.md) 与 [v2](./docs/protocols/scs-bridge-v2.md) 协议边界
 - [发布检查清单](./docs/release-checklist.md)
 
 ## License

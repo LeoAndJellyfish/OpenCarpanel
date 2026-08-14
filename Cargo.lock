@@ -2703,6 +2703,7 @@ version = "0.2.2"
 dependencies = [
  "opencarpanel-adapter-api",
  "opencarpanel-telemetry-core",
+ "serde_json",
 ]
 
 [[package]]
