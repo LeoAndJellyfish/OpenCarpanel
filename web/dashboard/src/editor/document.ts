@@ -6,6 +6,7 @@ import {
   type LayoutDocument,
   type WidgetInstance,
   type WidgetManifest,
+  type WidgetType,
 } from "@opencarpanel/widget-sdk";
 
 import { findAvailablePlacement } from "./grid";
@@ -53,6 +54,16 @@ export function removeWidget(layout: LayoutDocument, instanceId: string): Layout
   return {
     ...layout,
     widgets: layout.widgets.filter((widget) => widget.instanceId !== instanceId),
+  };
+}
+
+export function removeWidgetsByType(
+  layout: LayoutDocument,
+  componentType: WidgetType,
+): LayoutDocument {
+  return {
+    ...layout,
+    widgets: layout.widgets.filter((widget) => widget.componentType !== componentType),
   };
 }
 

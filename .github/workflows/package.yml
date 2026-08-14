@@ -122,11 +122,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: OpenCarpanel v__VERSION__ — Adaptive Dashboard Telemetry
+          releaseName: OpenCarpanel v__VERSION__ — Dashboard Controls & Update Progress
           releaseBody: |
-            OpenCarpanel v0.3.1 brings the expanded F1 and SCS telemetry onto responsive, game-specific phone and tablet dashboards while keeping the complete driving data path local.
+            OpenCarpanel v0.3.2 makes dashboard customization immediate with game-specific component switches, and makes desktop updates observable with clear download and installation progress.
 
-            See `docs/releases/v0.3.1.md` for the new panels, safe layout migration, compatibility, and validation notes.
+            See `docs/releases/v0.3.2.md` for editor behavior, updater safety, compatibility, and validation notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

@@ -7,6 +7,8 @@
 - [`plans/2026-08-12-f1-25-2026-season-pack-design.md`](plans/2026-08-12-f1-25-2026-season-pack-design.md)：2026 UDP 包布局以及按 `gameId` 自动切换前端、隔离布局的设计。
 - [`plans/2026-08-12-f1-25-2026-season-pack-implementation.md`](plans/2026-08-12-f1-25-2026-season-pack-implementation.md)：对应的测试优先实施与验证步骤。
 - [`plans/2026-08-12-v0.2-desktop-control-center-design.md`](plans/2026-08-12-v0.2-desktop-control-center-design.md)：Tauri 桌面控制中心、单 Host、配置、托盘和签名更新设计。
+- [`plans/2026-08-14-dashboard-widget-toggle-design.md`](plans/2026-08-14-dashboard-widget-toggle-design.md)：按游戏过滤的 Steam 浮层式组件开关与兼容性设计。
+- [`plans/2026-08-14-desktop-update-progress-design.md`](plans/2026-08-14-desktop-update-progress-design.md)：应用内更新下载、验签和安装阶段的进度反馈设计。
 - [`data-paths-and-scs-packet.md`](data-paths-and-scs-packet.md)：四款游戏的端到端数据链路与 SCS bridge v1/v2 数组图解。
 - [`plans/2026-08-11-f1-24-mvp-implementation.md`](plans/2026-08-11-f1-24-mvp-implementation.md)：按测试优先顺序拆分的实施计划。
 - [`adr/`](adr/)：重要且长期有效的架构决策记录。
@@ -24,5 +26,6 @@
 - [`releases/v0.2.2.md`](releases/v0.2.2.md)：桌面控制中心文案精简、兼容性与验证说明。
 - [`releases/v0.3.0.md`](releases/v0.3.0.md)：F1 与 SCS 遥测扩展、bridge v2、兼容性与验证说明。
 - [`releases/v0.3.1.md`](releases/v0.3.1.md)：游戏自适应遥测面板、默认布局安全迁移与响应式验证说明。
+- [`releases/v0.3.2.md`](releases/v0.3.2.md)：按游戏过滤的组件开关、桌面更新进度与兼容性说明。
 
 架构设计描述“系统应当是什么样”，实施计划描述“按什么顺序把它建出来”，ADR 解释“为什么选择该方案”。

@@ -31,6 +31,7 @@ import {
   addWidget,
   duplicateWidget,
   removeWidget,
+  removeWidgetsByType,
   updateWidgetSettings,
 } from "../editor/document";
 import {
@@ -51,7 +52,10 @@ import {
   MAX_LAYOUT_TRANSFER_BYTES,
 } from "../editor/layout-transfer";
 import { useTelemetryRuntime } from "../telemetry/use-runtime";
-import { BUILTIN_WIDGET_MANIFESTS, builtinWidgetManifest } from "../widgets/catalog";
+import {
+  builtinWidgetManifest,
+  builtinWidgetManifestsForGame,
+} from "../widgets/catalog";
 import "../styles/editor.css";
 
 const BREAKPOINT_LABELS: Readonly<Record<BreakpointName, string>> = {
@@ -85,6 +89,7 @@ export function EditRoute() {
   const layout = history.present;
   const selected = layout.widgets.find((widget) => widget.instanceId === selectedId);
   const selectedManifest = selected ? builtinWidgetManifest(selected.componentType) : undefined;
+  const availableManifests = builtinWidgetManifestsForGame(selectedGameId);
   const dirty = savedDocument ? layoutSignature(layout) !== layoutSignature(savedDocument) : false;
   const loaded = loadedLayoutId === presentation.layoutId;
 
@@ -204,15 +209,26 @@ export function EditRoute() {
     setConflict(undefined);
   };
 
-  const add = (manifest: WidgetManifest<object>) => {
+  const toggleWidget = (manifest: WidgetManifest<object>) => {
+    const instances = layout.widgets.filter(
+      (widget) => widget.componentType === manifest.type,
+    );
+    if (instances.length > 0) {
+      commit(removeWidgetsByType(layout, manifest.type));
+      if (selected?.componentType === manifest.type) {
+        setSelectedId(undefined);
+      }
+      setNotice(`已停用 ${manifest.displayName}。`);
+      return;
+    }
     const next = addWidget(layout, manifest);
     if (!next) {
-      setNotice("当前断点没有足够空间；请先缩小或移除一个组件。");
+      setNotice("所有预览断点都需要可用空间；请先停用或缩小一个组件。");
       return;
     }
     commit(next);
     setSelectedId(next.widgets.at(-1)?.instanceId);
-    setNotice(`已添加 ${manifest.displayName}。`);
+    setNotice(`已启用 ${manifest.displayName}。`);
   };
 
   const duplicateSelected = () => {
@@ -394,14 +410,35 @@ export function EditRoute() {
       <div class="editor-workspace">
         <aside class="editor-toolbox" aria-label="组件与样式">
           <section>
-            <h2>添加组件</h2>
+            <h2>组件</h2>
             <div class="editor-widget-catalog">
-              {BUILTIN_WIDGET_MANIFESTS.map((manifest) => (
-                <button key={manifest.type} type="button" onClick={() => add(manifest)}>
-                  <span>{manifest.displayName}</span>
-                  <small>{manifest.description}</small>
-                </button>
-              ))}
+              {availableManifests.map((manifest) => {
+                const instanceCount = layout.widgets.filter(
+                  (widget) => widget.componentType === manifest.type,
+                ).length;
+                const enabled = instanceCount > 0;
+                return (
+                  <button
+                    key={manifest.type}
+                    type="button"
+                    aria-label={`${enabled ? "停用" : "启用"} ${manifest.displayName}`}
+                    aria-pressed={enabled}
+                    onClick={() => toggleWidget(manifest)}
+                  >
+                    <span class="editor-widget-copy">
+                      <strong>{manifest.displayName}</strong>
+                      <small>
+                        {enabled
+                          ? instanceCount > 1
+                            ? `已启用 · ${instanceCount} 个`
+                            : "已启用"
+                          : "未启用"}
+                      </small>
+                    </span>
+                    <span class="editor-widget-switch" aria-hidden="true" />
+                  </button>
+                );
+              })}
             </div>
           </section>
 

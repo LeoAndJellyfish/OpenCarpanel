@@ -31,7 +31,7 @@
 四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
 
 > [!IMPORTANT]
-> `v0.3.1` 已将扩展遥测接入手机/iPad 仪表盘：F1 自动显示比赛、天气、燃油、轮胎、车损与 2026 主动空气动力学面板，ETS2/ATS 自动显示导航、任务、油量与灯光面板；未修改的旧默认布局会安全升级，自定义布局保持不变。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.3.2` 将仪表盘编辑器改为按游戏过滤的组件开关：单击即可启用或停用，F1 与 ETS2/ATS 不再混入不适用组件；桌面端更新同时新增真实下载进度、验签与安装阶段反馈。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
