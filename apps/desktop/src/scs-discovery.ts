@@ -15,8 +15,39 @@ export interface ScsDirectoryPresentation {
   chooseLabel: string;
 }
 
+export interface ScsBridgeNotice {
+  message: string;
+  actionLabel: string;
+}
+
 export function isScsGame(game: string): game is ScsGame {
   return game === "ets2" || game === "ats";
+}
+
+export function scsRuntimeGame(
+  activeAdapter: string | null | undefined,
+  adapterSelection: string,
+): ScsGame | null {
+  if (activeAdapter && isScsGame(activeAdapter)) {
+    return activeAdapter;
+  }
+  return isScsGame(adapterSelection) ? adapterSelection : null;
+}
+
+export function scsBridgeNotice(status: ScsPluginStatus | null): ScsBridgeNotice | null {
+  if (!status || status.state === "current") {
+    return null;
+  }
+  const game = status.game.toUpperCase();
+  return status.state === "missing"
+    ? {
+        message: `${game} SCS Bridge 尚未安装，任务数据暂不可用`,
+        actionLabel: "安装 Bridge",
+      }
+    : {
+        message: `${game} SCS Bridge 需要更新，任务数据暂不可用`,
+        actionLabel: "更新 Bridge",
+      };
 }
 
 export function scsDirectoryPresentation(

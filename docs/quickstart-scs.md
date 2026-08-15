@@ -65,6 +65,7 @@ $env:OPENCARPANEL_GAME = "ets2" # 美卡改为 ats
 | `packetsReceived` 始终为 0 | 文件是否在正确的 64 位 `plugins` 目录；是否重启游戏并接受 SDK 提示；Host 是否监听默认 20777 |
 | 游戏没有 SDK 提示 | 插件路径/扩展名/CPU 架构不正确，或游戏尚未完全重启 |
 | `packetsReceived` 增长但不识别 | 固定选择是否选错；插件是否损坏或来自不受支持的协议版本 |
+| 基础速度/转速正常，但任务、导航、油量或灯光缺失 | 仍在运行 44-byte v1 旧插件；完全退出游戏，在“游戏设置”中更新 SCS Bridge，确认状态为 `CURRENT` 后重新启动游戏 |
 | RPM 上限暂时为空 | 车辆配置事件尚未到达；进入车辆并开始驾驶后会更新 |
 | 仪表显示 `DATA STALE` | 游戏暂停或进入菜单时插件有意停止发送；回到驾驶后自动恢复 |
 | 插件初始化失败 | 在游戏的 `game.log.txt` 中搜索 `OpenCarpanel:`；插件会记录 socket 或 SDK callback 注册错误 |

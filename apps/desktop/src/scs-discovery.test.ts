@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { ScsPluginStatus } from "./desktop-api";
-import { isScsGame, scsDirectoryPresentation } from "./scs-discovery";
+import {
+  isScsGame,
+  scsBridgeNotice,
+  scsDirectoryPresentation,
+  scsRuntimeGame,
+} from "./scs-discovery";
 
 const status: ScsPluginStatus = {
   game: "ets2",
@@ -37,5 +42,25 @@ describe("SCS Steam discovery presentation", () => {
     expect(isScsGame("ets2")).toBe(true);
     expect(isScsGame("ats")).toBe(true);
     expect(isScsGame("f1-25")).toBe(false);
+  });
+
+  it("checks the active SCS source before a fixed selection", () => {
+    expect(scsRuntimeGame("ets2", "auto")).toBe("ets2");
+    expect(scsRuntimeGame("ats", "ets2")).toBe("ats");
+    expect(scsRuntimeGame("f1-25", "ets2")).toBe("ets2");
+    expect(scsRuntimeGame("f1-25", "auto")).toBeNull();
+  });
+
+  it("only asks for action when the bridge is missing or outdated", () => {
+    expect(scsBridgeNotice(status)).toMatchObject({
+      message: "ETS2 SCS Bridge 尚未安装，任务数据暂不可用",
+      actionLabel: "安装 Bridge",
+    });
+    expect(scsBridgeNotice({ ...status, state: "outdated" })).toMatchObject({
+      message: "ETS2 SCS Bridge 需要更新，任务数据暂不可用",
+      actionLabel: "更新 Bridge",
+    });
+    expect(scsBridgeNotice({ ...status, state: "current" })).toBeNull();
+    expect(scsBridgeNotice(null)).toBeNull();
   });
 });

@@ -34,7 +34,9 @@ import {
   type ScsDiscoveryPhase,
   type ScsGame,
   isScsGame,
+  scsBridgeNotice,
   scsDirectoryPresentation,
+  scsRuntimeGame,
 } from "./scs-discovery";
 import {
   IDLE_UPDATE_PROGRESS,
@@ -123,9 +125,19 @@ export function App() {
     return () => window.clearInterval(timer);
   }, [data !== null, busy]);
 
+  const runtimeScsGame = data
+    ? scsRuntimeGame(
+        data.diagnostics.activeAdapter,
+        data.settings.host.adapterSelection,
+      )
+    : null;
+  const scsDiscoveryTarget = section === "games" && isScsGame(setupGame)
+    ? setupGame
+    : runtimeScsGame;
+
   useEffect(() => {
-    if (section !== "games" || !isScsGame(setupGame)) return;
-    const game = setupGame;
+    if (!scsDiscoveryTarget) return;
+    const game = scsDiscoveryTarget;
     if (scsStatuses[game] || scsDiscovery[game] !== "idle") return;
     const requestVersion = scsRequestVersions.current[game] + 1;
     scsRequestVersions.current[game] = requestVersion;
@@ -145,7 +157,7 @@ export function App() {
         if (scsRequestVersions.current[game] !== requestVersion) return;
         setScsDiscovery((current) => ({ ...current, [game]: "failed" }));
       });
-  }, [section, setupGame, scsStatuses, scsDiscovery]);
+  }, [scsDiscoveryTarget, scsStatuses, scsDiscovery]);
 
   const profile = useMemo(
     () => (data ? gameProfile(data.diagnostics) : null),
@@ -377,8 +389,13 @@ export function App() {
                 )
               }
               onNavigate={setSection}
+              onOpenScsSetup={(game) => {
+                setSetupGame(game);
+                setSection("games");
+              }}
               onOpen={(target) => void openDashboard(target).catch((reason) => setError(errorText(reason)))}
               profileLabel={profile.label}
+              scsStatus={runtimeScsGame ? (scsStatuses[runtimeScsGame] ?? null) : null}
             />
           )}
           {section === "pairing" && (
@@ -461,20 +478,25 @@ interface OverviewProps {
   data: DesktopBootstrap;
   live: boolean;
   profileLabel: string;
+  scsStatus: ScsPluginStatus | null;
   onNavigate: (section: Section) => void;
   onCompleteOnboarding: () => void;
   onOpen: (target: "dashboard" | "editor") => void;
+  onOpenScsSetup: (game: ScsGame) => void;
 }
 
 function Overview({
   data,
   live,
   profileLabel,
+  scsStatus,
   onNavigate,
   onCompleteOnboarding,
   onOpen,
+  onOpenScsSetup,
 }: OverviewProps) {
   const diagnostics = data.diagnostics;
+  const bridgeNotice = scsBridgeNotice(scsStatus);
   const steps = [
     { code: "01", label: "GAME", value: diagnostics.activeAdapter ?? "WAITING", active: live },
     {
@@ -514,6 +536,17 @@ function Overview({
             <button class="button-quiet" type="button" onClick={() => onNavigate("games")}>开始设置</button>
             <button class="text-action" type="button" onClick={onCompleteOnboarding}>稍后提醒</button>
           </div>
+        </section>
+      )}
+
+      {bridgeNotice && scsStatus && isScsGame(scsStatus.game) && (
+        <section class="scs-bridge-notice" role="status">
+          <strong>{bridgeNotice.message}</strong>
+          <button
+            class="button-quiet"
+            type="button"
+            onClick={() => onOpenScsSetup(scsStatus.game as ScsGame)}
+          >{bridgeNotice.actionLabel}</button>
         </section>
       )}
 
