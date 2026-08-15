@@ -1,0 +1,602 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GamePluginPackage",
+  "description": "Single-file distributable plugin package.",
+  "type": "object",
+  "properties": {
+    "manifest": {
+      "description": "Embedded external-plugin manifest.",
+      "$ref": "#/$defs/GamePluginManifest"
+    },
+    "moduleBase64": {
+      "description": "Base64-encoded WASM module bytes.",
+      "type": "string"
+    },
+    "packageVersion": {
+      "description": "Package envelope version.",
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "packageVersion",
+    "manifest",
+    "moduleBase64"
+  ],
+  "$defs": {
+    "GamePluginManifest": {
+      "description": "Complete source-of-truth declaration for one supported game or telemetry producer.",
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "description": "Canonical telemetry paths this decoder can produce.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TelemetryField"
+          }
+        },
+        "description": {
+          "description": "Concise purpose and compatibility summary.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Stable lowercase game/plugin identifier.",
+          "type": "string"
+        },
+        "ingress": {
+          "description": "Host-owned input transport declaration.",
+          "$ref": "#/$defs/PluginIngress"
+        },
+        "license": {
+          "description": "SPDX license expression or short license identifier.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Product-facing source name.",
+          "type": "string"
+        },
+        "presentation": {
+          "description": "Trusted Dashboard presentation configuration.",
+          "$ref": "#/$defs/PluginPresentation"
+        },
+        "protocol": {
+          "description": "Human-readable upstream wire protocol information.",
+          "$ref": "#/$defs/PluginProtocol"
+        },
+        "publisher": {
+          "description": "Publisher shown before local installation.",
+          "type": "string"
+        },
+        "runtime": {
+          "description": "Decoder implementation selected by the Host.",
+          "$ref": "#/$defs/PluginRuntime"
+        },
+        "schemaVersion": {
+          "description": "Manifest schema version.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "setup": {
+          "description": "Declarative setup workflow for the desktop control center.",
+          "$ref": "#/$defs/PluginSetup"
+        },
+        "version": {
+          "description": "Plugin implementation semantic version.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "name",
+        "version",
+        "publisher",
+        "license",
+        "description",
+        "runtime",
+        "protocol",
+        "ingress",
+        "capabilities",
+        "presentation",
+        "setup"
+      ]
+    },
+    "PluginGameFamily": {
+      "description": "High-level dashboard visual family.",
+      "oneOf": [
+        {
+          "description": "Circuit/open-wheel oriented density.",
+          "type": "string",
+          "const": "formula"
+        },
+        {
+          "description": "Road and hauling oriented density.",
+          "type": "string",
+          "const": "truck"
+        },
+        {
+          "description": "General driving telemetry layout.",
+          "type": "string",
+          "const": "generic"
+        }
+      ]
+    },
+    "PluginIngress": {
+      "description": "Host-owned transport used to deliver bytes to a decoder.",
+      "type": "object",
+      "properties": {
+        "defaultPort": {
+          "description": "Suggested port when configuring the game or producer.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "kind": {
+          "description": "v1 transport kind.",
+          "$ref": "#/$defs/PluginIngressKind"
+        },
+        "maxDatagramBytes": {
+          "description": "Decoder-specific maximum input size.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "defaultPort",
+        "maxDatagramBytes"
+      ]
+    },
+    "PluginIngressKind": {
+      "description": "Supported plugin ingress transports.",
+      "oneOf": [
+        {
+          "description": "Datagram arrives on the single UDP listener owned by the Host.",
+          "type": "string",
+          "const": "shared_udp"
+        }
+      ]
+    },
+    "PluginLayoutPreset": {
+      "description": "Responsive layout template selected by a plugin.",
+      "oneOf": [
+        {
+          "description": "Six-panel formula layout.",
+          "type": "string",
+          "const": "formula"
+        },
+        {
+          "description": "Five-panel trucking layout.",
+          "type": "string",
+          "const": "truck"
+        },
+        {
+          "description": "Four core telemetry panels.",
+          "type": "string",
+          "const": "generic"
+        }
+      ]
+    },
+    "PluginPresentation": {
+      "description": "Safe presentation values consumed by the trusted Dashboard.",
+      "type": "object",
+      "properties": {
+        "detail": {
+          "description": "Secondary label rendered next to the game name.",
+          "type": "string"
+        },
+        "fallbackRpmMax": {
+          "description": "Safe fallback for games that do not report maximum RPM.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "family": {
+          "description": "Broad visual family.",
+          "$ref": "#/$defs/PluginGameFamily"
+        },
+        "layoutPreset": {
+          "description": "Built-in responsive placement template.",
+          "$ref": "#/$defs/PluginLayoutPreset"
+        },
+        "shortName": {
+          "description": "Compact tab/status label.",
+          "type": "string"
+        },
+        "statusMode": {
+          "description": "Semantics used by the built-in status widget.",
+          "$ref": "#/$defs/PluginStatusMode"
+        },
+        "theme": {
+          "description": "Theme values applied to a new per-game layout.",
+          "$ref": "#/$defs/PluginTheme"
+        },
+        "widgets": {
+          "description": "Trusted built-in widget types offered for this game.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "shortName",
+        "detail",
+        "family",
+        "statusMode",
+        "layoutPreset",
+        "theme",
+        "fallbackRpmMax",
+        "widgets"
+      ]
+    },
+    "PluginProtocol": {
+      "description": "Upstream game or software telemetry protocol label.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Protocol family, such as `EA UDP` or `SCS bridge`.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Accepted upstream protocol versions.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "PluginRuntime": {
+      "description": "Decoder implementation referenced by a manifest.",
+      "oneOf": [
+        {
+          "description": "Adapter compiled into the official Host.",
+          "type": "object",
+          "properties": {
+            "entrypoint": {
+              "description": "Factory entrypoint resolved by the built-in registry.",
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "builtin"
+            }
+          },
+          "required": [
+            "kind",
+            "entrypoint"
+          ]
+        },
+        {
+          "description": "Sandboxed WebAssembly adapter installed from a package.",
+          "type": "object",
+          "properties": {
+            "abiVersion": {
+              "description": "Stable ABI required by the module.",
+              "type": "integer",
+              "format": "uint16",
+              "maximum": 65535,
+              "minimum": 0
+            },
+            "kind": {
+              "type": "string",
+              "const": "wasm"
+            },
+            "module": {
+              "description": "Safe package-relative module filename.",
+              "type": "string"
+            },
+            "sha256": {
+              "description": "Lowercase SHA-256 of the decoded module bytes.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "abiVersion",
+            "module",
+            "sha256"
+          ]
+        }
+      ]
+    },
+    "PluginSetup": {
+      "description": "Declarative setup workflow rendered by the desktop application.",
+      "oneOf": [
+        {
+          "description": "EA F1 in-game UDP settings.",
+          "type": "object",
+          "properties": {
+            "format": {
+              "description": "Format label the user selects in game.",
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "f1_udp"
+            },
+            "sendRateHz": {
+              "description": "Recommended game send rate.",
+              "type": "integer",
+              "format": "uint16",
+              "maximum": 65535,
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "format",
+            "sendRateHz"
+          ]
+        },
+        {
+          "description": "Official SCS SDK bridge installation.",
+          "type": "object",
+          "properties": {
+            "directoryName": {
+              "description": "Expected Steam install directory name.",
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "scs_sdk"
+            },
+            "steamAppId": {
+              "description": "Steam application id used for discovery.",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "steamAppId",
+            "directoryName"
+          ]
+        },
+        {
+          "description": "Generic UDP producer instructions.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "udp"
+            },
+            "steps": {
+              "description": "Ordered concise configuration steps.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "steps"
+          ]
+        },
+        {
+          "description": "No setup beyond starting the producer.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "none"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "PluginStatusMode": {
+      "description": "Built-in status widget semantics.",
+      "oneOf": [
+        {
+          "description": "DRS/active-aero state.",
+          "type": "string",
+          "const": "drs"
+        },
+        {
+          "description": "SCS bridge and job state.",
+          "type": "string",
+          "const": "scs"
+        },
+        {
+          "description": "Transport freshness only.",
+          "type": "string",
+          "const": "generic"
+        }
+      ]
+    },
+    "PluginTheme": {
+      "description": "Hexadecimal colors used for a plugin's default layout.",
+      "type": "object",
+      "properties": {
+        "accent": {
+          "description": "Game accent color.",
+          "type": "string"
+        },
+        "background": {
+          "description": "Dashboard background.",
+          "type": "string"
+        },
+        "foreground": {
+          "description": "Primary text and marks.",
+          "type": "string"
+        },
+        "warning": {
+          "description": "Warning color.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "background",
+        "foreground",
+        "accent",
+        "warning"
+      ]
+    },
+    "TelemetryField": {
+      "description": "Stable fields that an adapter can advertise to clients.",
+      "oneOf": [
+        {
+          "description": "Vehicle speed in metres per second.",
+          "type": "string",
+          "const": "vehicle.speedMps"
+        },
+        {
+          "description": "Selected gear.",
+          "type": "string",
+          "const": "vehicle.gear"
+        },
+        {
+          "description": "Current engine revolutions per minute.",
+          "type": "string",
+          "const": "vehicle.rpm"
+        },
+        {
+          "description": "Maximum engine revolutions per minute.",
+          "type": "string",
+          "const": "vehicle.rpmMax"
+        },
+        {
+          "description": "Game-provided shift-light progression.",
+          "type": "string",
+          "const": "vehicle.revLights"
+        },
+        {
+          "description": "Accelerator input.",
+          "type": "string",
+          "const": "vehicle.throttle"
+        },
+        {
+          "description": "Brake input.",
+          "type": "string",
+          "const": "vehicle.brake"
+        },
+        {
+          "description": "Driver-reduction-system state.",
+          "type": "string",
+          "const": "vehicle.drs"
+        },
+        {
+          "description": "Fuel state in game-native mass or volume units.",
+          "type": "string",
+          "const": "vehicle.fuel"
+        },
+        {
+          "description": "Pit-lane limiter state.",
+          "type": "string",
+          "const": "vehicle.pitLimiter"
+        },
+        {
+          "description": "Current lap number.",
+          "type": "string",
+          "const": "lap.current"
+        },
+        {
+          "description": "Current race position.",
+          "type": "string",
+          "const": "lap.position"
+        },
+        {
+          "description": "Current-lap time.",
+          "type": "string",
+          "const": "lap.currentTimeMs"
+        },
+        {
+          "description": "Previous completed-lap time.",
+          "type": "string",
+          "const": "lap.lastTimeMs"
+        },
+        {
+          "description": "Delta to the relevant best lap.",
+          "type": "string",
+          "const": "lap.deltaToBestMs"
+        },
+        {
+          "description": "Current-lap invalidation state.",
+          "type": "string",
+          "const": "lap.invalid"
+        },
+        {
+          "description": "Extended sector timing and race-position state.",
+          "type": "string",
+          "const": "lap.raceState"
+        },
+        {
+          "description": "Track identifier.",
+          "type": "string",
+          "const": "session.trackId"
+        },
+        {
+          "description": "Remaining session time.",
+          "type": "string",
+          "const": "session.remainingTimeMs"
+        },
+        {
+          "description": "Scheduled total laps.",
+          "type": "string",
+          "const": "session.totalLaps"
+        },
+        {
+          "description": "Extended session and race-control state.",
+          "type": "string",
+          "const": "session.raceState"
+        },
+        {
+          "description": "Four-corner tyre state.",
+          "type": "string",
+          "const": "tyres"
+        },
+        {
+          "description": "Ambient and track conditions.",
+          "type": "string",
+          "const": "conditions"
+        },
+        {
+          "description": "Vehicle damage state.",
+          "type": "string",
+          "const": "damage"
+        },
+        {
+          "description": "Active-aerodynamics state.",
+          "type": "string",
+          "const": "aero"
+        },
+        {
+          "description": "Route-advisor state.",
+          "type": "string",
+          "const": "navigation"
+        },
+        {
+          "description": "Exterior-light state.",
+          "type": "string",
+          "const": "lights"
+        },
+        {
+          "description": "Delivery-job state.",
+          "type": "string",
+          "const": "job"
+        }
+      ]
+    }
+  }
+}

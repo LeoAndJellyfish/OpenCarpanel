@@ -162,6 +162,84 @@ export type ResultStatus =
  */
 export type MonotonicTimestamp = number;
 /**
+ * High-level dashboard visual family.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginGameFamily".
+ */
+export type PluginGameFamily = "formula" | "truck" | "generic";
+/**
+ * Supported plugin ingress transports.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginIngressKind".
+ */
+export type PluginIngressKind = "shared_udp";
+/**
+ * Responsive layout template selected by a plugin.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginLayoutPreset".
+ */
+export type PluginLayoutPreset = "formula" | "truck" | "generic";
+/**
+ * Declarative setup workflow rendered by the desktop application.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginSetup".
+ */
+export type PluginSetup =
+  | {
+      /**
+       * Format label the user selects in game.
+       */
+      format: string;
+      kind: "f1_udp";
+      /**
+       * Recommended game send rate.
+       */
+      sendRateHz: number;
+      [k: string]: unknown;
+    }
+  | {
+      /**
+       * Expected Steam install directory name.
+       */
+      directoryName: string;
+      kind: "scs_sdk";
+      /**
+       * Steam application id used for discovery.
+       */
+      steamAppId: number;
+      [k: string]: unknown;
+    }
+  | {
+      kind: "udp";
+      /**
+       * Ordered concise configuration steps.
+       */
+      steps: string[];
+      [k: string]: unknown;
+    }
+  | {
+      kind: "none";
+      [k: string]: unknown;
+    };
+/**
+ * Origin of a plugin visible in diagnostics and management UI.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginSource".
+ */
+export type PluginSource = "builtin" | "installed";
+/**
+ * Built-in status widget semantics.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginStatusMode".
+ */
+export type PluginStatusMode = "drs" | "scs" | "generic";
+/**
  * Race-control flag applying to the player vehicle.
  *
  * This interface was referenced by `undefined`'s JSON-Schema
@@ -239,7 +317,165 @@ export interface CapabilitiesMessage {
    * Stable canonical telemetry paths.
    */
   fields: TelemetryField[];
+  /**
+   * Installed and built-in game plugins available to this Host.
+   */
+  plugins?: GamePluginMetadata[];
   [k: string]: unknown;
+}
+/**
+ * Non-secret manifest subset sent to desktop and dashboard clients.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "GamePluginMetadata".
+ */
+export interface GamePluginMetadata {
+  /**
+   * Canonical telemetry fields.
+   */
+  capabilities: TelemetryField[];
+  /**
+   * Concise compatibility summary.
+   */
+  description: string;
+  /**
+   * Stable game/plugin identifier.
+   */
+  id: string;
+  ingress: PluginIngress;
+  /**
+   * Product-facing source name.
+   */
+  name: string;
+  presentation: PluginPresentation;
+  /**
+   * Human-readable accepted protocol version.
+   */
+  protocolVersion: string;
+  /**
+   * Publisher shown in diagnostics.
+   */
+  publisher: string;
+  /**
+   * Desktop setup workflow.
+   */
+  setup:
+    | {
+        /**
+         * Format label the user selects in game.
+         */
+        format: string;
+        kind: "f1_udp";
+        /**
+         * Recommended game send rate.
+         */
+        sendRateHz: number;
+        [k: string]: unknown;
+      }
+    | {
+        /**
+         * Expected Steam install directory name.
+         */
+        directoryName: string;
+        kind: "scs_sdk";
+        /**
+         * Steam application id used for discovery.
+         */
+        steamAppId: number;
+        [k: string]: unknown;
+      }
+    | {
+        kind: "udp";
+        /**
+         * Ordered concise configuration steps.
+         */
+        steps: string[];
+        [k: string]: unknown;
+      }
+    | {
+        kind: "none";
+        [k: string]: unknown;
+      };
+  /**
+   * Built-in or locally installed origin.
+   */
+  source: "builtin" | "installed";
+  /**
+   * Plugin implementation version.
+   */
+  version: string;
+}
+/**
+ * Host-owned transport declaration.
+ */
+export interface PluginIngress {
+  /**
+   * Suggested port when configuring the game or producer.
+   */
+  defaultPort: number;
+  /**
+   * v1 transport kind.
+   */
+  kind: "shared_udp";
+  /**
+   * Decoder-specific maximum input size.
+   */
+  maxDatagramBytes: number;
+}
+/**
+ * Dashboard configuration.
+ */
+export interface PluginPresentation {
+  /**
+   * Secondary label rendered next to the game name.
+   */
+  detail: string;
+  /**
+   * Safe fallback for games that do not report maximum RPM.
+   */
+  fallbackRpmMax: number;
+  /**
+   * Broad visual family.
+   */
+  family: "formula" | "truck" | "generic";
+  /**
+   * Built-in responsive placement template.
+   */
+  layoutPreset: "formula" | "truck" | "generic";
+  /**
+   * Compact tab/status label.
+   */
+  shortName: string;
+  /**
+   * Semantics used by the built-in status widget.
+   */
+  statusMode: "drs" | "scs" | "generic";
+  theme: PluginTheme;
+  /**
+   * Trusted built-in widget types offered for this game.
+   */
+  widgets: string[];
+}
+/**
+ * Theme values applied to a new per-game layout.
+ */
+export interface PluginTheme {
+  /**
+   * Game accent color.
+   */
+  accent: string;
+  /**
+   * Dashboard background.
+   */
+  background: string;
+  /**
+   * Primary text and marks.
+   */
+  foreground: string;
+  /**
+   * Warning color.
+   */
+  warning: string;
 }
 /**
  * Current ambient and track conditions.
@@ -665,6 +901,87 @@ export interface NavigationState {
    */
   timeS?: number | null;
   [k: string]: unknown;
+}
+/**
+ * Host-owned transport used to deliver bytes to a decoder.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginIngress".
+ */
+export interface PluginIngress1 {
+  /**
+   * Suggested port when configuring the game or producer.
+   */
+  defaultPort: number;
+  /**
+   * v1 transport kind.
+   */
+  kind: "shared_udp";
+  /**
+   * Decoder-specific maximum input size.
+   */
+  maxDatagramBytes: number;
+}
+/**
+ * Safe presentation values consumed by the trusted Dashboard.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginPresentation".
+ */
+export interface PluginPresentation1 {
+  /**
+   * Secondary label rendered next to the game name.
+   */
+  detail: string;
+  /**
+   * Safe fallback for games that do not report maximum RPM.
+   */
+  fallbackRpmMax: number;
+  /**
+   * Broad visual family.
+   */
+  family: "formula" | "truck" | "generic";
+  /**
+   * Built-in responsive placement template.
+   */
+  layoutPreset: "formula" | "truck" | "generic";
+  /**
+   * Compact tab/status label.
+   */
+  shortName: string;
+  /**
+   * Semantics used by the built-in status widget.
+   */
+  statusMode: "drs" | "scs" | "generic";
+  theme: PluginTheme;
+  /**
+   * Trusted built-in widget types offered for this game.
+   */
+  widgets: string[];
+}
+/**
+ * Hexadecimal colors used for a plugin's default layout.
+ *
+ * This interface was referenced by `undefined`'s JSON-Schema
+ * via the `definition` "PluginTheme".
+ */
+export interface PluginTheme1 {
+  /**
+   * Game accent color.
+   */
+  accent: string;
+  /**
+   * Dashboard background.
+   */
+  background: string;
+  /**
+   * Primary text and marks.
+   */
+  foreground: string;
+  /**
+   * Warning color.
+   */
+  warning: string;
 }
 /**
  * Reliable-event history can no longer satisfy the requested sequence.

@@ -1,0 +1,19 @@
+[package]
+name = "opencarpanel-game-plugin-api"
+description = "Versioned OpenCarpanel game plugin manifest and decoder wire contracts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+opencarpanel-adapter-api = { path = "../adapter-api" }
+opencarpanel-telemetry-core = { path = "../telemetry-core" }
+schemars = "1.2.1"
+semver = "1.0.28"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+
+[lints]
+workspace = true

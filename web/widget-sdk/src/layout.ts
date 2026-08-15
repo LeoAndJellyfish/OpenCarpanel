@@ -4,6 +4,8 @@ import type {
   ThemeSettings as GeneratedThemeSettings,
   WidgetInstance as GeneratedWidgetInstance,
 } from "./generated/layout-document";
+import { BUILTIN_GAME_PLUGINS } from "./generated/builtin-game-plugins";
+import type { GamePluginMetadata } from "./generated/server-message";
 import type { WidgetType } from "./manifest";
 
 export const LAYOUT_SCHEMA_VERSION = 1 as const;
@@ -17,9 +19,11 @@ export const BREAKPOINT_NAMES = [
 
 export type BreakpointName = (typeof BREAKPOINT_NAMES)[number];
 
-export const BUILTIN_GAME_IDS = ["f1-24", "f1-25", "ets2", "ats"] as const;
+export type BuiltinGameId = (typeof BUILTIN_GAME_PLUGINS)[number]["id"];
 
-export type BuiltinGameId = (typeof BUILTIN_GAME_IDS)[number];
+export const BUILTIN_GAME_IDS = BUILTIN_GAME_PLUGINS.map(
+  (plugin) => plugin.id,
+) as readonly BuiltinGameId[];
 
 export interface BreakpointGrid {
   readonly columns: number;
@@ -138,41 +142,14 @@ const TRUCK_PLACEMENTS: TruckPlacements = {
   },
 };
 
-const SIGNAL_THEME: ThemeSettings = {
-  background: "#07090c",
-  foreground: "#f2f0e9",
-  accent: "#d9ff43",
-  warning: "#ff4b3e",
-};
-
-const CYAN_THEME: ThemeSettings = {
-  background: "#061015",
-  foreground: "#eefcff",
-  accent: "#42e8ff",
-  warning: "#ff5e6c",
-};
-
-const AMBER_THEME: ThemeSettings = {
-  background: "#0e0b08",
-  foreground: "#fff5e5",
-  accent: "#ffbd45",
-  warning: "#ff4b3e",
-};
-
-const ROAD_THEME: ThemeSettings = {
-  background: "#080d10",
-  foreground: "#f5f0e6",
-  accent: "#ff6a3d",
-  warning: "#ffcf54",
-};
-
 function builtInLayout(
   id: string,
   name: string,
   placements: DefaultPlacements,
   theme: ThemeSettings,
   fallbackRpmMax: number,
-  family: "formula" | "truck",
+  family: "formula" | "truck" | "generic",
+  supportedWidgets: readonly string[],
 ): LayoutDocument {
   const supplementalWidgets: WidgetInstance[] = family === "formula"
     ? [
@@ -189,93 +166,91 @@ function builtInLayout(
           settings: {},
         },
       ]
-    : [
+    : family === "truck" ? [
         {
           instanceId: "route",
           componentType: "core.route",
           placements: (placements as TruckPlacements).route,
           settings: {},
         },
-      ];
+      ] : [];
+  const widgets: WidgetInstance[] = [
+    {
+      instanceId: "tachometer",
+      componentType: "core.tachometer",
+      placements: placements.tachometer,
+      settings: { fallbackRpmMax },
+    },
+    {
+      instanceId: "gear",
+      componentType: "core.gear",
+      placements: placements.gear,
+      settings: {},
+    },
+    {
+      instanceId: "speed",
+      componentType: "core.speed",
+      placements: placements.speed,
+      settings: { unit: "km/h" },
+    },
+    {
+      instanceId: "status",
+      componentType: "core.status",
+      placements: placements.status,
+      settings: {},
+    },
+    ...supplementalWidgets,
+  ];
   return {
     schemaVersion: LAYOUT_SCHEMA_VERSION,
     revision: 0,
     id,
     name,
-    widgets: [
-      {
-        instanceId: "tachometer",
-        componentType: "core.tachometer",
-        placements: placements.tachometer,
-        settings: { fallbackRpmMax },
-      },
-      {
-        instanceId: "gear",
-        componentType: "core.gear",
-        placements: placements.gear,
-        settings: {},
-      },
-      {
-        instanceId: "speed",
-        componentType: "core.speed",
-        placements: placements.speed,
-        settings: { unit: "km/h" },
-      },
-      {
-        instanceId: "status",
-        componentType: "core.status",
-        placements: placements.status,
-        settings: {},
-      },
-      ...supplementalWidgets,
-    ],
+    widgets: widgets.filter((widget) => supportedWidgets.includes(widget.componentType)),
     theme,
   };
 }
 
-export const DEFAULT_LAYOUT = builtInLayout(
-  "default",
-  "OpenCarpanel Default",
-  FORMULA_PLACEMENTS,
-  SIGNAL_THEME,
-  12_000,
-  "formula",
-);
+export function gameDefaultLayout(plugin: GamePluginMetadata): LayoutDocument {
+  const preset = plugin.presentation.layoutPreset;
+  return builtInLayout(
+    `game-${plugin.id}`,
+    `${plugin.presentation.shortName} Default`,
+    preset === "truck" ? TRUCK_PLACEMENTS : FORMULA_PLACEMENTS,
+    { ...plugin.presentation.theme },
+    plugin.presentation.fallbackRpmMax,
+    preset,
+    plugin.presentation.widgets,
+  );
+}
 
-export const GAME_DEFAULT_LAYOUTS: Readonly<Record<BuiltinGameId, LayoutDocument>> = {
-  "f1-24": builtInLayout(
-    "game-f1-24",
-    "F1 24 Trackside",
-    FORMULA_PLACEMENTS,
-    SIGNAL_THEME,
-    12_000,
-    "formula",
-  ),
-  "f1-25": builtInLayout(
-    "game-f1-25",
-    "F1 25 Electric Grid",
-    FORMULA_PLACEMENTS,
-    CYAN_THEME,
-    12_000,
-    "formula",
-  ),
-  ets2: builtInLayout(
-    "game-ets2",
-    "ETS2 Long Haul",
-    TRUCK_PLACEMENTS,
-    AMBER_THEME,
-    2_500,
-    "truck",
-  ),
-  ats: builtInLayout(
-    "game-ats",
-    "ATS Interstate",
-    TRUCK_PLACEMENTS,
-    ROAD_THEME,
-    2_500,
-    "truck",
-  ),
-};
+const FALLBACK_PLUGIN = BUILTIN_GAME_PLUGINS.find(
+  (plugin) => plugin.presentation.layoutPreset === "formula",
+) ?? BUILTIN_GAME_PLUGINS[0];
+
+export const DEFAULT_LAYOUT: LayoutDocument = FALLBACK_PLUGIN
+  ? {
+      ...gameDefaultLayout(FALLBACK_PLUGIN),
+      id: "default",
+      name: "OpenCarpanel Default",
+    }
+  : {
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
+      revision: 0,
+      id: "default",
+      name: "OpenCarpanel Default",
+      widgets: [],
+      theme: {
+        background: "#07090c",
+        foreground: "#f2f0e9",
+        accent: "#d9ff43",
+        warning: "#ff4b3e",
+      },
+    };
+
+export const GAME_DEFAULT_LAYOUTS = Object.fromEntries(
+  BUILTIN_GAME_PLUGINS.map((plugin) => [plugin.id, gameDefaultLayout(plugin)]),
+) as Readonly<Record<BuiltinGameId, LayoutDocument>>;
 
 export function cloneLayout(layout: LayoutDocument): LayoutDocument {
   return JSON.parse(JSON.stringify(layout)) as LayoutDocument;

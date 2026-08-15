@@ -28,10 +28,12 @@
 | **Euro Truck Simulator 2** | 随包 SCS SDK 插件 → loopback UDP | 驾驶、导航、道路限速、油量/续航、灯光与配送任务 | 首次使用需复制插件并接受游戏 SDK 提示 |
 | **American Truck Simulator** | 同一 SCS SDK 插件 → loopback UDP | 与 ETS2 相同 | v2 插件只向 `127.0.0.1:20777` 非阻塞发送；Host 兼容 v1 |
 
-四种游戏输入共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换 F1/卡车视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时可固定为 `f1-24`、`f1-25`、`ets2` 或 `ats`。
+四种内置游戏输入与已安装的第三方插件共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时，可固定为任一内置或已安装插件 ID。
+
+从 v0.4.0 起，游戏支持遵循同一份版本化插件 manifest。桌面控制中心可安装第三方 `.ocp-plugin`；跨平台 WASM decoder 在无 WASI、无 Host imports 且受内存/fuel/输入输出上限约束的沙箱中运行。数据源、设置步骤、主题、独立布局和适用组件都会从插件元数据自动出现，开发方法见[游戏插件开发指南](./docs/plugin-development.md)。
 
 > [!IMPORTANT]
-> `v0.3.3` 会从 Steam 注册表、默认目录、全部 `libraryfolders.vdf` 游戏库和 AppID manifest 自动定位 ETS2/ATS；结果在本机分游戏缓存并在下次启动重新校验，找不到时仍可手动选择。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> `v0.4.0` 把游戏支持统一为版本化 manifest，并允许安装受限的跨平台 WASM decoder；内置 F1/SCS 支持、Steam 自动查找和手动目录选择保持兼容。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
@@ -127,8 +129,8 @@ npm run test:host-latency
 
 ```text
 apps/       Rust Host 与 Tauri/Preact 桌面控制中心
-crates/     Adapter API、F1/SCS adapters、telemetry、protocol、config
-plugins/    最小 SCS Telemetry SDK 原生桥接插件
+crates/     Plugin/Adapter API、WASM runtime/SDK、telemetry、protocol、config
+plugins/    内置游戏 manifest 与最小 SCS Telemetry SDK 原生桥接插件
 web/        Preact Dashboard、Editor 与 Widget SDK
 schemas/    版本化 JSON Schema 和生成类型
 tests/      集成、fixture 与性能门禁
@@ -139,6 +141,8 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 推荐阅读：
 
 - [游戏数据链路与 SCS 数据包协议图解](./docs/data-paths-and-scs-packet.md)
+- [第三方游戏插件开发、WASM ABI 与打包指南](./docs/plugin-development.md)
+- [标准游戏插件系统设计](./docs/plans/2026-08-15-game-plugin-system-design.md)
 - [多游戏输入与适配器设计](./docs/plans/2026-08-12-multi-game-adapters-design.md)
 - [F1 25 2026 Season Pack 与按游戏前端设计](./docs/plans/2026-08-12-f1-25-2026-season-pack-design.md)
 - [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)

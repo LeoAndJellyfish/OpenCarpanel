@@ -2,11 +2,10 @@ import {
   BREAKPOINT_NAMES,
   cloneLayout,
   type BreakpointName,
-  type BuiltinGameId,
   type LayoutDocument,
   type WidgetManifest,
 } from "@opencarpanel/widget-sdk";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import {
   LayoutApiError,
@@ -17,8 +16,8 @@ import {
 import { ConnectionScreen } from "../connection/screen";
 import {
   gamePresentation,
-  isBuiltinGameId,
-  SUPPORTED_GAME_PRESENTATIONS,
+  gamePresentations,
+  isGamePluginId,
 } from "../dashboard/game-profile";
 import {
   dashboardThemeStyle,
@@ -54,7 +53,7 @@ import {
 import { useTelemetryRuntime } from "../telemetry/use-runtime";
 import {
   builtinWidgetManifest,
-  builtinWidgetManifestsForGame,
+  builtinWidgetManifestsForPlugin,
 } from "../widgets/catalog";
 import "../styles/editor.css";
 
@@ -65,14 +64,21 @@ const BREAKPOINT_LABELS: Readonly<Record<BreakpointName, string>> = {
   desktop: "桌面预览",
 };
 
-const INITIAL_GAME_ID: BuiltinGameId = "f1-24";
+const INITIAL_GAME_ID = "f1-24";
 
 export function EditRoute() {
   const runtime = useTelemetryRuntime();
-  const [selectedGameId, setSelectedGameId] = useState<BuiltinGameId>(INITIAL_GAME_ID);
-  const presentation = gamePresentation(selectedGameId);
+  const [selectedGameId, setSelectedGameId] = useState(INITIAL_GAME_ID);
+  const presentations = useMemo(
+    () => gamePresentations(runtime.plugins),
+    [runtime.plugins],
+  );
+  const presentation = useMemo(
+    () => gamePresentation(selectedGameId, runtime.plugins),
+    [runtime.plugins, selectedGameId],
+  );
   const [history, setHistory] = useState(() =>
-    createHistory(cloneLayout(gamePresentation(INITIAL_GAME_ID).defaultLayout)),
+    createHistory(cloneLayout(gamePresentation(INITIAL_GAME_ID, runtime.plugins).defaultLayout)),
   );
   const [savedDocument, setSavedDocument] = useState<LayoutDocument>();
   const [breakpoint, setBreakpoint] = useState<BreakpointName>(() =>
@@ -89,14 +95,26 @@ export function EditRoute() {
   const layout = history.present;
   const selected = layout.widgets.find((widget) => widget.instanceId === selectedId);
   const selectedManifest = selected ? builtinWidgetManifest(selected.componentType) : undefined;
-  const availableManifests = builtinWidgetManifestsForGame(selectedGameId);
+  const availableManifests = builtinWidgetManifestsForPlugin(presentation.plugin);
   const dirty = savedDocument ? layoutSignature(layout) !== layoutSignature(savedDocument) : false;
   const loaded = loadedLayoutId === presentation.layoutId;
 
   useEffect(() => {
+    if (presentations.some((candidate) => candidate.id === selectedGameId)) {
+      return;
+    }
+    const fallback = presentations[0];
+    if (fallback) {
+      setSelectedGameId(fallback.id);
+      setSelectedId(undefined);
+      setConflict(undefined);
+    }
+  }, [presentations, selectedGameId]);
+
+  useEffect(() => {
     if (
       manuallySelectedGame.current ||
-      !isBuiltinGameId(runtime.gameId) ||
+      !isGamePluginId(runtime.gameId, runtime.plugins) ||
       runtime.gameId === selectedGameId
     ) {
       return;
@@ -107,7 +125,7 @@ export function EditRoute() {
     setSelectedGameId(runtime.gameId);
     setSelectedId(undefined);
     setConflict(undefined);
-  }, [dirty, layout, runtime.gameId, selectedGameId]);
+  }, [dirty, layout, runtime.gameId, runtime.plugins, selectedGameId]);
 
   useEffect(() => {
     if (!runtime.hasConnected || loaded) {
@@ -196,7 +214,7 @@ export function EditRoute() {
     setHistory((current) => commitHistory(current, next));
   };
 
-  const selectGame = (nextGameId: BuiltinGameId) => {
+  const selectGame = (nextGameId: string) => {
     if (nextGameId === selectedGameId) {
       return;
     }
@@ -341,11 +359,9 @@ export function EditRoute() {
             <span>游戏面板</span>
             <select
               value={selectedGameId}
-              onChange={(event) =>
-                selectGame(event.currentTarget.value as BuiltinGameId)
-              }
+              onChange={(event) => selectGame(event.currentTarget.value)}
             >
-              {SUPPORTED_GAME_PRESENTATIONS.map((profile) => (
+              {presentations.map((profile) => (
                 <option key={profile.id} value={profile.id}>
                   {profile.label}
                 </option>

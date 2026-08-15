@@ -47,6 +47,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.91.1
         with:
           components: clippy, rustfmt
+          targets: wasm32-unknown-unknown
 
       - name: Install locked dependencies
         run: npm ci
@@ -62,6 +63,8 @@ jobs:
           cargo clippy --locked --workspace --all-targets -- -D warnings
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo test --locked --workspace
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo build --locked -p opencarpanel-example-game-plugin --target wasm32-unknown-unknown --release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run check:web
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -122,11 +125,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: OpenCarpanel v__VERSION__ — Automatic Steam Game Discovery
+          releaseName: OpenCarpanel v__VERSION__ — Sandboxed Game Plugins
           releaseBody: |
-            OpenCarpanel v0.3.3 automatically locates Euro Truck Simulator 2 and American Truck Simulator across Steam libraries while preserving a validated manual folder fallback.
+            OpenCarpanel v0.4.0 introduces a versioned game-plugin contract, sandboxed cross-platform WASM decoders, dynamic desktop and dashboard metadata, and a third-party SDK/tooling workflow. F1 24, F1 25 (including the 2026 Season Pack), ETS2, and ATS now share the same manifest model.
 
-            See `docs/releases/v0.3.3.md` for discovery behavior, path validation, compatibility, and verification notes.
+            See `docs/releases/v0.4.0.md` for the security limits, installation workflow, compatibility, and verification notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

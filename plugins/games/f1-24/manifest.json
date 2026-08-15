@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "f1-24",
+  "name": "EA Sports F1 24",
+  "version": "1.0.0",
+  "publisher": "OpenCarpanel contributors",
+  "license": "Apache-2.0",
+  "description": "EA Sports F1 24 original 2024 UDP telemetry.",
+  "runtime": {
+    "kind": "builtin",
+    "entrypoint": "f1-24"
+  },
+  "protocol": {
+    "name": "EA UDP",
+    "version": "2024/v27.2x"
+  },
+  "ingress": {
+    "kind": "shared_udp",
+    "defaultPort": 20777,
+    "maxDatagramBytes": 65507
+  },
+  "capabilities": [
+    "vehicle.speedMps",
+    "vehicle.gear",
+    "vehicle.rpm",
+    "vehicle.rpmMax",
+    "vehicle.revLights",
+    "vehicle.throttle",
+    "vehicle.brake",
+    "vehicle.drs",
+    "vehicle.fuel",
+    "vehicle.pitLimiter",
+    "lap.current",
+    "lap.position",
+    "lap.currentTimeMs",
+    "lap.lastTimeMs",
+    "lap.invalid",
+    "lap.raceState",
+    "session.trackId",
+    "session.remainingTimeMs",
+    "session.totalLaps",
+    "session.raceState",
+    "tyres",
+    "conditions",
+    "damage"
+  ],
+  "presentation": {
+    "shortName": "F1 24",
+    "detail": "FORMULA / UDP 2024",
+    "family": "formula",
+    "statusMode": "drs",
+    "layoutPreset": "formula",
+    "theme": {
+      "background": "#07090c",
+      "foreground": "#f2f0e9",
+      "accent": "#d9ff43",
+      "warning": "#ff4b3e"
+    },
+    "fallbackRpmMax": 12000,
+    "widgets": [
+      "core.gear",
+      "core.race",
+      "core.speed",
+      "core.tachometer",
+      "core.tyres",
+      "core.status"
+    ]
+  },
+  "setup": {
+    "kind": "f1_udp",
+    "format": "F1 24 / 2024",
+    "sendRateHz": 60
+  }
+}

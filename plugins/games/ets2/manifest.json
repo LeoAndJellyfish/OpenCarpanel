@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "ets2",
+  "name": "Euro Truck Simulator 2",
+  "version": "1.0.0",
+  "publisher": "OpenCarpanel contributors",
+  "license": "Apache-2.0",
+  "description": "Euro Truck Simulator 2 telemetry through the bundled SCS SDK bridge.",
+  "runtime": {
+    "kind": "builtin",
+    "entrypoint": "ets2"
+  },
+  "protocol": {
+    "name": "OpenCarpanel SCS bridge",
+    "version": "scs-bridge/v1+v2 (SDK 1.14)"
+  },
+  "ingress": {
+    "kind": "shared_udp",
+    "defaultPort": 20777,
+    "maxDatagramBytes": 188
+  },
+  "capabilities": [
+    "vehicle.speedMps",
+    "vehicle.gear",
+    "vehicle.rpm",
+    "vehicle.rpmMax",
+    "vehicle.throttle",
+    "vehicle.brake",
+    "vehicle.drs",
+    "vehicle.fuel",
+    "navigation",
+    "lights",
+    "job"
+  ],
+  "presentation": {
+    "shortName": "ETS2",
+    "detail": "LONG HAUL / SCS SDK",
+    "family": "truck",
+    "statusMode": "scs",
+    "layoutPreset": "truck",
+    "theme": {
+      "background": "#0e0b08",
+      "foreground": "#fff5e5",
+      "accent": "#ffbd45",
+      "warning": "#ff4b3e"
+    },
+    "fallbackRpmMax": 2500,
+    "widgets": [
+      "core.gear",
+      "core.route",
+      "core.speed",
+      "core.tachometer",
+      "core.status"
+    ]
+  },
+  "setup": {
+    "kind": "scs_sdk",
+    "steamAppId": 227300,
+    "directoryName": "Euro Truck Simulator 2"
+  }
+}

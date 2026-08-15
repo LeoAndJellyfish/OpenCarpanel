@@ -57,7 +57,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     println!("\n配对后可打开编辑器：{dashboard_url}/edit");
     println!("本机诊断：{dashboard_url}/api/v1/diagnostics\n");
     println!(
-        "游戏遥测 UDP 目标端口：{}\n选择游戏可在桌面控制中心设置，或使用 OPENCARPANEL_GAME=auto|f1-24|f1-25|ets2|ats（当前：{}）。\n按 Ctrl+C 退出。\n",
+        "游戏遥测 UDP 目标端口：{}\n选择游戏可在桌面控制中心设置，或使用 OPENCARPANEL_GAME=auto|<游戏插件ID>（当前：{}）。\n按 Ctrl+C 退出。\n",
         running.udp_address().port(),
         running.state().adapter_selection(),
     );

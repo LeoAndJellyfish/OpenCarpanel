@@ -23,6 +23,8 @@ tauri-build = { version = "2.6.3", features = [] }
 atomic-write-file = "0.3.0"
 hex = "0.4.3"
 opencarpanel-config = { path = "../../../crates/config" }
+opencarpanel-game-plugin-api = { path = "../../../crates/game-plugin-api" }
+opencarpanel-game-plugin-runtime = { path = "../../../crates/game-plugin-runtime" }
 opencarpanel-host = { path = "../../host" }
 parking_lot = "0.12.5"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -44,7 +46,9 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"] }
 winreg = "0.56.0"
 
 [dev-dependencies]
+base64 = "0.22.1"
 tempfile = "3.27.0"
+wat = "1.252.0"
 
 [lints]
 workspace = true

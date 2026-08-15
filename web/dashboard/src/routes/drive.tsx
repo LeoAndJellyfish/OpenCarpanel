@@ -1,5 +1,5 @@
 import { cloneLayout, type LayoutDocument } from "@opencarpanel/widget-sdk";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 
 import { loadLayout } from "../api/layouts";
 import { ConnectionScreen } from "../connection/screen";
@@ -11,7 +11,10 @@ import { useTelemetryRuntime } from "../telemetry/use-runtime";
 export function DriveRoute() {
   const runtime = useTelemetryRuntime();
   const breakpoint = useDashboardBreakpoint();
-  const presentation = gamePresentation(runtime.gameId);
+  const presentation = useMemo(
+    () => gamePresentation(runtime.gameId, runtime.plugins),
+    [runtime.gameId, runtime.plugins],
+  );
   const [layout, setLayout] = useState<LayoutDocument>(() =>
     cloneLayout(presentation.defaultLayout),
   );

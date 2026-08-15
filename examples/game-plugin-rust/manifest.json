@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "example-sim",
+  "name": "Example Sim",
+  "version": "1.0.0",
+  "publisher": "Example plugin developer",
+  "license": "Apache-2.0",
+  "description": "Minimal OCP1 UDP decoder for the OpenCarpanel plugin tutorial.",
+  "runtime": {
+    "kind": "wasm",
+    "abiVersion": 1,
+    "module": "decoder.wasm",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "protocol": {
+    "name": "Example UDP",
+    "version": "OCP1/1"
+  },
+  "ingress": {
+    "kind": "shared_udp",
+    "defaultPort": 20777,
+    "maxDatagramBytes": 6
+  },
+  "capabilities": [
+    "vehicle.speedMps"
+  ],
+  "presentation": {
+    "shortName": "EXAMPLE",
+    "detail": "GENERIC / OCP1 UDP",
+    "family": "generic",
+    "statusMode": "generic",
+    "layoutPreset": "generic",
+    "theme": {
+      "background": "#090d12",
+      "foreground": "#f3f7f5",
+      "accent": "#53e0b0",
+      "warning": "#ff665c"
+    },
+    "fallbackRpmMax": 8000,
+    "widgets": [
+      "core.speed"
+    ]
+  },
+  "setup": {
+    "kind": "udp",
+    "steps": [
+      "Enable the producer's UDP telemetry",
+      "Send OCP1 datagrams to the OpenCarpanel Host"
+    ]
+  }
+}

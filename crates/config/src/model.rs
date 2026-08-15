@@ -347,10 +347,9 @@ impl HostSettings {
         if !matches!(self.snapshot_hz, 20 | 30 | 60) {
             return Err(ValidationError::UnsupportedSnapshotRate(self.snapshot_hz));
         }
-        if !matches!(
-            self.adapter_selection.as_str(),
-            "auto" | "f1-24" | "f1-25" | "ets2" | "ats"
-        ) {
+        if self.adapter_selection != "auto"
+            && validate_identifier("game plugin selection", &self.adapter_selection).is_err()
+        {
             return Err(ValidationError::UnsupportedAdapterSelection(
                 self.adapter_selection.clone(),
             ));
@@ -563,7 +562,7 @@ impl Display for ValidationError {
             }
             Self::UnsupportedAdapterSelection(value) => write!(
                 formatter,
-                "adapter selection {value:?} is unsupported; use auto, f1-24, f1-25, ets2, or ats"
+                "adapter selection {value:?} is unsupported; use auto or a lowercase game plugin id"
             ),
         }
     }

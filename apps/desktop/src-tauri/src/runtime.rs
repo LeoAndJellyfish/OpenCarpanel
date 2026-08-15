@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     error::Error,
     fmt::{self, Display, Formatter},
     path::{Path, PathBuf},
@@ -10,6 +11,10 @@ use std::{
 };
 
 use opencarpanel_config::{AppSettings, SettingsRepository};
+use opencarpanel_game_plugin_api::PluginSource;
+use opencarpanel_game_plugin_runtime::{
+    PluginInstallReceipt, install_package, remove_installed_plugin,
+};
 use opencarpanel_host::{
     HostConfig, HostDiagnostics, InstanceGuard, InstanceMode, PairedDevice, RunningHost, bind_host,
     dashboard_url, default_data_directory, default_runtime_directory, pairing_url, qr_svg,
@@ -344,6 +349,61 @@ impl DesktopRuntime {
         Ok(())
     }
 
+    /// Installs or upgrades one verified game plugin, then reloads the Host registry.
+    ///
+    /// # Errors
+    ///
+    /// Returns a sanitized package, filesystem, or Host restart error.
+    pub async fn install_game_plugin(
+        &self,
+        package_path: PathBuf,
+    ) -> Result<PluginInstallReceipt, String> {
+        let reserved_ids = self.builtin_plugin_ids().await?;
+        let plugins_root = self.plugins_root();
+        let receipt = tokio::task::spawn_blocking(move || {
+            install_package(&plugins_root, &package_path, &reserved_ids)
+                .map_err(|error| error.to_string())
+        })
+        .await
+        .map_err(|error| error.to_string())??;
+        self.reload_current_host().await?;
+        Ok(receipt)
+    }
+
+    /// Removes one installed game plugin and reloads the Host registry.
+    ///
+    /// If the removed plugin is the fixed source, selection is safely changed
+    /// to automatic detection before its files are removed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for built-ins, unknown ids, filesystem failures, or a
+    /// failed Host restart.
+    pub async fn remove_game_plugin(&self, plugin_id: &str) -> Result<(), String> {
+        let source = self.plugin_source(plugin_id).await?;
+        if source != PluginSource::Installed {
+            return Err("只能卸载用户安装的游戏插件".to_owned());
+        }
+
+        let mut settings = self.settings();
+        if settings.host.adapter_selection == plugin_id {
+            "auto".clone_into(&mut settings.host.adapter_selection);
+            self.update_settings(settings).await?;
+        }
+
+        let plugins_root = self.plugins_root();
+        let plugin_id = plugin_id.to_owned();
+        let removed = tokio::task::spawn_blocking(move || {
+            remove_installed_plugin(&plugins_root, &plugin_id).map_err(|error| error.to_string())
+        })
+        .await
+        .map_err(|error| error.to_string())??;
+        if !removed {
+            return Err("游戏插件已经不存在".to_owned());
+        }
+        self.reload_current_host().await
+    }
+
     /// Returns a cheap diagnostic sample for background desktop integrations.
     pub async fn diagnostics(&self) -> Option<HostDiagnostics> {
         self.host
@@ -368,6 +428,56 @@ impl DesktopRuntime {
             "diagnostics" => Ok(format!("{root}/api/v1/diagnostics")),
             _ => Err("不允许打开未知的本地页面".to_owned()),
         }
+    }
+
+    fn plugins_root(&self) -> PathBuf {
+        self.data_directory.join("game-plugins")
+    }
+
+    async fn builtin_plugin_ids(&self) -> Result<BTreeSet<String>, String> {
+        let host = self.host.lock().await;
+        let running = host
+            .as_ref()
+            .ok_or_else(|| "Host 当前未运行，无法校验游戏插件".to_owned())?;
+        Ok(running
+            .state()
+            .supported_adapters()
+            .iter()
+            .filter(|adapter| adapter.metadata().source == PluginSource::Builtin)
+            .map(|adapter| adapter.id().to_owned())
+            .collect())
+    }
+
+    async fn plugin_source(&self, plugin_id: &str) -> Result<PluginSource, String> {
+        let host = self.host.lock().await;
+        let running = host
+            .as_ref()
+            .ok_or_else(|| "Host 当前未运行，无法管理游戏插件".to_owned())?;
+        running
+            .state()
+            .supported_adapters()
+            .iter()
+            .find(|adapter| adapter.id() == plugin_id)
+            .map(|adapter| adapter.metadata().source)
+            .ok_or_else(|| "未找到这个游戏插件".to_owned())
+    }
+
+    async fn reload_current_host(&self) -> Result<(), String> {
+        let config = host_config(&self.settings(), &self.data_directory, true)
+            .map_err(|error| error.to_string())?;
+        let mut host_slot = self.host.lock().await;
+        let current = host_slot
+            .take()
+            .ok_or_else(|| "Host 当前未运行，无法重载游戏插件".to_owned())?;
+        if let Err(error) = current.shutdown().await {
+            *host_slot = bind_host(config).await.ok();
+            return Err(format!("重载前停止 Host 失败：{error}"));
+        }
+        let running = bind_host(config)
+            .await
+            .map_err(|error| format!("游戏插件已变更，但 Host 重启失败：{error}"))?;
+        *host_slot = Some(running);
+        Ok(())
     }
 }
 
@@ -408,7 +518,14 @@ pub type SharedDesktopRuntime = Arc<DesktopRuntime>;
 
 #[cfg(test)]
 mod tests {
-    use std::net::TcpListener;
+    use std::{fs, net::TcpListener};
+
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use opencarpanel_game_plugin_api::{
+        GAME_PLUGIN_ABI_VERSION, GAME_PLUGIN_PACKAGE_VERSION, GamePluginPackage, PluginRuntime,
+        parse_manifest,
+    };
+    use sha2::{Digest as _, Sha256};
 
     use super::*;
 
@@ -436,6 +553,79 @@ mod tests {
         let after = runtime.snapshot().await?;
         assert_eq!(after.settings, initial);
         assert_eq!(after.diagnostics.status, "ok");
+        runtime.shutdown().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn installed_plugin_reloads_and_uninstall_resets_a_fixed_selection()
+    -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let data_directory = temp.path().join("data");
+        let runtime_directory = temp.path().join("runtime");
+        let mut initial = AppSettings::default();
+        initial.host.http_bind = "127.0.0.1:0".to_owned();
+        initial.host.udp_bind = "127.0.0.1:0".to_owned();
+        SettingsRepository::new(&data_directory).save(&initial)?;
+        let runtime = DesktopRuntime::start_at(data_directory, runtime_directory, false).await?;
+
+        let module = wat::parse_str(
+            r#"(module
+              (memory (export "memory") 6 64)
+              (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
+              (func (export "ocp_input_ptr") (result i32) i32.const 0)
+              (func (export "ocp_input_capacity") (result i32) i32.const 65536)
+              (func (export "ocp_output_ptr") (result i32) i32.const 65536)
+              (func (export "ocp_output_capacity") (result i32) i32.const 262144)
+              (func (export "ocp_decode") (param i32 i64) (result i32) i32.const 0)
+            )"#,
+        )?;
+        let mut manifest = parse_manifest(include_bytes!(
+            "../../../../plugins/games/f1-24/manifest.json"
+        ))?;
+        manifest.id = "desktop-test-sim".to_owned();
+        manifest.name = "Desktop Test Sim".to_owned();
+        manifest.runtime = PluginRuntime::Wasm {
+            abi_version: GAME_PLUGIN_ABI_VERSION,
+            module: "decoder.wasm".to_owned(),
+            sha256: format!("{:x}", Sha256::digest(&module)),
+        };
+        let package_path = temp.path().join("desktop-test-sim.ocp-plugin");
+        fs::write(
+            &package_path,
+            serde_json::to_vec(&GamePluginPackage {
+                package_version: GAME_PLUGIN_PACKAGE_VERSION,
+                manifest,
+                module_base64: STANDARD.encode(module),
+            })?,
+        )?;
+
+        let receipt = runtime.install_game_plugin(package_path).await?;
+        assert_eq!(receipt.id, "desktop-test-sim");
+        assert!(
+            runtime
+                .snapshot()
+                .await?
+                .diagnostics
+                .supported_adapters
+                .iter()
+                .any(|adapter| adapter.id == "desktop-test-sim")
+        );
+
+        let mut fixed = runtime.settings();
+        fixed.host.adapter_selection = "desktop-test-sim".to_owned();
+        runtime.update_settings(fixed).await?;
+        runtime.remove_game_plugin("desktop-test-sim").await?;
+        let after = runtime.snapshot().await?;
+        assert_eq!(after.settings.host.adapter_selection, "auto");
+        assert!(
+            after
+                .diagnostics
+                .supported_adapters
+                .iter()
+                .all(|adapter| adapter.id != "desktop-test-sim")
+        );
+
         runtime.shutdown().await?;
         Ok(())
     }

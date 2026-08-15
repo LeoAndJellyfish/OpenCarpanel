@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +22,14 @@ const schemas = [
   {
     source: path.join(workspaceRoot, "schemas", "layout", "v1", "layout-document.schema.json"),
     output: "layout-document.ts",
+  },
+  {
+    source: path.join(workspaceRoot, "schemas", "game-plugin", "v1", "manifest.schema.json"),
+    output: "game-plugin-manifest.ts",
+  },
+  {
+    source: path.join(workspaceRoot, "schemas", "game-plugin", "v1", "package.schema.json"),
+    output: "game-plugin-package.ts",
   },
 ];
 
@@ -64,6 +72,33 @@ async function readSchema(source) {
 
 function quoteList(values) {
   return values.map((value) => JSON.stringify(value)).join(", ");
+}
+
+async function builtinPluginMetadata() {
+  const pluginRoot = path.join(workspaceRoot, "plugins", "games");
+  const entries = (await readdir(pluginRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name));
+  return Promise.all(
+    entries.map(async (entry) => {
+      const manifest = JSON.parse(
+        await readFile(path.join(pluginRoot, entry.name, "manifest.json"), "utf8"),
+      );
+      return {
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        publisher: manifest.publisher,
+        description: manifest.description,
+        protocolVersion: manifest.protocol.version,
+        ingress: manifest.ingress,
+        capabilities: manifest.capabilities,
+        presentation: manifest.presentation,
+        setup: manifest.setup,
+        source: "builtin",
+      };
+    }),
+  );
 }
 
 function normalizeRefSiblings(value) {
@@ -133,12 +168,21 @@ export const CLIENT_MESSAGE_TYPES = [${quoteList(messageTypes(clientSchema, sche
 export const SERVER_MESSAGE_TYPES = [${quoteList(messageTypes(serverSchema, schemas[1].source))}] as const;
 `;
   await writeFile(path.join(outputDirectory, "wire-metadata.ts"), metadata, "utf8");
+  const builtinPlugins = `${bannerComment}
+import type { GamePluginMetadata } from "./server-message";
+
+export const BUILTIN_GAME_PLUGINS = ${JSON.stringify(await builtinPluginMetadata(), null, 2)} as const satisfies readonly GamePluginMetadata[];
+`;
+  await writeFile(path.join(outputDirectory, "builtin-game-plugins.ts"), builtinPlugins, "utf8");
   await writeFile(
     path.join(outputDirectory, "index.ts"),
     `${bannerComment}
 export type { ClientMessage } from "./client-message";
+export type { GamePluginManifest } from "./game-plugin-manifest";
+export type { GamePluginPackage } from "./game-plugin-package";
 export type { LayoutDocument } from "./layout-document";
-export type { ServerMessage } from "./server-message";
+export type { GamePluginMetadata, ServerMessage } from "./server-message";
+export { BUILTIN_GAME_PLUGINS } from "./builtin-game-plugins";
 export { CLIENT_MESSAGE_TYPES, PROTOCOL_VERSION, SERVER_MESSAGE_TYPES } from "./wire-metadata";
 `,
     "utf8",

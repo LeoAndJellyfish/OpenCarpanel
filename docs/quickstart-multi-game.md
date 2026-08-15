@@ -1,6 +1,6 @@
 # OpenCarpanel 多游戏快速开始
 
-OpenCarpanel 桌面控制中心内嵌的 Host 默认在 UDP `20777` 上自动识别四个输入源，并把当前 active 游戏发布给同一套手机/iPad Dashboard。安装目录仍附带独立无头 Host，但不能与 GUI 同时运行。
+OpenCarpanel 桌面控制中心内嵌的 Host 默认在 UDP `20777` 上自动识别四个内置输入源和已安装游戏插件，并把当前 active 游戏发布给同一套手机/iPad Dashboard。安装目录仍附带独立无头 Host，但不能与 GUI 同时运行。
 
 | 游戏 | 游戏到 Host 的入口 | 首版要求 |
 | --- | --- | --- |
@@ -55,14 +55,14 @@ npm run package:host
 
 ## 自动识别与固定选择
 
-默认 `auto` 模式会识别四种协议。当前 active 来源持续发包时，Host 会保持两秒来源粘性，避免两个游戏同时运行时仪表盘来回切换。
+默认 `auto` 模式会识别全部已加载插件。当前 active 来源持续发包时，Host 会保持两秒来源粘性，避免两个游戏同时运行时仪表盘来回切换。
 
 每个有效 snapshot 都携带稳定的 `meta.gameId`。驾驶页只在这个低频标识变化时切换页面配置：F1 24/25 使用方程式布局与 DRS 状态，ETS2/ATS 使用速度优先的卡车布局与 SCS bridge 状态。四款游戏分别保存为 `game-f1-24`、`game-f1-25`、`game-ets2`、`game-ats`，所以编辑某款游戏不会覆盖另一款；`/edit` 也可以手动选择要预览和编辑的游戏。
 
 排障或只允许一个游戏时，在控制中心“网络”页选择目标 adapter。无头自动化也可在启动前设置：
 
 ```powershell
-$env:OPENCARPANEL_GAME = "f1-25" # auto | f1-24 | f1-25 | ets2 | ats
+$env:OPENCARPANEL_GAME = "f1-25" # auto、内置 ID 或已安装插件 ID
 .\target\release\opencarpanel-host.exe
 ```
 
@@ -72,7 +72,13 @@ macOS/Linux：
 OPENCARPANEL_GAME=ets2 ./target/release/opencarpanel-host
 ```
 
-值严格区分大小写；非法值会让 Host 以可操作错误退出，不会静默回退。
+值严格区分大小写；不安全的 ID 会让 Host 以可操作错误退出。语法有效但插件缺失/加载失败时，Host 会回退到 `auto` 并在 `pluginLoadIssues` 中记录原因。
+
+## 安装第三方游戏插件
+
+在“游戏设置”点击“安装 `.ocp-plugin`”并选择本地包。校验成功后 Host 会自动重载，插件随即进入游戏页、网络数据源列表和手机布局编辑器。已安装插件可在其游戏页明确卸载；如果当前固定到该插件，控制中心会先安全切回自动识别。
+
+插件只可选择 OpenCarpanel 自带的可信仪表组件，不会向手机执行第三方 JavaScript/CSS。包格式、WASM 沙箱和开发步骤见[游戏插件开发指南](plugin-development.md)。
 
 ## 判断问题在哪一段
 

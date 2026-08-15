@@ -415,11 +415,14 @@ pub async fn bind_host(config: HostConfig) -> Result<RunningHost, HostError> {
     spawn_host_inner(
         http_listener,
         udp_socket,
-        LayoutRepository::new(data_directory),
+        LayoutRepository::new(&data_directory),
         pairing,
-        adapter_selection,
-        snapshot_hz_limit,
-        None,
+        HostLaunchOptions {
+            adapter_selection,
+            snapshot_hz_limit,
+            plugins_root: Some(data_directory.join("game-plugins")),
+            temporary_data: None,
+        },
     )
 }
 
@@ -439,6 +442,7 @@ pub fn spawn_host(
         source,
     })?;
     let layouts = LayoutRepository::new(temporary_data.path());
+    let plugins_root = temporary_data.path().join("game-plugins");
     let pairing =
         PairingService::load(temporary_data.path()).map_err(|source| HostError::DeviceStore {
             path: temporary_data.path().to_path_buf(),
@@ -449,9 +453,12 @@ pub fn spawn_host(
         udp_socket,
         layouts,
         pairing,
-        AdapterSelection::Auto,
-        60,
-        Some(temporary_data),
+        HostLaunchOptions {
+            adapter_selection: AdapterSelection::Auto,
+            snapshot_hz_limit: 60,
+            plugins_root: Some(plugins_root),
+            temporary_data: Some(temporary_data),
+        },
     )
 }
 
@@ -470,6 +477,7 @@ pub fn spawn_host_with_adapter_selection(
         source,
     })?;
     let layouts = LayoutRepository::new(temporary_data.path());
+    let plugins_root = temporary_data.path().join("game-plugins");
     let pairing =
         PairingService::load(temporary_data.path()).map_err(|source| HostError::DeviceStore {
             path: temporary_data.path().to_path_buf(),
@@ -480,9 +488,12 @@ pub fn spawn_host_with_adapter_selection(
         udp_socket,
         layouts,
         pairing,
-        adapter_selection,
-        60,
-        Some(temporary_data),
+        HostLaunchOptions {
+            adapter_selection,
+            snapshot_hz_limit: 60,
+            plugins_root: Some(plugins_root),
+            temporary_data: Some(temporary_data),
+        },
     )
 }
 
@@ -501,10 +512,20 @@ pub fn spawn_host_with_layout_repository(
         udp_socket,
         layouts,
         PairingService::ephemeral(),
-        AdapterSelection::Auto,
-        60,
-        None,
+        HostLaunchOptions {
+            adapter_selection: AdapterSelection::Auto,
+            snapshot_hz_limit: 60,
+            plugins_root: None,
+            temporary_data: None,
+        },
     )
+}
+
+struct HostLaunchOptions {
+    adapter_selection: AdapterSelection,
+    snapshot_hz_limit: u16,
+    plugins_root: Option<PathBuf>,
+    temporary_data: Option<tempfile::TempDir>,
 }
 
 fn spawn_host_inner(
@@ -512,10 +533,14 @@ fn spawn_host_inner(
     udp_socket: UdpSocket,
     layouts: LayoutRepository,
     pairing: PairingService,
-    adapter_selection: AdapterSelection,
-    snapshot_hz_limit: u16,
-    temporary_data: Option<tempfile::TempDir>,
+    options: HostLaunchOptions,
 ) -> Result<RunningHost, HostError> {
+    let HostLaunchOptions {
+        adapter_selection,
+        snapshot_hz_limit,
+        plugins_root,
+        temporary_data,
+    } = options;
     let http_address = http_listener
         .local_addr()
         .map_err(|source| HostError::Runtime {
@@ -528,10 +553,13 @@ fn spawn_host_inner(
             service: "game telemetry UDP local address",
             source,
         })?;
-    let adapters = AdapterRegistry::new(adapter_selection).map_err(HostError::Adapter)?;
+    let adapters = AdapterRegistry::new_with_plugins(adapter_selection, plugins_root.as_deref())
+        .map_err(HostError::Adapter)?;
+    let effective_selection = adapters.selection().clone();
     let state = Arc::new(HostState::new(
-        adapter_selection,
+        effective_selection,
         adapters.supported_adapters(),
+        adapters.load_issues(),
         TelemetrySnapshot::default(),
     ));
     let pairing = Arc::new(pairing);

@@ -57,6 +57,7 @@ fn server_messages_keep_stable_external_tags() -> serde_json::Result<()> {
             ServerPayload::Capabilities(CapabilitiesMessage {
                 fields: vec![TelemetryField::VehicleSpeed],
                 extensions: vec!["f1-24.revLightsPercent".into()],
+                plugins: Vec::new(),
             }),
         ),
         (

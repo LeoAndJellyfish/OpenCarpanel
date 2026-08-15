@@ -1,4 +1,6 @@
 use axum::{Json, extract::State};
+use opencarpanel_game_plugin_api::GamePluginMetadata;
+use opencarpanel_game_plugin_runtime::PluginLoadIssue;
 use opencarpanel_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 
@@ -22,6 +24,8 @@ pub struct HostDiagnostics {
     pub active_adapter: Option<String>,
     /// Metadata and counters for all compiled adapters.
     pub supported_adapters: Vec<AdapterDiagnostics>,
+    /// External plugin manifests that were skipped without stopping the Host.
+    pub plugin_load_issues: Vec<PluginLoadIssue>,
     /// Milliseconds since this Host runtime started.
     pub uptime_ms: u64,
     /// UDP and publication counters.
@@ -52,6 +56,8 @@ pub struct TelemetryDiagnostics {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AdapterDiagnostics {
+    /// Complete client-safe plugin manifest metadata.
+    pub plugin: GamePluginMetadata,
     /// Stable adapter id.
     pub id: String,
     /// Product-facing game name.
@@ -98,6 +104,7 @@ pub(crate) fn snapshot(host: &crate::HostState, active_connections: usize) -> Ho
             let (packets_recognized, last_packet_at_us) =
                 host.adapter_packet_metrics(index).unwrap_or((0, 0));
             AdapterDiagnostics {
+                plugin: adapter.metadata().clone(),
                 id: adapter.id().to_owned(),
                 display_name: adapter.display_name().to_owned(),
                 protocol_version: adapter.protocol_version().to_owned(),
@@ -116,6 +123,7 @@ pub(crate) fn snapshot(host: &crate::HostState, active_connections: usize) -> Ho
         adapter_selection: host.adapter_selection().as_str().to_owned(),
         active_adapter: host.active_adapter_id().map(str::to_owned),
         supported_adapters,
+        plugin_load_issues: host.plugin_load_issues().to_vec(),
         uptime_ms: metrics.uptime_ms,
         telemetry: TelemetryDiagnostics {
             packets_received: metrics.packets_received,

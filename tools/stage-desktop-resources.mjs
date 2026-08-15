@@ -71,7 +71,7 @@ copyFileSync(
 );
 copyFileSync(path.join(projectRoot, "LICENSE"), path.join(resourceDirectory, "LICENSE"));
 copyFileSync(path.join(projectRoot, "NOTICE"), path.join(resourceDirectory, "NOTICE"));
-for (const document of ["quickstart-multi-game.md", "quickstart-f1-24.md", "quickstart-f1-25.md", "quickstart-scs.md"]) {
+for (const document of ["quickstart-multi-game.md", "quickstart-f1-24.md", "quickstart-f1-25.md", "quickstart-scs.md", "plugin-development.md"]) {
   copyFileSync(
     path.join(projectRoot, "docs", document),
     path.join(resourceDirectory, "docs", document),

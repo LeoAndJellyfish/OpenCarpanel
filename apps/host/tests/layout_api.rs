@@ -91,24 +91,10 @@ async fn built_in_games_receive_independent_default_layouts() -> Result<(), Box<
     let authorization = format!("Bearer {session}");
 
     for (id, name, accent, tachometer_x, widget_count, supplemental) in [
-        (
-            "game-f1-24",
-            "F1 24 Trackside",
-            "#d9ff43",
-            0,
-            6,
-            "core.race",
-        ),
-        (
-            "game-f1-25",
-            "F1 25 Electric Grid",
-            "#42e8ff",
-            0,
-            6,
-            "core.race",
-        ),
-        ("game-ets2", "ETS2 Long Haul", "#ffbd45", 5, 5, "core.route"),
-        ("game-ats", "ATS Interstate", "#ff6a3d", 5, 5, "core.route"),
+        ("game-f1-24", "F1 24 Default", "#d9ff43", 0, 6, "core.race"),
+        ("game-f1-25", "F1 25 Default", "#42e8ff", 0, 6, "core.race"),
+        ("game-ets2", "ETS2 Default", "#ffbd45", 5, 5, "core.route"),
+        ("game-ats", "ATS Default", "#ff6a3d", 5, 5, "core.route"),
     ] {
         let response = request(
             address,

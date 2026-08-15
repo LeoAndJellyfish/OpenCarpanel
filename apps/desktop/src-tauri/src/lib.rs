@@ -44,6 +44,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
             commands::discover_scs_directory,
             commands::choose_scs_directory,
             commands::install_scs_plugin,
+            commands::install_game_plugin,
+            commands::remove_game_plugin,
             commands::check_for_updates,
             commands::install_update,
         ])

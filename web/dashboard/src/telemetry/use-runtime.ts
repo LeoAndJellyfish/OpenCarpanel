@@ -1,6 +1,8 @@
 import {
+  BUILTIN_GAME_PLUGINS,
   BUILTIN_GAME_IDS,
   type BuiltinGameId,
+  type GamePluginMetadata,
   type ServerMessage,
 } from "@opencarpanel/widget-sdk";
 import { useEffect, useState } from "preact/hooks";
@@ -18,6 +20,7 @@ const initialView: ConnectionView = {
 export interface TelemetryRuntime {
   readonly connection: ConnectionView;
   readonly gameId: string | undefined;
+  readonly plugins: readonly GamePluginMetadata[];
   readonly hasConnected: boolean;
   readonly loop: TelemetryRenderLoop;
 }
@@ -25,6 +28,7 @@ export interface TelemetryRuntime {
 export function useTelemetryRuntime(): TelemetryRuntime {
   const [connection, setConnection] = useState<ConnectionView>(initialView);
   const [gameId, setGameId] = useState<string>();
+  const [plugins, setPlugins] = useState<readonly GamePluginMetadata[]>(BUILTIN_GAME_PLUGINS);
   const [hasConnected, setHasConnected] = useState(false);
   const [store] = useState(
     () =>
@@ -199,6 +203,8 @@ export function useTelemetryRuntime(): TelemetryRuntime {
         staleTimer = window.setTimeout(() => store.setStale(true), 750);
       } else if (message.type === "stale") {
         store.setStale(true);
+      } else if (message.type === "capabilities" && message.plugins?.length) {
+        setPlugins(message.plugins);
       }
     };
     const telemetryConnection = new TelemetryConnection(observeView, observeMessage);
@@ -222,7 +228,7 @@ export function useTelemetryRuntime(): TelemetryRuntime {
     };
   }, [demoGameId, demoMode, loop, store]);
 
-  return { connection, gameId, hasConnected, loop };
+  return { connection, gameId, hasConnected, loop, plugins };
 }
 
 function tyreDemo(temperatureC: number, wear: number) {

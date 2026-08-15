@@ -115,16 +115,7 @@ async fn handle_socket(
     {
         return;
     }
-    if send_payload(
-        &mut socket,
-        ServerPayload::Capabilities(CapabilitiesMessage {
-            fields: host.capabilities().to_vec(),
-            extensions: Vec::new(),
-        }),
-    )
-    .await
-    .is_err()
-    {
+    if send_capabilities(&mut socket, &host).await.is_err() {
         return;
     }
 
@@ -327,6 +318,22 @@ async fn send_snapshot(
             seq: snapshot.meta.sequence,
             captured_at_us,
             data: snapshot,
+        }),
+    )
+    .await
+}
+
+async fn send_capabilities(socket: &mut WebSocket, host: &HostState) -> Result<(), axum::Error> {
+    send_payload(
+        socket,
+        ServerPayload::Capabilities(CapabilitiesMessage {
+            fields: host.capabilities().to_vec(),
+            extensions: Vec::new(),
+            plugins: host
+                .supported_adapters()
+                .iter()
+                .map(|adapter| adapter.metadata().clone())
+                .collect(),
         }),
     )
     .await

@@ -11,6 +11,7 @@ use opencarpanel_config::{
     BreakpointName, ComponentType, ConfigError, GridPlacement, InstanceId, LayoutDocument,
     LayoutId, LayoutRepository, MAX_LAYOUT_BYTES, ThemeSettings, ValidationError, WidgetInstance,
 };
+use opencarpanel_game_plugin_api::{GamePluginMetadata, PluginLayoutPreset};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -109,7 +110,13 @@ pub(crate) async fn get_layout(
     let id =
         LayoutId::new(raw_id).map_err(|_| LayoutApiError::InvalidRequest("invalid layout id"))?;
     let repository = Arc::clone(&state.layouts);
-    let loaded = tokio::task::spawn_blocking(move || load_or_create(&repository, &id))
+    let plugins = state
+        .host
+        .supported_adapters()
+        .iter()
+        .map(|adapter| adapter.metadata().clone())
+        .collect::<Vec<_>>();
+    let loaded = tokio::task::spawn_blocking(move || load_or_create(&repository, &id, &plugins))
         .await
         .map_err(|_| LayoutApiError::Internal)?
         .map_err(map_config_error)?;
@@ -208,15 +215,16 @@ fn require_json_content_type(headers: &HeaderMap) -> Result<(), LayoutApiError> 
 fn load_or_create(
     repository: &LayoutRepository,
     id: &LayoutId,
+    plugins: &[GamePluginMetadata],
 ) -> Result<Option<LayoutEnvelope>, ConfigError> {
     if let Some(loaded) = repository.load(id)? {
-        let document = upgrade_previous_builtin_layout(repository, id, loaded.document)?;
+        let document = upgrade_previous_builtin_layout(repository, id, loaded.document, plugins)?;
         return Ok(Some(LayoutEnvelope {
             document,
             recovered: loaded.recovered,
         }));
     }
-    let Some(default) = layout_for_new_id(repository, id)? else {
+    let Some(default) = layout_for_new_id(repository, id, plugins)? else {
         return Ok(None);
     };
 
@@ -239,11 +247,12 @@ fn upgrade_previous_builtin_layout(
     repository: &LayoutRepository,
     id: &LayoutId,
     document: LayoutDocument,
+    plugins: &[GamePluginMetadata],
 ) -> Result<LayoutDocument, ConfigError> {
     if !is_v0_3_builtin_layout(id, &document) {
         return Ok(document);
     }
-    let Some(current) = built_in_layout(id).map_err(ConfigError::Validation)? else {
+    let Some(current) = plugin_layout(id, plugins).map_err(ConfigError::Validation)? else {
         return Ok(document);
     };
     match repository.save(&current, document.revision()) {
@@ -256,7 +265,7 @@ fn upgrade_previous_builtin_layout(
 }
 
 fn is_v0_3_builtin_layout(id: &LayoutId, document: &LayoutDocument) -> bool {
-    let Some(spec) = built_in_layout_spec(id) else {
+    let Some(spec) = legacy_builtin_layout_spec(id) else {
         return false;
     };
     if document.revision() != 1
@@ -297,8 +306,9 @@ fn is_v0_3_builtin_layout(id: &LayoutId, document: &LayoutDocument) -> bool {
 fn layout_for_new_id(
     repository: &LayoutRepository,
     id: &LayoutId,
+    plugins: &[GamePluginMetadata],
 ) -> Result<Option<LayoutDocument>, ConfigError> {
-    let built_in = built_in_layout(id).map_err(ConfigError::Validation)?;
+    let built_in = plugin_layout(id, plugins).map_err(ConfigError::Validation)?;
     if id.as_str() == DEFAULT_LAYOUT_ID || built_in.is_none() {
         return Ok(built_in);
     }
@@ -329,15 +339,8 @@ fn clone_layout_with_id(
 }
 
 #[derive(Clone, Copy)]
-enum BuiltInLayoutFamily {
-    Formula,
-    Truck,
-}
-
-#[derive(Clone, Copy)]
-struct BuiltInLayoutSpec {
+struct LegacyBuiltInLayoutSpec {
     name: &'static str,
-    family: BuiltInLayoutFamily,
     background: &'static str,
     foreground: &'static str,
     accent: &'static str,
@@ -345,47 +348,42 @@ struct BuiltInLayoutSpec {
     fallback_rpm_max: u64,
 }
 
-fn built_in_layout_spec(id: &LayoutId) -> Option<BuiltInLayoutSpec> {
+fn legacy_builtin_layout_spec(id: &LayoutId) -> Option<LegacyBuiltInLayoutSpec> {
     let spec = match id.as_str() {
-        DEFAULT_LAYOUT_ID => BuiltInLayoutSpec {
+        DEFAULT_LAYOUT_ID => LegacyBuiltInLayoutSpec {
             name: "OpenCarpanel Default",
-            family: BuiltInLayoutFamily::Formula,
             background: "#07090c",
             foreground: "#f2f0e9",
             accent: "#d9ff43",
             warning: "#ff4b3e",
             fallback_rpm_max: 12_000,
         },
-        "game-f1-24" => BuiltInLayoutSpec {
+        "game-f1-24" => LegacyBuiltInLayoutSpec {
             name: "F1 24 Trackside",
-            family: BuiltInLayoutFamily::Formula,
             background: "#07090c",
             foreground: "#f2f0e9",
             accent: "#d9ff43",
             warning: "#ff4b3e",
             fallback_rpm_max: 12_000,
         },
-        "game-f1-25" => BuiltInLayoutSpec {
+        "game-f1-25" => LegacyBuiltInLayoutSpec {
             name: "F1 25 Electric Grid",
-            family: BuiltInLayoutFamily::Formula,
             background: "#061015",
             foreground: "#eefcff",
             accent: "#42e8ff",
             warning: "#ff5e6c",
             fallback_rpm_max: 12_000,
         },
-        "game-ets2" => BuiltInLayoutSpec {
+        "game-ets2" => LegacyBuiltInLayoutSpec {
             name: "ETS2 Long Haul",
-            family: BuiltInLayoutFamily::Truck,
             background: "#0e0b08",
             foreground: "#fff5e5",
             accent: "#ffbd45",
             warning: "#ff4b3e",
             fallback_rpm_max: 2_500,
         },
-        "game-ats" => BuiltInLayoutSpec {
+        "game-ats" => LegacyBuiltInLayoutSpec {
             name: "ATS Interstate",
-            family: BuiltInLayoutFamily::Truck,
             background: "#080d10",
             foreground: "#f5f0e6",
             accent: "#ff6a3d",
@@ -397,22 +395,51 @@ fn built_in_layout_spec(id: &LayoutId) -> Option<BuiltInLayoutSpec> {
     Some(spec)
 }
 
-fn built_in_layout(id: &LayoutId) -> Result<Option<LayoutDocument>, ValidationError> {
-    let Some(spec) = built_in_layout_spec(id) else {
+fn plugin_layout(
+    id: &LayoutId,
+    plugins: &[GamePluginMetadata],
+) -> Result<Option<LayoutDocument>, ValidationError> {
+    let plugin = if id.as_str() == DEFAULT_LAYOUT_ID {
+        plugins
+            .iter()
+            .find(|plugin| plugin.presentation.layout_preset == PluginLayoutPreset::Formula)
+            .or_else(|| plugins.first())
+    } else {
+        id.as_str()
+            .strip_prefix("game-")
+            .and_then(|plugin_id| plugins.iter().find(|plugin| plugin.id == plugin_id))
+    };
+    let Some(plugin) = plugin else {
         return Ok(None);
     };
 
-    let mut document = LayoutDocument::empty(LayoutId::new(id.as_str())?, spec.name)?;
-    document.set_theme(ThemeSettings {
-        background: spec.background.into(),
-        foreground: spec.foreground.into(),
-        accent: spec.accent.into(),
-        warning: spec.warning.into(),
-    });
-    let widgets = match spec.family {
-        BuiltInLayoutFamily::Formula => formula_widgets(spec.fallback_rpm_max)?,
-        BuiltInLayoutFamily::Truck => truck_widgets(spec.fallback_rpm_max)?,
+    let name = if id.as_str() == DEFAULT_LAYOUT_ID {
+        "OpenCarpanel Default".to_owned()
+    } else {
+        format!("{} Default", plugin.presentation.short_name)
     };
+    let mut document = LayoutDocument::empty(LayoutId::new(id.as_str())?, name)?;
+    document.set_theme(ThemeSettings {
+        background: plugin.presentation.theme.background.clone(),
+        foreground: plugin.presentation.theme.foreground.clone(),
+        accent: plugin.presentation.theme.accent.clone(),
+        warning: plugin.presentation.theme.warning.clone(),
+    });
+    let mut widgets = match plugin.presentation.layout_preset {
+        PluginLayoutPreset::Formula | PluginLayoutPreset::Generic => {
+            formula_widgets(u64::from(plugin.presentation.fallback_rpm_max))?
+        }
+        PluginLayoutPreset::Truck => {
+            truck_widgets(u64::from(plugin.presentation.fallback_rpm_max))?
+        }
+    };
+    widgets.retain(|widget| {
+        plugin
+            .presentation
+            .widgets
+            .iter()
+            .any(|component| component == widget.component_type.as_str())
+    });
     document.set_widgets(widgets);
     document.validate()?;
     Ok(Some(document))

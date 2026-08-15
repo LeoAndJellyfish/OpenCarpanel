@@ -1,7 +1,8 @@
 import {
+  BUILTIN_GAME_PLUGINS,
   DEFAULT_LAYOUT,
-  GAME_DEFAULT_LAYOUTS,
-  type BuiltinGameId,
+  gameDefaultLayout,
+  type GamePluginMetadata,
   type LayoutDocument,
 } from "@opencarpanel/widget-sdk";
 
@@ -9,57 +10,37 @@ export type GameFamily = "formula" | "truck" | "neutral";
 export type StatusMode = "drs" | "scs" | "generic";
 
 export interface GamePresentation {
-  readonly id: BuiltinGameId | "unknown";
+  readonly id: string;
   readonly label: string;
   readonly detail: string;
   readonly family: GameFamily;
   readonly statusMode: StatusMode;
   readonly layoutId: string;
   readonly defaultLayout: LayoutDocument;
+  readonly plugin: GamePluginMetadata | undefined;
 }
 
-export interface BuiltinGamePresentation extends GamePresentation {
-  readonly id: BuiltinGameId;
+function presentationForPlugin(plugin: GamePluginMetadata): GamePresentation {
+  const defaultLayout = gameDefaultLayout(plugin);
+  return {
+    id: plugin.id,
+    label: plugin.name.toUpperCase(),
+    detail: plugin.presentation.detail.toUpperCase(),
+    family: plugin.presentation.family === "generic" ? "neutral" : plugin.presentation.family,
+    statusMode: plugin.presentation.statusMode,
+    layoutId: defaultLayout.id,
+    defaultLayout,
+    plugin,
+  };
 }
 
-export const SUPPORTED_GAME_PRESENTATIONS: readonly BuiltinGamePresentation[] = [
-  {
-    id: "f1-24",
-    label: "F1 24",
-    detail: "FORMULA / UDP 2024",
-    family: "formula",
-    statusMode: "drs",
-    layoutId: "game-f1-24",
-    defaultLayout: GAME_DEFAULT_LAYOUTS["f1-24"],
-  },
-  {
-    id: "f1-25",
-    label: "F1 25",
-    detail: "FORMULA / UDP 2025 + 2026",
-    family: "formula",
-    statusMode: "drs",
-    layoutId: "game-f1-25",
-    defaultLayout: GAME_DEFAULT_LAYOUTS["f1-25"],
-  },
-  {
-    id: "ets2",
-    label: "EURO TRUCK SIMULATOR 2",
-    detail: "LONG HAUL / SCS SDK",
-    family: "truck",
-    statusMode: "scs",
-    layoutId: "game-ets2",
-    defaultLayout: GAME_DEFAULT_LAYOUTS.ets2,
-  },
-  {
-    id: "ats",
-    label: "AMERICAN TRUCK SIMULATOR",
-    detail: "INTERSTATE / SCS SDK",
-    family: "truck",
-    statusMode: "scs",
-    layoutId: "game-ats",
-    defaultLayout: GAME_DEFAULT_LAYOUTS.ats,
-  },
-];
+export function gamePresentations(
+  plugins: readonly GamePluginMetadata[],
+): readonly GamePresentation[] {
+  return plugins.map(presentationForPlugin);
+}
+
+export const SUPPORTED_GAME_PRESENTATIONS = gamePresentations(BUILTIN_GAME_PLUGINS);
 
 const UNKNOWN_GAME_PRESENTATION: GamePresentation = {
   id: "unknown",
@@ -69,15 +50,24 @@ const UNKNOWN_GAME_PRESENTATION: GamePresentation = {
   statusMode: "generic",
   layoutId: "default",
   defaultLayout: DEFAULT_LAYOUT,
+  plugin: undefined,
 };
 
-export function gamePresentation(gameId: string | null | undefined): GamePresentation {
-  return (
-    SUPPORTED_GAME_PRESENTATIONS.find((presentation) => presentation.id === gameId) ??
-    UNKNOWN_GAME_PRESENTATION
-  );
+export function gamePresentation(
+  gameId: string | null | undefined,
+  plugins: readonly GamePluginMetadata[] = BUILTIN_GAME_PLUGINS,
+): GamePresentation {
+  const plugin = plugins.find((candidate) => candidate.id === gameId);
+  return plugin ? presentationForPlugin(plugin) : UNKNOWN_GAME_PRESENTATION;
 }
 
-export function isBuiltinGameId(value: string | null | undefined): value is BuiltinGameId {
-  return SUPPORTED_GAME_PRESENTATIONS.some((presentation) => presentation.id === value);
+export function isGamePluginId(
+  value: string | null | undefined,
+  plugins: readonly GamePluginMetadata[],
+): value is string {
+  return plugins.some((plugin) => plugin.id === value);
+}
+
+export function isBuiltinGameId(value: string | null | undefined): boolean {
+  return BUILTIN_GAME_PLUGINS.some((plugin) => plugin.id === value);
 }

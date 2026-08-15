@@ -3,6 +3,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
+use opencarpanel_game_plugin_api::GamePluginMetadata;
 use opencarpanel_telemetry_core::{TelemetryEvent, TelemetryField, TelemetrySnapshot};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -163,6 +164,9 @@ pub struct CapabilitiesMessage {
     pub fields: Vec<TelemetryField>,
     /// Namespaced adapter extension paths.
     pub extensions: Vec<String>,
+    /// Installed and built-in game plugins available to this Host.
+    #[serde(default)]
+    pub plugins: Vec<GamePluginMetadata>,
 }
 
 /// Reliable-event history can no longer satisfy the requested sequence.

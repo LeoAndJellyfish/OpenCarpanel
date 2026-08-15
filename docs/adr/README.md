@@ -12,5 +12,6 @@ ADR 记录已经确认、会长期影响实现的决策。已有决策不直接�
 | [0006](0006-render-loop-and-motion-budget.md) | Accepted | 独立渲染循环与运动性能预算 |
 | [0007](0007-versioned-local-game-input-bridges.md) | Accepted | 版本化本机桥接接入游戏内遥测 SDK |
 | [0008](0008-tauri-desktop-embedded-host.md) | Accepted | Tauri 桌面控制中心内嵌唯一 Host 核心 |
+| [0009](0009-sandboxed-game-plugin-packages.md) | Accepted | 声明式清单与沙箱化 WASM 游戏插件 |
 
 新 ADR 使用四位递增编号，并包含 Context、Decision、Consequences、Alternatives 和 References。

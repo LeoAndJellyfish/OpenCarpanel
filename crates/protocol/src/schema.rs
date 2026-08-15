@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use opencarpanel_game_plugin_api::{GamePluginManifest, GamePluginPackage};
 use opencarpanel_telemetry_core::{TelemetryEvent, TelemetrySnapshot, TelemetryUpdate};
 use schemars::{Schema, schema_for};
 
@@ -46,6 +47,14 @@ pub fn generate_schema_documents() -> Result<Vec<SchemaDocument>, serde_json::Er
         (
             "protocol/v1/server-message.schema.json",
             schema_for!(ServerMessage),
+        ),
+        (
+            "game-plugin/v1/manifest.schema.json",
+            schema_for!(GamePluginManifest),
+        ),
+        (
+            "game-plugin/v1/package.schema.json",
+            schema_for!(GamePluginPackage),
         ),
         (
             "telemetry/v1/telemetry-event.schema.json",

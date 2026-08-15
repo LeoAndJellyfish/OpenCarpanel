@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "ats",
+  "name": "American Truck Simulator",
+  "version": "1.0.0",
+  "publisher": "OpenCarpanel contributors",
+  "license": "Apache-2.0",
+  "description": "American Truck Simulator telemetry through the bundled SCS SDK bridge.",
+  "runtime": {
+    "kind": "builtin",
+    "entrypoint": "ats"
+  },
+  "protocol": {
+    "name": "OpenCarpanel SCS bridge",
+    "version": "scs-bridge/v1+v2 (SDK 1.14)"
+  },
+  "ingress": {
+    "kind": "shared_udp",
+    "defaultPort": 20777,
+    "maxDatagramBytes": 188
+  },
+  "capabilities": [
+    "vehicle.speedMps",
+    "vehicle.gear",
+    "vehicle.rpm",
+    "vehicle.rpmMax",
+    "vehicle.throttle",
+    "vehicle.brake",
+    "vehicle.drs",
+    "vehicle.fuel",
+    "navigation",
+    "lights",
+    "job"
+  ],
+  "presentation": {
+    "shortName": "ATS",
+    "detail": "INTERSTATE / SCS SDK",
+    "family": "truck",
+    "statusMode": "scs",
+    "layoutPreset": "truck",
+    "theme": {
+      "background": "#080d10",
+      "foreground": "#f5f0e6",
+      "accent": "#ff6a3d",
+      "warning": "#ffcf54"
+    },
+    "fallbackRpmMax": 2500,
+    "widgets": [
+      "core.gear",
+      "core.route",
+      "core.speed",
+      "core.tachometer",
+      "core.status"
+    ]
+  },
+  "setup": {
+    "kind": "scs_sdk",
+    "steamAppId": 270880,
+    "directoryName": "American Truck Simulator"
+  }
+}

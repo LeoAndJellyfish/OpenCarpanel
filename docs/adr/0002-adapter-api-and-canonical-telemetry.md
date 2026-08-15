@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by ADR-0009。统一遥测与 `GameAdapter` 边界仍有效；“MVP 不支持运行时加载”的限制由标准插件包取代。
 
 ## Context
 

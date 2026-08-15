@@ -8,6 +8,7 @@ use std::{
     time::Instant,
 };
 
+use opencarpanel_game_plugin_runtime::PluginLoadIssue;
 use opencarpanel_protocol::EventMessage;
 use opencarpanel_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetrySnapshot,
@@ -50,6 +51,7 @@ pub struct HostState {
     started_at: Instant,
     adapter_selection: AdapterSelection,
     supported_adapters: Vec<SupportedAdapter>,
+    plugin_load_issues: Vec<PluginLoadIssue>,
     capabilities: Vec<TelemetryField>,
     active_adapter: AtomicUsize,
     adapter_packets: Vec<AtomicU64>,
@@ -68,6 +70,7 @@ impl HostState {
     pub(crate) fn new(
         adapter_selection: AdapterSelection,
         supported_adapters: Vec<SupportedAdapter>,
+        plugin_load_issues: Vec<PluginLoadIssue>,
         snapshot: TelemetrySnapshot,
     ) -> Self {
         let capabilities = supported_adapters
@@ -82,6 +85,7 @@ impl HostState {
             started_at: Instant::now(),
             adapter_selection,
             supported_adapters,
+            plugin_load_issues,
             capabilities,
             active_adapter: AtomicUsize::new(NO_ACTIVE_ADAPTER),
             adapter_packets: (0..adapter_count).map(|_| AtomicU64::new(0)).collect(),
@@ -106,8 +110,8 @@ impl HostState {
 
     /// Returns the configured automatic or fixed adapter selection.
     #[must_use]
-    pub const fn adapter_selection(&self) -> AdapterSelection {
-        self.adapter_selection
+    pub const fn adapter_selection(&self) -> &AdapterSelection {
+        &self.adapter_selection
     }
 
     /// Returns the adapter that most recently won source selection.
@@ -121,6 +125,12 @@ impl HostState {
     #[must_use]
     pub fn supported_adapters(&self) -> &[SupportedAdapter] {
         &self.supported_adapters
+    }
+
+    /// Returns non-fatal external plugin discovery failures.
+    #[must_use]
+    pub fn plugin_load_issues(&self) -> &[PluginLoadIssue] {
+        &self.plugin_load_issues
     }
 
     /// Returns the active adapter's stable canonical capabilities.

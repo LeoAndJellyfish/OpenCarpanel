@@ -13,16 +13,17 @@ import {
   chooseScsDirectory,
   createPairing,
   discoverScsDirectory,
+  installGamePlugin as installExternalGamePlugin,
   openDashboard,
   openLogs,
   refreshRuntime,
+  removeGamePlugin as removeExternalGamePlugin,
   revokeDevice,
   saveSettings,
   installScsPlugin,
   installUpdate,
 } from "./desktop-api";
 import {
-  type GameId,
   compactNumber,
   formatAge,
   formatDeviceTime,
@@ -50,7 +51,7 @@ import {
 } from "./update-progress";
 
 type Section = "overview" | "pairing" | "games" | "dashboard" | "network" | "system";
-type SetupGame = Exclude<GameId, "waiting">;
+type SetupGame = string;
 
 const NAVIGATION: readonly { id: Section; index: string; label: string }[] = [
   { id: "overview", index: "01", label: "总览" },
@@ -59,13 +60,6 @@ const NAVIGATION: readonly { id: Section; index: string; label: string }[] = [
   { id: "dashboard", index: "04", label: "仪表盘" },
   { id: "network", index: "05", label: "网络" },
   { id: "system", index: "06", label: "系统与诊断" },
-];
-
-const GAME_TABS: readonly { id: SetupGame; label: string; detail: string }[] = [
-  { id: "f1-24", label: "F1 24", detail: "UDP 2024" },
-  { id: "f1-25", label: "F1 25", detail: "2025 + 2026" },
-  { id: "ets2", label: "ETS2", detail: "SCS SDK" },
-  { id: "ats", label: "ATS", detail: "SCS SDK" },
 ];
 
 export function App() {
@@ -95,8 +89,11 @@ export function App() {
         if (!active) return;
         setData(value);
         setDraft(value.settings);
-        const detected = value.diagnostics.activeAdapter;
-        if (detected && detected !== "waiting") setSetupGame(detected as SetupGame);
+        const selected = value.diagnostics.activeAdapter
+          ?? (value.settings.host.adapterSelection === "auto"
+            ? value.diagnostics.supportedAdapters[0]?.id
+            : value.settings.host.adapterSelection);
+        if (selected) setSetupGame(selected);
       })
       .catch((reason: unknown) => active && setError(errorText(reason)));
     return () => {
@@ -161,7 +158,7 @@ export function App() {
 
   const profile = useMemo(
     () => (data ? gameProfile(data.diagnostics) : null),
-    [data?.diagnostics.activeAdapter, data?.diagnostics.adapterSelection],
+    [data?.diagnostics],
   );
 
   async function commitSettings(next: AppSettings, successMessage: string) {
@@ -231,7 +228,7 @@ export function App() {
     }
   }
 
-  async function installGamePlugin() {
+  async function installScsBridge() {
     if (!isScsGame(setupGame)) return;
     const game = setupGame;
     const scsStatus = scsStatuses[game];
@@ -242,6 +239,52 @@ export function App() {
       const installed = await installScsPlugin(scsStatus);
       setScsStatuses((current) => ({ ...current, [game]: installed }));
       setMessage("SCS bridge 已安装并通过 SHA-256 校验；完全重启游戏后接受 SDK 提示");
+    } catch (reason) {
+      setError(errorText(reason));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function installGamePackage() {
+    setBusy("plugin-install");
+    setError(null);
+    const previousIds = new Set(
+      data?.diagnostics.supportedAdapters
+        .filter((adapter) => adapter.plugin.source === "installed")
+        .map((adapter) => adapter.id),
+    );
+    try {
+      const snapshot = await installExternalGamePlugin();
+      if (!snapshot) return;
+      setData((current) => mergeRuntime(current, snapshot));
+      setDraft(snapshot.settings);
+      const installed = snapshot.diagnostics.supportedAdapters.find(
+        (adapter) => adapter.plugin.source === "installed" && !previousIds.has(adapter.id),
+      );
+      if (installed) setSetupGame(installed.id);
+      setMessage(installed ? `${installed.plugin.name} 已安装并加载` : "游戏插件已更新并重新加载");
+    } catch (reason) {
+      setError(errorText(reason));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function uninstallGamePackage(pluginId: string) {
+    const adapter = data?.diagnostics.supportedAdapters.find((item) => item.id === pluginId);
+    if (!adapter || adapter.plugin.source !== "installed") return;
+    if (!window.confirm(`卸载 ${adapter.plugin.name}？其本地插件文件将被删除。`)) return;
+    setBusy(`plugin-remove:${pluginId}`);
+    setError(null);
+    try {
+      const snapshot = await removeExternalGamePlugin(pluginId);
+      setData((current) => mergeRuntime(current, snapshot));
+      setDraft(snapshot.settings);
+      if (setupGame === pluginId) {
+        setSetupGame(snapshot.diagnostics.supportedAdapters[0]?.id ?? "f1-25");
+      }
+      setMessage(`${adapter.plugin.name} 已卸载`);
     } catch (reason) {
       setError(errorText(reason));
     } finally {
@@ -412,7 +455,9 @@ export function App() {
               busy={busy}
               data={data}
               onChooseDirectory={() => void chooseGameDirectory()}
-              onInstallPlugin={() => void installGamePlugin()}
+              onInstallExternal={() => void installGamePackage()}
+              onInstallScs={() => void installScsBridge()}
+              onRemoveExternal={(pluginId) => void uninstallGamePackage(pluginId)}
               onSelectGame={selectSetupGame}
               onSetSelection={(selection) =>
                 void commitSettings(
@@ -431,6 +476,7 @@ export function App() {
           {section === "dashboard" && (
             <DashboardView
               data={data}
+              profile={profile}
               onOpen={(target) => void openDashboard(target).catch((reason) => setError(errorText(reason)))}
             />
           )}
@@ -709,7 +755,9 @@ function GamesView({
   busy,
   onSelectGame,
   onChooseDirectory,
-  onInstallPlugin,
+  onInstallExternal,
+  onInstallScs,
+  onRemoveExternal,
   onSetSelection,
 }: {
   data: DesktopBootstrap;
@@ -719,16 +767,36 @@ function GamesView({
   busy: string | null;
   onSelectGame: (game: SetupGame) => void;
   onChooseDirectory: () => void;
-  onInstallPlugin: () => void;
+  onInstallExternal: () => void;
+  onInstallScs: () => void;
+  onRemoveExternal: (pluginId: string) => void;
   onSetSelection: (selection: AppSettings["host"]["adapterSelection"]) => void;
 }) {
-  const isScs = selected === "ets2" || selected === "ats";
   const adapter = data.diagnostics.supportedAdapters.find((item) => item.id === selected);
+  const setup = adapter?.plugin.setup;
   const udpPort = data.endpoints.udpAddress.split(":").at(-1) ?? "20777";
   return (
     <>
+      <div class="game-plugin-toolbar">
+        <span>{data.diagnostics.supportedAdapters.length} 个数据源</span>
+        <button
+          class="button-signal"
+          disabled={busy === "plugin-install"}
+          type="button"
+          onClick={onInstallExternal}
+        >{busy === "plugin-install" ? "正在校验并加载…" : "安装 .ocp-plugin"}</button>
+      </div>
+      {data.diagnostics.pluginLoadIssues.length > 0 && (
+        <div class="plugin-issues" role="status">
+          {data.diagnostics.pluginLoadIssues.map((issue, index) => (
+            <span key={`${issue.pluginId ?? "unknown"}:${index}`}>
+              {issue.pluginId ?? "未知插件"}：{issue.message}
+            </span>
+          ))}
+        </div>
+      )}
       <div class="game-tabs" role="tablist" aria-label="选择要配置的游戏">
-        {GAME_TABS.map((game) => (
+        {data.diagnostics.supportedAdapters.map((game) => (
           <button
             role="tab"
             aria-selected={selected === game.id}
@@ -737,7 +805,8 @@ function GamesView({
             onClick={() => onSelectGame(game.id)}
             key={game.id}
           >
-            <span>{game.label}</span><small>{game.detail}</small>
+            <span>{game.plugin.presentation.shortName}</span>
+            <small>{game.plugin.source === "installed" ? "本地插件" : game.plugin.protocolVersion}</small>
           </button>
         ))}
       </div>
@@ -748,18 +817,22 @@ function GamesView({
             <h2>{adapter?.displayName ?? selected}</h2>
             <span class="protocol-tag">{adapter?.protocolVersion ?? "COMPILED"}</span>
           </div>
-          {isScs ? (
+          {setup?.kind === "scs_sdk" && isScsGame(selected) ? (
             <ScsSetup
               busy={busy}
               game={selected}
               discovery={scsDiscovery}
               status={scsStatus}
               onChooseDirectory={onChooseDirectory}
-              onInstall={onInstallPlugin}
+              onInstall={onInstallScs}
               udpPort={udpPort}
             />
+          ) : setup?.kind === "f1_udp" ? (
+            <F1Setup format={setup.format} sendRateHz={setup.sendRateHz} udpPort={udpPort} />
+          ) : setup?.kind === "udp" ? (
+            <UdpSetup steps={setup.steps} udpPort={udpPort} />
           ) : (
-            <F1Setup game={selected} udpPort={udpPort} />
+            <NoSetup udpPort={udpPort} />
           )}
         </section>
 
@@ -785,21 +858,66 @@ function GamesView({
             <small>CANONICAL FIELDS</small>
             <div>{adapter?.capabilities.map((field) => <span key={field}>{field}</span>)}</div>
           </div>
+          {adapter && (
+            <div class="plugin-origin">
+              <span>{adapter.plugin.publisher}</span>
+              <code>v{adapter.plugin.version}</code>
+            </div>
+          )}
+          {adapter?.plugin.source === "installed" && (
+            <button
+              class="button-danger plugin-remove"
+              disabled={busy === `plugin-remove:${adapter.id}`}
+              type="button"
+              onClick={() => onRemoveExternal(adapter.id)}
+            >{busy === `plugin-remove:${adapter.id}` ? "正在卸载…" : "卸载此插件"}</button>
+          )}
         </aside>
       </div>
     </>
   );
 }
 
-function F1Setup({ game, udpPort }: { game: "f1-24" | "f1-25"; udpPort: string }) {
-  const mode = game === "f1-24" ? "F1 24 / 2024" : "F1 25 / 2025 或 2026 Season Pack";
+function F1Setup({
+  format,
+  sendRateHz,
+  udpPort,
+}: {
+  format: string;
+  sendRateHz: number;
+  udpPort: string;
+}) {
   return (
     <div class="wizard-body">
       <ol class="setup-steps">
         <li><span>01</span><strong>UDP Telemetry</strong><b>ON</b></li>
         <li><span>02</span><strong>UDP IP Address</strong><b>127.0.0.1</b></li>
-        <li><span>03</span><strong>UDP Port / Send Rate</strong><b>{udpPort} / 60 HZ</b></li>
-        <li><span>04</span><strong>UDP Format</strong><b>{mode}</b></li>
+        <li><span>03</span><strong>UDP Port / Send Rate</strong><b>{udpPort} / {sendRateHz} HZ</b></li>
+        <li><span>04</span><strong>UDP Format</strong><b>{format}</b></li>
+      </ol>
+    </div>
+  );
+}
+
+function UdpSetup({ steps, udpPort }: { steps: string[]; udpPort: string }) {
+  return (
+    <div class="wizard-body">
+      <ol class="setup-steps">
+        {steps.map((step, index) => (
+          <li key={step}><span>{String(index + 1).padStart(2, "0")}</span><strong>{step}</strong></li>
+        ))}
+        <li><span>{String(steps.length + 1).padStart(2, "0")}</span><strong>遥测目标</strong><b>127.0.0.1:{udpPort}</b></li>
+      </ol>
+    </div>
+  );
+}
+
+function NoSetup({ udpPort }: { udpPort: string }) {
+  return (
+    <div class="wizard-body">
+      <ol class="setup-steps">
+        <li><span>01</span><strong>启动游戏或数据源</strong><b>READY</b></li>
+        <li><span>02</span><strong>共享 UDP 监听</strong><b>127.0.0.1:{udpPort}</b></li>
       </ol>
     </div>
   );
@@ -851,9 +969,11 @@ function matchesRetryableDiscovery(phase: ScsDiscoveryPhase): boolean {
 
 function DashboardView({
   data,
+  profile,
   onOpen,
 }: {
   data: DesktopBootstrap;
+  profile: ReturnType<typeof gameProfile>;
   onOpen: (target: "dashboard" | "editor") => void;
 }) {
   return (
@@ -867,18 +987,18 @@ function DashboardView({
           </div>
           <div class="url-plate"><small>MOBILE URL</small><code>{data.endpoints.dashboardUrl}</code></div>
         </div>
-        <DashboardMiniature />
+        <DashboardMiniature profile={profile} />
       </section>
     </div>
   );
 }
 
-function DashboardMiniature() {
+function DashboardMiniature({ profile }: { profile: ReturnType<typeof gameProfile> }) {
   return (
-    <div class="display-mock" aria-label="F1 仪表盘预览">
+    <div class="display-mock" aria-label={`${profile.label} 仪表盘预览`}>
       <div class="display-bezel">
         <div class="shift-lights">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>
-        <span class="mock-game">F1 25 / 2026</span>
+        <span class="mock-game">{profile.shortLabel}</span>
         <strong class="mock-gear">7</strong>
         <div class="mock-speed"><b>312</b><small>KM/H</small></div>
         <div class="mock-rpm"><span /></div>
@@ -934,7 +1054,10 @@ function NetworkView({
             value={draft.host.adapterSelection}
             onChange={(event) => updateHost("adapterSelection", event.currentTarget.value as AppSettings["host"]["adapterSelection"])}
           >
-            <option value="auto">自动识别</option><option value="f1-24">F1 24</option><option value="f1-25">F1 25</option><option value="ets2">ETS2</option><option value="ats">ATS</option>
+            <option value="auto">自动识别</option>
+            {data.diagnostics.supportedAdapters.map((adapter) => (
+              <option value={adapter.id} key={adapter.id}>{adapter.plugin.name}</option>
+            ))}
           </select>
         </label>
         <div class="form-actions">

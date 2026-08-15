@@ -15,7 +15,11 @@ export type {
   TelemetryEvent,
   TelemetryField,
   TelemetrySnapshot,
+  GamePluginMetadata,
 } from "./generated/server-message";
+export type { GamePluginManifest } from "./generated/game-plugin-manifest";
+export type { GamePluginPackage } from "./generated/game-plugin-package";
+export { BUILTIN_GAME_PLUGINS } from "./generated/builtin-game-plugins";
 export {
   CLIENT_MESSAGE_TYPES,
   PROTOCOL_VERSION,
@@ -39,6 +43,7 @@ export {
   BUILTIN_GAME_IDS,
   DEFAULT_LAYOUT,
   GAME_DEFAULT_LAYOUTS,
+  gameDefaultLayout,
   LAYOUT_SCHEMA_VERSION,
   LayoutParseError,
   cloneLayout,

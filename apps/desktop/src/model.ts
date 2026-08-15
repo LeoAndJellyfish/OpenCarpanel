@@ -1,6 +1,6 @@
 import type { HostDiagnostics } from "./desktop-api";
 
-export type GameId = "f1-24" | "f1-25" | "ets2" | "ats" | "waiting";
+export type GameId = string;
 
 export interface GameProfile {
   id: GameId;
@@ -10,49 +10,30 @@ export interface GameProfile {
   family: "formula" | "truck" | "neutral";
 }
 
-const PROFILES: Record<GameId, GameProfile> = {
-  "f1-24": {
-    id: "f1-24",
-    shortLabel: "F1 24",
-    label: "EA Sports F1 24",
-    accent: "#d9ff43",
-    family: "formula",
-  },
-  "f1-25": {
-    id: "f1-25",
-    shortLabel: "F1 25",
-    label: "F1 25 · 2026 Season Pack",
-    accent: "#40e6d2",
-    family: "formula",
-  },
-  ets2: {
-    id: "ets2",
-    shortLabel: "ETS2",
-    label: "Euro Truck Simulator 2",
-    accent: "#ffb74a",
-    family: "truck",
-  },
-  ats: {
-    id: "ats",
-    shortLabel: "ATS",
-    label: "American Truck Simulator",
-    accent: "#ff6b62",
-    family: "truck",
-  },
-  waiting: {
-    id: "waiting",
-    shortLabel: "AUTO",
-    label: "等待游戏遥测",
-    accent: "#aab4af",
-    family: "neutral",
-  },
+const WAITING_PROFILE: GameProfile = {
+  id: "waiting",
+  shortLabel: "AUTO",
+  label: "等待游戏遥测",
+  accent: "#aab4af",
+  family: "neutral",
 };
 
 export function gameProfile(diagnostics: HostDiagnostics): GameProfile {
   const candidate =
     diagnostics.activeAdapter ??
     (diagnostics.adapterSelection === "auto" ? "waiting" : diagnostics.adapterSelection);
-  return candidate in PROFILES ? PROFILES[candidate as GameId] : PROFILES.waiting;
+  const adapter = diagnostics.supportedAdapters.find((item) => item.id === candidate);
+  if (!adapter) {
+    return WAITING_PROFILE;
+  }
+  const presentation = adapter.plugin.presentation;
+  return {
+    id: adapter.id,
+    shortLabel: presentation.shortName,
+    label: adapter.plugin.name,
+    accent: presentation.theme.accent,
+    family: presentation.family === "generic" ? "neutral" : presentation.family,
+  };
 }
 
 export function telemetryIsLive(diagnostics: HostDiagnostics): boolean {

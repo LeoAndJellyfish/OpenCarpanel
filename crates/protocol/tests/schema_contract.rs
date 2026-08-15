@@ -15,6 +15,8 @@ fn generated_schema_bundle_has_stable_paths_and_valid_json() -> Result<(), Box<d
         [
             "protocol/v1/client-message.schema.json",
             "protocol/v1/server-message.schema.json",
+            "game-plugin/v1/manifest.schema.json",
+            "game-plugin/v1/package.schema.json",
             "telemetry/v1/telemetry-event.schema.json",
             "telemetry/v1/telemetry-snapshot.schema.json",
             "telemetry/v1/telemetry-update.schema.json",

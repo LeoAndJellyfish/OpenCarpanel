@@ -1,8 +1,9 @@
 import type {
-  BuiltinGameId,
+  GamePluginMetadata,
   WidgetManifest,
   WidgetType,
 } from "@opencarpanel/widget-sdk";
+import { BUILTIN_GAME_PLUGINS } from "@opencarpanel/widget-sdk";
 
 import { statusManifest } from "../dashboard/status-manifest";
 import { gearManifest } from "./gear";
@@ -22,24 +23,16 @@ export const BUILTIN_WIDGET_MANIFESTS = [
   statusManifest,
 ] as const;
 
-const COMMON_WIDGET_TYPES: readonly WidgetType[] = [
-  gearManifest.type,
-  speedManifest.type,
-  tachometerManifest.type,
-  statusManifest.type,
-];
-
-const GAME_WIDGET_TYPES: Readonly<Record<BuiltinGameId, readonly WidgetType[]>> = {
-  "f1-24": [...COMMON_WIDGET_TYPES, raceManifest.type, tyresManifest.type],
-  "f1-25": [...COMMON_WIDGET_TYPES, raceManifest.type, tyresManifest.type],
-  ets2: [...COMMON_WIDGET_TYPES, routeManifest.type],
-  ats: [...COMMON_WIDGET_TYPES, routeManifest.type],
-};
-
-export function builtinWidgetManifestsForGame(gameId: BuiltinGameId) {
-  const supportedTypes = GAME_WIDGET_TYPES[gameId];
+export function builtinWidgetManifestsForPlugin(plugin: GamePluginMetadata | undefined) {
+  const supportedTypes = new Set(plugin?.presentation.widgets ?? []);
   return BUILTIN_WIDGET_MANIFESTS.filter((manifest) =>
-    supportedTypes.includes(manifest.type),
+    supportedTypes.has(manifest.type),
+  );
+}
+
+export function builtinWidgetManifestsForGame(gameId: string) {
+  return builtinWidgetManifestsForPlugin(
+    BUILTIN_GAME_PLUGINS.find((plugin) => plugin.id === gameId),
   );
 }
 

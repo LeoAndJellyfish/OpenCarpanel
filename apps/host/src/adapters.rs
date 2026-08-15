@@ -1,20 +1,35 @@
 use std::{
+    collections::BTreeSet,
     error::Error,
     fmt::{self, Display, Formatter},
+    path::Path,
     str::FromStr,
 };
 
-use opencarpanel_adapter_api::{AdapterError, AdapterOutput, GameAdapter};
+use opencarpanel_adapter_api::{AdapterError, AdapterId, AdapterOutput, GameAdapter};
 use opencarpanel_adapter_f1::{F1_24Adapter, F1_25Adapter};
 use opencarpanel_adapter_scs::{AtsAdapter, Ets2Adapter};
+use opencarpanel_game_plugin_api::{
+    GamePluginManifest, GamePluginMetadata, PluginRuntime, PluginSource, parse_manifest,
+};
+use opencarpanel_game_plugin_runtime::{
+    MAX_PLUGIN_LOAD_ISSUES, PluginLoadIssue, WasmGameAdapter, load_installed_plugins,
+};
 use opencarpanel_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetryReducer, TelemetrySnapshot,
 };
 
 const ACTIVE_SOURCE_TIMEOUT_US: u64 = 2_000_000;
 
-/// Game-adapter selection used by the Host telemetry receiver.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+const BUILTIN_MANIFESTS: &[&[u8]] = &[
+    include_bytes!("../../../plugins/games/f1-24/manifest.json"),
+    include_bytes!("../../../plugins/games/f1-25/manifest.json"),
+    include_bytes!("../../../plugins/games/ets2/manifest.json"),
+    include_bytes!("../../../plugins/games/ats/manifest.json"),
+];
+
+/// Automatic detection or one stable plugin id selected by the Host.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum AdapterSelection {
     /// Detect a supported protocol and keep the current source sticky while it is active.
     #[default]
@@ -27,29 +42,26 @@ pub enum AdapterSelection {
     Ets2,
     /// Accept only the American Truck Simulator bridge protocol.
     Ats,
+    /// Accept only a valid dynamically installed plugin id.
+    Plugin(AdapterId),
 }
 
 impl AdapterSelection {
-    /// Returns the stable configuration value.
+    /// Returns the stable persisted configuration value.
     #[must_use]
-    pub const fn as_str(self) -> &'static str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::Auto => "auto",
             Self::F1_24 => "f1-24",
             Self::F1_25 => "f1-25",
             Self::Ets2 => "ets2",
             Self::Ats => "ats",
+            Self::Plugin(id) => id.as_str(),
         }
     }
 
-    const fn fixed_adapter_id(self) -> Option<&'static str> {
-        match self {
-            Self::Auto => None,
-            Self::F1_24 => Some("f1-24"),
-            Self::F1_25 => Some("f1-25"),
-            Self::Ets2 => Some("ets2"),
-            Self::Ats => Some("ats"),
-        }
+    fn fixed_adapter_id(&self) -> Option<&str> {
+        (!matches!(self, Self::Auto)).then(|| self.as_str())
     }
 }
 
@@ -69,14 +81,16 @@ impl FromStr for AdapterSelection {
             "f1-25" => Ok(Self::F1_25),
             "ets2" => Ok(Self::Ets2),
             "ats" => Ok(Self::Ats),
-            _ => Err(ParseAdapterSelectionError {
-                value: value.to_owned(),
-            }),
+            _ => AdapterId::new(value.to_owned())
+                .map(Self::Plugin)
+                .map_err(|_| ParseAdapterSelectionError {
+                    value: value.to_owned(),
+                }),
         }
     }
 }
 
-/// Error returned for an unsupported Host game-selection value.
+/// Error returned for an unsafe Host plugin-selection value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseAdapterSelectionError {
     value: String,
@@ -86,7 +100,7 @@ impl Display for ParseAdapterSelectionError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "unsupported game selection {:?}; expected auto, f1-24, f1-25, ets2, or ats",
+            "invalid game plugin selection {:?}; use auto or a lowercase plugin id",
             self.value
         )
     }
@@ -94,38 +108,41 @@ impl Display for ParseAdapterSelectionError {
 
 impl Error for ParseAdapterSelectionError {}
 
-/// Immutable metadata for one adapter compiled into the Host.
+/// Immutable public metadata for one registered game plugin.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SupportedAdapter {
-    id: String,
-    display_name: String,
-    protocol_version: String,
-    capabilities: Vec<TelemetryField>,
+    metadata: GamePluginMetadata,
 }
 
 impl SupportedAdapter {
-    /// Returns the stable adapter id.
+    /// Returns the stable plugin id.
     #[must_use]
     pub fn id(&self) -> &str {
-        &self.id
+        &self.metadata.id
     }
 
-    /// Returns the human-readable game name.
+    /// Returns the human-readable game or producer name.
     #[must_use]
     pub fn display_name(&self) -> &str {
-        &self.display_name
+        &self.metadata.name
     }
 
-    /// Returns the accepted game-input protocol version.
+    /// Returns the accepted upstream protocol version.
     #[must_use]
     pub fn protocol_version(&self) -> &str {
-        &self.protocol_version
+        &self.metadata.protocol_version
     }
 
-    /// Returns the canonical telemetry fields supplied by this adapter.
+    /// Returns canonical telemetry fields supplied by this plugin.
     #[must_use]
     pub fn capabilities(&self) -> &[TelemetryField] {
-        &self.capabilities
+        &self.metadata.capabilities
+    }
+
+    /// Returns complete client-safe plugin metadata.
+    #[must_use]
+    pub const fn metadata(&self) -> &GamePluginMetadata {
+        &self.metadata
     }
 }
 
@@ -137,20 +154,21 @@ struct AdapterPipeline {
 }
 
 impl AdapterPipeline {
-    fn new(adapter: Box<dyn GameAdapter>) -> Self {
-        let descriptor = adapter.descriptor();
+    fn new(
+        adapter: Box<dyn GameAdapter>,
+        manifest: &GamePluginManifest,
+        source: PluginSource,
+    ) -> Result<Self, AdapterError> {
+        validate_descriptor(adapter.as_ref(), manifest)?;
         let metadata = SupportedAdapter {
-            id: descriptor.id.as_str().to_owned(),
-            display_name: descriptor.display_name.clone(),
-            protocol_version: descriptor.protocol_version.clone(),
-            capabilities: descriptor.capabilities.iter().copied().collect(),
+            metadata: manifest.metadata(source),
         };
-        Self {
-            reducer: TelemetryReducer::with_game_id(metadata.id.clone()),
+        Ok(Self {
+            reducer: TelemetryReducer::with_game_id(metadata.id().to_owned()),
             adapter,
             metadata,
             last_seen_us: None,
-        }
+        })
     }
 }
 
@@ -159,29 +177,77 @@ pub(crate) struct AdapterRegistry {
     selected_index: Option<usize>,
     active_index: Option<usize>,
     pipelines: Vec<AdapterPipeline>,
+    load_issues: Vec<PluginLoadIssue>,
     output: AdapterOutput,
     pending_events: Vec<TelemetryEvent>,
 }
 
 impl AdapterRegistry {
+    #[cfg(test)]
     pub(crate) fn new(selection: AdapterSelection) -> Result<Self, AdapterError> {
-        let adapters: Vec<Box<dyn GameAdapter>> = vec![
-            Box::new(F1_24Adapter::new()?),
-            Box::new(F1_25Adapter::new()?),
-            Box::new(Ets2Adapter::new()?),
-            Box::new(AtsAdapter::new()?),
-        ];
-        let pipelines: Vec<_> = adapters.into_iter().map(AdapterPipeline::new).collect();
+        Self::new_with_plugins(selection, None)
+    }
+
+    pub(crate) fn new_with_plugins(
+        selection: AdapterSelection,
+        plugins_root: Option<&Path>,
+    ) -> Result<Self, AdapterError> {
+        let mut pipelines = Vec::new();
+        let mut reserved_ids = BTreeSet::new();
+        for manifest_bytes in BUILTIN_MANIFESTS {
+            let manifest = parse_manifest(manifest_bytes)
+                .map_err(|error| AdapterError::invalid_configuration(error.to_string()))?;
+            reserved_ids.insert(manifest.id.clone());
+            let adapter = builtin_adapter(&manifest)?;
+            pipelines.push(AdapterPipeline::new(
+                adapter,
+                &manifest,
+                PluginSource::Builtin,
+            )?);
+        }
+
+        let (installed, mut load_issues) = plugins_root.map_or_else(
+            || (Vec::new(), Vec::new()),
+            |root| load_installed_plugins(root, &reserved_ids),
+        );
+        for plugin in installed {
+            let pipeline = WasmGameAdapter::from_file(&plugin.manifest, &plugin.module_path)
+                .map_err(|error| error.to_string())
+                .and_then(|adapter| {
+                    AdapterPipeline::new(
+                        Box::new(adapter),
+                        &plugin.manifest,
+                        PluginSource::Installed,
+                    )
+                    .map_err(|error| error.to_string())
+                });
+            match pipeline {
+                Ok(pipeline) => pipelines.push(pipeline),
+                Err(message) if load_issues.len() < MAX_PLUGIN_LOAD_ISSUES => {
+                    load_issues.push(PluginLoadIssue {
+                        plugin_id: Some(plugin.manifest.id),
+                        message,
+                    });
+                }
+                Err(_message) => {}
+            }
+        }
+
+        let mut selection = selection;
         let selected_index = selection.fixed_adapter_id().and_then(|selected| {
             pipelines
                 .iter()
-                .position(|pipeline| pipeline.metadata.id == selected)
+                .position(|pipeline| pipeline.metadata.id() == selected)
         });
         if selection != AdapterSelection::Auto && selected_index.is_none() {
-            return Err(AdapterError::invalid_configuration(format!(
-                "adapter {} is not compiled into this Host",
-                selection.as_str()
-            )));
+            if load_issues.len() == MAX_PLUGIN_LOAD_ISSUES {
+                load_issues.pop();
+            }
+            load_issues.push(PluginLoadIssue {
+                plugin_id: Some(selection.as_str().to_owned()),
+                message: "fixed plugin is unavailable; automatic detection is active".to_owned(),
+            });
+            selection = AdapterSelection::Auto;
         }
 
         Ok(Self {
@@ -189,6 +255,7 @@ impl AdapterRegistry {
             selected_index,
             active_index: None,
             pipelines,
+            load_issues,
             output: AdapterOutput::with_capacity(1, 4),
             pending_events: Vec::with_capacity(4),
         })
@@ -199,6 +266,14 @@ impl AdapterRegistry {
             .iter()
             .map(|pipeline| pipeline.metadata.clone())
             .collect()
+    }
+
+    pub(crate) fn load_issues(&self) -> Vec<PluginLoadIssue> {
+        self.load_issues.clone()
+    }
+
+    pub(crate) const fn selection(&self) -> &AdapterSelection {
+        &self.selection
     }
 
     pub(crate) fn decode(
@@ -282,6 +357,43 @@ impl AdapterRegistry {
     }
 }
 
+fn builtin_adapter(manifest: &GamePluginManifest) -> Result<Box<dyn GameAdapter>, AdapterError> {
+    let PluginRuntime::Builtin { entrypoint } = &manifest.runtime else {
+        return Err(AdapterError::invalid_configuration(format!(
+            "built-in manifest {} does not declare a built-in runtime",
+            manifest.id
+        )));
+    };
+    match entrypoint.as_str() {
+        "f1-24" => Ok(Box::new(F1_24Adapter::new()?)),
+        "f1-25" => Ok(Box::new(F1_25Adapter::new()?)),
+        "ets2" => Ok(Box::new(Ets2Adapter::new()?)),
+        "ats" => Ok(Box::new(AtsAdapter::new()?)),
+        _ => Err(AdapterError::invalid_configuration(format!(
+            "built-in entrypoint {entrypoint} has no compiled adapter factory"
+        ))),
+    }
+}
+
+fn validate_descriptor(
+    adapter: &dyn GameAdapter,
+    manifest: &GamePluginManifest,
+) -> Result<(), AdapterError> {
+    let descriptor = adapter.descriptor();
+    let descriptor_capabilities = descriptor.capabilities.iter().copied().collect::<Vec<_>>();
+    if descriptor.id.as_str() != manifest.id
+        || descriptor.display_name != manifest.name
+        || descriptor.protocol_version != manifest.protocol.version
+        || descriptor_capabilities != manifest.capabilities
+    {
+        return Err(AdapterError::invalid_configuration(format!(
+            "adapter descriptor for {} has drifted from its plugin manifest",
+            manifest.id
+        )));
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub(crate) enum RegistryOutcome {
     Rejected,
@@ -302,18 +414,51 @@ mod tests {
     use super::*;
 
     #[test]
-    fn selection_values_are_strict_and_actionable() {
-        for value in ["auto", "f1-24", "f1-25", "ets2", "ats"] {
+    fn selection_accepts_any_safe_plugin_id() {
+        for value in ["auto", "f1-24", "f1-25", "ets2", "ats", "community-sim"] {
             let parsed = value.parse::<AdapterSelection>();
             assert!(parsed.is_ok(), "rejected {value}");
-            assert_eq!(parsed.map(AdapterSelection::as_str), Ok(value));
+            assert_eq!(
+                parsed.map(|selection| selection.as_str().to_owned()),
+                Ok(value.to_owned())
+            );
         }
 
-        let error = "F1-25"
+        for value in ["F1-25", "../escape", "bad--id", ""] {
+            assert!(
+                value.parse::<AdapterSelection>().is_err(),
+                "accepted {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn builtin_manifests_match_native_adapter_descriptors() -> Result<(), AdapterError> {
+        let registry = AdapterRegistry::new(AdapterSelection::Auto)?;
+        assert_eq!(
+            registry
+                .supported_adapters()
+                .iter()
+                .map(SupportedAdapter::id)
+                .collect::<Vec<_>>(),
+            ["f1-24", "f1-25", "ets2", "ats"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unavailable_fixed_plugin_falls_back_to_auto_with_a_load_issue() -> Result<(), AdapterError> {
+        let selection = "missing-plugin"
             .parse::<AdapterSelection>()
-            .err()
-            .map(|error| error.to_string());
-        assert!(error.is_some_and(|message| message.contains("expected auto, f1-24, f1-25")));
+            .map_err(|error| AdapterError::invalid_configuration(error.to_string()))?;
+        let registry = AdapterRegistry::new(selection)?;
+        assert_eq!(registry.selection(), &AdapterSelection::Auto);
+        assert_eq!(registry.load_issues().len(), 1);
+        assert_eq!(
+            registry.load_issues()[0].plugin_id.as_deref(),
+            Some("missing-plugin")
+        );
+        Ok(())
     }
 
     #[test]
