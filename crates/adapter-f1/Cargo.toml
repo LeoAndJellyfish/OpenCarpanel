@@ -1,5 +1,5 @@
 [package]
-name = "opencarpanel-adapter-f1"
+name = "opensimdash-adapter-f1"
 description = "Shared F1 24 and F1 25 UDP telemetry adapters"
 version.workspace = true
 edition.workspace = true
@@ -8,8 +8,8 @@ license.workspace = true
 publish = false
 
 [dependencies]
-opencarpanel-adapter-api = { path = "../adapter-api" }
-opencarpanel-telemetry-core = { path = "../telemetry-core" }
+opensimdash-adapter-api = { path = "../adapter-api" }
+opensimdash-telemetry-core = { path = "../telemetry-core" }
 serde_json = "1.0.151"
 
 [lints]

@@ -7,7 +7,7 @@ import {
   type WidgetInstance,
   type WidgetManifest,
   type WidgetType,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { findAvailablePlacement } from "./grid";
 

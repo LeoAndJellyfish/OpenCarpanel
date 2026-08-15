@@ -8,7 +8,7 @@ import "./styles/motion.css";
 
 const root = document.querySelector<HTMLDivElement>("#app");
 if (!root) {
-  throw new Error("OpenCarpanel app root is missing");
+  throw new Error("OpenSimDash app root is missing");
 }
 
 render(<App />, root);

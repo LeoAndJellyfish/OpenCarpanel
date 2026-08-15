@@ -1,6 +1,6 @@
 use std::{error::Error, fs, path::Path};
 
-use opencarpanel_config::generate_layout_schema;
+use opensimdash_config::generate_layout_schema;
 
 #[test]
 fn committed_layout_schema_matches_rust_types() -> Result<(), Box<dyn Error>> {

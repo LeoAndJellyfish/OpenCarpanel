@@ -1,4 +1,4 @@
-//! ETS2 and ATS telemetry decoding for the `OpenCarpanel` SCS SDK bridge.
+//! ETS2 and ATS telemetry decoding for the `OpenSimDash` SCS SDK bridge.
 
 mod adapter;
 mod cursor;

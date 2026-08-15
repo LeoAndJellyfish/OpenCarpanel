@@ -1,4 +1,4 @@
-# OpenCarpanel SCS telemetry bridge
+# OpenSimDash SCS telemetry bridge
 
 This native SCS Telemetry SDK plugin sends a fixed 188-byte v2 datagram to
 `127.0.0.1:20777` after each unpaused game frame. It supports Euro Truck
@@ -18,9 +18,9 @@ cmake --install build --config Release --prefix package
 ```
 
 Use a 64-bit compiler. The resulting file is named
-`opencarpanel-scs-telemetry.dll` on Windows,
-`opencarpanel-scs-telemetry.dylib` on macOS, and
-`opencarpanel-scs-telemetry.so` on Linux.
+`opensimdash-scs-telemetry.dll` on Windows,
+`opensimdash-scs-telemetry.dylib` on macOS, and
+`opensimdash-scs-telemetry.so` on Linux.
 
 ## Install
 
@@ -30,7 +30,7 @@ Use a 64-bit compiler. The resulting file is named
 - Linux: copy the SO into `<game>/bin/linux_x64/plugins/`.
 
 Create the `plugins` directory if it does not exist. On the next game launch,
-accept the game's notice that an SDK plugin is active. OpenCarpanel Host must
+accept the game's notice that an SDK plugin is active. OpenSimDash Host must
 listen on its default telemetry port, UDP 20777.
 
 The plugin has a distinct filename and can coexist with ETS2LA's
@@ -43,7 +43,7 @@ base layout; the exact v2 layout is:
 
 | Offset | Bytes | Field |
 |---:|---:|---|
-| 0 | 4 | Magic `OCP\0` |
+| 0 | 4 | Magic `OSD\0` |
 | 4 | 1 | Protocol version (`2`) |
 | 5 | 1 | Game (`1` ETS2, `2` ATS) |
 | 6 | 2 | Flags and reserved bytes (`0`) |
@@ -77,6 +77,6 @@ rejects unknown bits, invalid text padding/UTF-8, and invalid numeric values.
 
 ## Licensing
 
-OpenCarpanel bridge code is Apache-2.0. The vendored SCS SDK headers are under
+OpenSimDash bridge code is Apache-2.0. The vendored SCS SDK headers are under
 SCS Software's permissive SDK license; that notice is included in installed
 packages as `sdk_license.txt`.

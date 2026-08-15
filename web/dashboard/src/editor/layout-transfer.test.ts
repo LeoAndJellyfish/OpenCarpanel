@@ -1,4 +1,4 @@
-import { cloneLayout, DEFAULT_LAYOUT } from "@opencarpanel/widget-sdk";
+import { cloneLayout, DEFAULT_LAYOUT } from "@opensimdash/widget-sdk";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -17,7 +17,7 @@ describe("layout import and export", () => {
     };
     const exported = createLayoutExport(source);
 
-    expect(exported.filename).toBe("opencarpanel-shared-layout.json");
+    expect(exported.filename).toBe("opensimdash-shared-layout.json");
     expect(exported.content.endsWith("\n")).toBe(true);
     const imported = importLayoutText(`\ufeff${exported.content}`, {
       id: "default",

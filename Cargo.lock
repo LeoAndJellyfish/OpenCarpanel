@@ -2718,32 +2718,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-adapter-api"
-version = "0.4.0"
+name = "opensimdash-adapter-api"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-telemetry-core",
+ "opensimdash-telemetry-core",
 ]
 
 [[package]]
-name = "opencarpanel-adapter-f1"
-version = "0.4.0"
+name = "opensimdash-adapter-f1"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-adapter-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-adapter-api",
+ "opensimdash-telemetry-core",
  "serde_json",
 ]
 
 [[package]]
-name = "opencarpanel-adapter-scs"
-version = "0.4.0"
+name = "opensimdash-adapter-scs"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-adapter-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-adapter-api",
+ "opensimdash-telemetry-core",
 ]
 
 [[package]]
-name = "opencarpanel-config"
-version = "0.4.0"
+name = "opensimdash-config"
+version = "0.4.1"
 dependencies = [
  "atomic-write-file",
  "schemars 1.2.2",
@@ -2753,16 +2753,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-desktop"
-version = "0.4.0"
+name = "opensimdash-desktop"
+version = "0.4.1"
 dependencies = [
  "atomic-write-file",
  "base64 0.22.1",
  "hex",
- "opencarpanel-config",
- "opencarpanel-game-plugin-api",
- "opencarpanel-game-plugin-runtime",
- "opencarpanel-host",
+ "opensimdash-config",
+ "opensimdash-game-plugin-api",
+ "opensimdash-game-plugin-runtime",
+ "opensimdash-host",
  "parking_lot",
  "serde",
  "serde_json",
@@ -2785,20 +2785,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-example-game-plugin"
-version = "0.4.0"
+name = "opensimdash-example-game-plugin"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-game-plugin-api",
- "opencarpanel-game-plugin-sdk",
- "opencarpanel-telemetry-core",
+ "opensimdash-game-plugin-api",
+ "opensimdash-game-plugin-sdk",
+ "opensimdash-telemetry-core",
 ]
 
 [[package]]
-name = "opencarpanel-game-plugin-api"
-version = "0.4.0"
+name = "opensimdash-game-plugin-api"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-adapter-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-adapter-api",
+ "opensimdash-telemetry-core",
  "schemars 1.2.2",
  "semver",
  "serde",
@@ -2806,12 +2806,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-game-plugin-cli"
-version = "0.4.0"
+name = "opensimdash-game-plugin-cli"
+version = "0.4.1"
 dependencies = [
  "base64 0.22.1",
- "opencarpanel-game-plugin-api",
- "opencarpanel-game-plugin-runtime",
+ "opensimdash-game-plugin-api",
+ "opensimdash-game-plugin-runtime",
  "serde_json",
  "sha2",
  "tempfile",
@@ -2819,14 +2819,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-game-plugin-runtime"
-version = "0.4.0"
+name = "opensimdash-game-plugin-runtime"
+version = "0.4.1"
 dependencies = [
  "atomic-write-file",
  "base64 0.22.1",
- "opencarpanel-adapter-api",
- "opencarpanel-game-plugin-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-adapter-api",
+ "opensimdash-game-plugin-api",
+ "opensimdash-telemetry-core",
  "serde",
  "serde_json",
  "sha2",
@@ -2836,17 +2836,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-game-plugin-sdk"
-version = "0.4.0"
+name = "opensimdash-game-plugin-sdk"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-game-plugin-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-game-plugin-api",
+ "opensimdash-telemetry-core",
  "serde_json",
 ]
 
 [[package]]
-name = "opencarpanel-host"
-version = "0.4.0"
+name = "opensimdash-host"
+version = "0.4.1"
 dependencies = [
  "atomic-write-file",
  "axum",
@@ -2855,14 +2855,14 @@ dependencies = [
  "futures-util",
  "getrandom 0.3.4",
  "if-addrs",
- "opencarpanel-adapter-api",
- "opencarpanel-adapter-f1",
- "opencarpanel-adapter-scs",
- "opencarpanel-config",
- "opencarpanel-game-plugin-api",
- "opencarpanel-game-plugin-runtime",
- "opencarpanel-protocol",
- "opencarpanel-telemetry-core",
+ "opensimdash-adapter-api",
+ "opensimdash-adapter-f1",
+ "opensimdash-adapter-scs",
+ "opensimdash-config",
+ "opensimdash-game-plugin-api",
+ "opensimdash-game-plugin-runtime",
+ "opensimdash-protocol",
+ "opensimdash-telemetry-core",
  "qrcode",
  "serde",
  "serde_json",
@@ -2877,19 +2877,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-protocol"
-version = "0.4.0"
+name = "opensimdash-protocol"
+version = "0.4.1"
 dependencies = [
- "opencarpanel-game-plugin-api",
- "opencarpanel-telemetry-core",
+ "opensimdash-game-plugin-api",
+ "opensimdash-telemetry-core",
  "schemars 1.2.2",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "opencarpanel-telemetry-core"
-version = "0.4.0"
+name = "opensimdash-telemetry-core"
+version = "0.4.1"
 dependencies = [
  "schemars 1.2.2",
  "serde",
@@ -2897,11 +2897,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencarpanel-telemetry-replay"
-version = "0.4.0"
+name = "opensimdash-telemetry-replay"
+version = "0.4.1"
 dependencies = [
  "ctrlc",
- "opencarpanel-adapter-api",
+ "opensimdash-adapter-api",
 ]
 
 [[package]]

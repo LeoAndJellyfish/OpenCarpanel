@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use opencarpanel_adapter_api::{
+use opensimdash_adapter_api::{
     AdapterDescriptor, AdapterError, AdapterId, AdapterOutput, CapabilitySet, GameAdapter,
 };
-use opencarpanel_telemetry_core::{MonotonicTimestamp, TelemetryField, TelemetryUpdate};
+use opensimdash_telemetry_core::{MonotonicTimestamp, TelemetryField, TelemetryUpdate};
 
 #[derive(Debug)]
 struct FakeAdapter {

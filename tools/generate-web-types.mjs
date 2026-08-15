@@ -7,7 +7,7 @@ import { compile } from "json-schema-to-typescript";
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultOutput = path.join(workspaceRoot, "web", "widget-sdk", "src", "generated");
 const bannerComment = `/**
- * Generated from the committed OpenCarpanel JSON Schemas.
+ * Generated from the committed OpenSimDash JSON Schemas.
  * Do not edit by hand; run \`npm run generate:web-types\`.
  */`;
 const schemas = [

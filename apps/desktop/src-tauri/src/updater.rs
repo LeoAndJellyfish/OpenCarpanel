@@ -167,7 +167,7 @@ pub fn schedule_automatic_check(app: AppHandle, runtime: Arc<DesktopRuntime>) {
             let _notification = app
                 .notification()
                 .builder()
-                .title("OpenCarpanel 更新可用")
+                .title("OpenSimDash 更新可用")
                 .body(format!(
                     "{version} 已通过发布清单发现，可在控制中心中下载并验签。"
                 ))

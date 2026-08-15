@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
-  <title id="title">OpenCarpanel SCS bridge version 1 packet layout</title>
+  <title id="title">OpenSimDash SCS bridge version 1 packet layout</title>
   <desc id="desc">A textbook-style 44-byte array showing byte offsets and fields for magic, version, game, flags, session nonce, frame sequence, signed speed, RPM, RPM limit, displayed gear, throttle and brake.</desc>
   <defs>
     <pattern id="byte-grid" width="24.54545" height="76" patternUnits="userSpaceOnUse">

@@ -7,7 +7,7 @@ import {
   type GridPlacement,
   type LayoutDocument,
   type WidgetInstance,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { builtinWidgetManifest } from "../widgets/catalog";
 import { placementsOverlap } from "./grid";
@@ -28,7 +28,7 @@ export interface LayoutExport {
 
 export function createLayoutExport(document: LayoutDocument): LayoutExport {
   return {
-    filename: `opencarpanel-${document.id}.json`,
+    filename: `opensimdash-${document.id}.json`,
     content: `${JSON.stringify(document, undefined, 2)}\n`,
   };
 }

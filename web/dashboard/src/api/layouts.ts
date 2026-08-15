@@ -2,7 +2,7 @@ import {
   type LayoutDocument,
   LayoutParseError,
   parseLayoutDocument,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { readDeviceSession } from "../connection/session";
 

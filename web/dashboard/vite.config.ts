@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [
     preact(),
     {
-      name: "opencarpanel-development-csp",
+      name: "opensimdash-development-csp",
       apply: "serve",
       transformIndexHtml(html) {
         return html.replace("style-src 'self';", "style-src 'self' 'unsafe-inline';");

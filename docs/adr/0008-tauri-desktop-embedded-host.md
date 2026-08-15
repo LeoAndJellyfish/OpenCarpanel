@@ -10,9 +10,9 @@ v0.1.x 的无头 Rust Host 已能接收 F1/SCS UDP、托管手机 Dashboard、�
 
 ## Decision
 
-采用 Tauri 2 + Preact/TypeScript 构建默认桌面入口。Tauri 进程直接依赖并启动现有 `opencarpanel-host` library；不 spawn Host 子进程，也不通过 localhost HTTP 管理自身。Rust command 只返回经过裁剪的设置、诊断、设备和安装状态。
+采用 Tauri 2 + Preact/TypeScript 构建默认桌面入口。Tauri 进程直接依赖并启动现有 `opensimdash-host` library；不 spawn Host 子进程，也不通过 localhost HTTP 管理自身。Rust command 只返回经过裁剪的设置、诊断、设备和安装状态。
 
-GUI 与 `opencarpanel-host` CLI 在启动网络 listener 前获取同一个用户级 OS 文件锁。锁由打开的文件句柄持有；相邻的只读 owner JSON 记录 PID、模式、版本和启动时间，避免 Windows 锁区阻止诊断读取。进程异常退出时由操作系统释放。锁冲突报告“已有 OpenCarpanel 正在运行”并退出；锁成功但端口 bind 失败则明确报告“端口被其他程序占用”。测试可通过专用环境变量把锁目录隔离到临时目录。
+GUI 与 `opensimdash-host` CLI 在启动网络 listener 前获取同一个用户级 OS 文件锁。锁由打开的文件句柄持有；相邻的只读 owner JSON 记录 PID、模式、版本和启动时间，避免 Windows 锁区阻止诊断读取。进程异常退出时由操作系统释放。锁冲突报告“已有 OpenSimDash 正在运行”并退出；锁成功但端口 bind 失败则明确报告“端口被其他程序占用”。测试可通过专用环境变量把锁目录隔离到临时目录。
 
 主窗口关闭时默认隐藏到系统托盘，Host、UDP 和手机 Dashboard 继续运行；只有托盘“退出”、系统退出或显式更新重启才停止 Host。无头 CLI 与 GUI 使用同一设置仓库、设备仓库、数据目录、日志格式和实例锁。
 

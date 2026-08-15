@@ -11,7 +11,7 @@ import {
 const status: ScsPluginStatus = {
   game: "ets2",
   gameDirectory: "D:\\SteamLibrary\\steamapps\\common\\Euro Truck Simulator 2",
-  pluginPath: "D:\\SteamLibrary\\steamapps\\common\\Euro Truck Simulator 2\\bin\\win_x64\\plugins\\opencarpanel-scs-telemetry.dll",
+  pluginPath: "D:\\SteamLibrary\\steamapps\\common\\Euro Truck Simulator 2\\bin\\win_x64\\plugins\\opensimdash-scs-telemetry.dll",
   state: "missing",
   bundledSha256: "bundle",
   installedSha256: null,

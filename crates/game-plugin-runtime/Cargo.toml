@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-game-plugin-runtime"
-description = "Sandboxed runtime and package store for OpenCarpanel game plugins"
+name = "opensimdash-game-plugin-runtime"
+description = "Sandboxed runtime and package store for OpenSimDash game plugins"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,9 +10,9 @@ publish = false
 [dependencies]
 atomic-write-file = "0.3.0"
 base64 = "0.22.1"
-opencarpanel-adapter-api = { path = "../adapter-api" }
-opencarpanel-game-plugin-api = { path = "../game-plugin-api" }
-opencarpanel-telemetry-core = { path = "../telemetry-core" }
+opensimdash-adapter-api = { path = "../adapter-api" }
+opensimdash-game-plugin-api = { path = "../game-plugin-api" }
+opensimdash-telemetry-core = { path = "../telemetry-core" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.10.9"

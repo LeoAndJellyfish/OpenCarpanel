@@ -1,4 +1,4 @@
-export const DEVICE_SESSION_KEY = "opencarpanel.device-session.v1";
+export const DEVICE_SESSION_KEY = "opensimdash.device-session.v1";
 
 export function readDeviceSession(storage: Storage): string | undefined {
   const value = storage.getItem(DEVICE_SESSION_KEY)?.trim();

@@ -1,4 +1,4 @@
-import type { BreakpointName } from "@opencarpanel/widget-sdk";
+import type { BreakpointName } from "@opensimdash/widget-sdk";
 import { useEffect, useState } from "preact/hooks";
 
 export function selectBreakpoint(width: number, height: number): BreakpointName {

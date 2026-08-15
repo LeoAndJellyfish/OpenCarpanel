@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="OpenCarpanel 把 F1 24、F1 25、ETS2 与 ATS 的本地遥测送到手机或 iPad 仪表盘">
+  <img src="./assets/readme/hero.svg" width="100%" alt="OpenSimDash 把 F1 24、F1 25、ETS2 与 ATS 的本地遥测送到手机或 iPad 仪表盘">
 </p>
 
 <p align="center">
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest">下载预览版</a>
+  <a href="https://github.com/LeoAndJellyfish/OpenSimDash/releases/latest">下载预览版</a>
   · <a href="./docs/quickstart-multi-game.md">快速开始</a>
   · <a href="./docs/data-paths-and-scs-packet.md">数据链路与协议图解</a>
   · <a href="./docs/README.md">文档</a>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LeoAndJellyfish/OpenCarpanel/actions/workflows/ci.yml"><img src="https://github.com/LeoAndJellyfish/OpenCarpanel/actions/workflows/ci.yml/badge.svg" alt="OpenCarpanel CI status"></a>
+  <a href="https://github.com/LeoAndJellyfish/OpenSimDash/actions/workflows/ci.yml"><img src="https://github.com/LeoAndJellyfish/OpenSimDash/actions/workflows/ci.yml/badge.svg" alt="OpenSimDash CI status"></a>
 </p>
 
 ## 现在支持什么
@@ -30,21 +30,21 @@
 
 四种内置游戏输入与已安装的第三方插件共用一个 Rust Host 与 Dashboard。Host 默认自动识别来源，并在当前来源活跃时保持两秒粘性；Dashboard 根据遥测中的 `gameId` 自动切换视觉、状态语义和该游戏独立保存的自定义布局。排障或多游戏并行时，可固定为任一内置或已安装插件 ID。
 
-从 v0.4.0 起，游戏支持遵循同一份版本化插件 manifest。桌面控制中心可安装第三方 `.ocp-plugin`；跨平台 WASM decoder 在无 WASI、无 Host imports 且受内存/fuel/输入输出上限约束的沙箱中运行。数据源、设置步骤、主题、独立布局和适用组件都会从插件元数据自动出现，开发方法见[游戏插件开发指南](./docs/plugin-development.md)。
+游戏支持遵循同一份版本化插件 manifest。桌面控制中心可安装第三方 `.osd-plugin`；跨平台 WASM decoder 在无 WASI、无 Host imports 且受内存/fuel/输入输出上限约束的沙箱中运行。数据源、设置步骤、主题、独立布局和适用组件都会从插件元数据自动出现，开发方法见[游戏插件开发指南](./docs/plugin-development.md)。
 
 > [!IMPORTANT]
-> `v0.4.0` 把游戏支持统一为版本化 manifest，并允许安装受限的跨平台 WASM decoder；内置 F1/SCS 支持、Steam 自动查找和手动目录选择保持兼容。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
+> 项目从 `v0.4.1` 起正式使用 **OpenSimDash** 名称。插件包必须使用 `.osd-plugin` 与 `osd_*` WASM ABI；旧插件、环境变量和系统标识不提供兼容别名。首次启动会把已有设置、配对设备、布局和游戏目录发现状态复制到新资料目录，但不会迁移不兼容插件、运行时锁或日志。安装程序尚未使用商业 Windows 证书或 Apple Developer ID/notarization，因此仍明确标记为 preview；真实游戏与多种手机/iPad 的未完成验收如实保留在[发布检查清单](./docs/release-checklist.md)中。
 
 ## 从下载到第一块仪表盘
 
-1. 从 [Releases](https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest) 下载 Windows x64 安装器，或与你 Mac 架构匹配的 DMG。
-2. 启动 **OpenCarpanel** 桌面控制中心。macOS preview 首次运行可能需要在“隐私与安全性”中允许打开。
+1. 从 [Releases](https://github.com/LeoAndJellyfish/OpenSimDash/releases/latest) 下载 Windows x64 安装器，或与你 Mac 架构匹配的 DMG。
+2. 启动 **OpenSimDash** 桌面控制中心。macOS preview 首次运行可能需要在“隐私与安全性”中允许打开。
 3. 打开“设备与配对”，让手机/iPad 与电脑连接同一局域网并扫描一次性二维码。
 4. 按游戏配置数据源：
    - **F1 24/25：** UDP Telemetry `On`，IP `127.0.0.1`，端口 `20777`，`60Hz`；F1 25 的原始 **2025** 与 **2026 Season Pack** mode 均可。
    - **ETS2/ATS：** “游戏设置”会通过 Steam 库与 AppID 自动定位游戏；未找到时可手动选择目录。安装内置 bridge 后，重启游戏并接受 SDK 提示。
 
-安装目录同时包含独立的 `opencarpanel-host`（Windows 为 `.exe`）。GUI 与 CLI 共用一个实例锁和配置目录；任一已经运行时，另一个会说明当前所有者并退出，而不会争抢 `20777/20778`。
+安装目录同时包含独立的 `opensimdash-host`（Windows 为 `.exe`）。GUI 与 CLI 共用一个实例锁和配置目录；任一已经运行时，另一个会说明当前所有者并退出，而不会争抢 `20777/20778`。
 
 精确目录、防火墙、异机配置和分段排障见[多游戏快速开始](./docs/quickstart-multi-game.md)。
 
@@ -62,7 +62,7 @@ npm run build:desktop
 
 ```powershell
 npm run build:host
-.\target\release\opencarpanel-host.exe
+.\target\release\opensimdash-host.exe
 ```
 
 </details>
@@ -145,7 +145,7 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 - [标准游戏插件系统设计](./docs/plans/2026-08-15-game-plugin-system-design.md)
 - [多游戏输入与适配器设计](./docs/plans/2026-08-12-multi-game-adapters-design.md)
 - [F1 25 2026 Season Pack 与按游戏前端设计](./docs/plans/2026-08-12-f1-25-2026-season-pack-design.md)
-- [系统架构设计](./docs/plans/2026-08-11-opencarpanel-architecture-design.md)
+- [系统架构设计](./docs/plans/2026-08-11-opensimdash-architecture-design.md)
 - [视觉与动效设计](./docs/plans/2026-08-11-f1-dashboard-visual-design.md)
 - [ADR：为什么采用版本化本机桥接](./docs/adr/0007-versioned-local-game-input-bridges.md)
 - [ADR：为什么桌面端嵌入同一个 Host](./docs/adr/0008-tauri-desktop-embedded-host.md)
@@ -154,6 +154,6 @@ docs/       架构、ADR、协议、首启、图解与发布清单
 
 ## License
 
-OpenCarpanel 使用 [Apache License 2.0](./LICENSE)：允许使用、修改、分发和商业使用，并提供明确专利授权；分发时须保留许可证与声明。
+OpenSimDash 使用 [Apache License 2.0](./LICENSE)：允许使用、修改、分发和商业使用，并提供明确专利授权；分发时须保留许可证与声明。
 
 原生 SCS bridge 使用的官方 SCS SDK 1.14 头文件保留 SCS Software 的独立宽松许可。来源、归档哈希和许可位于 [`plugins/scs-telemetry-bridge/vendor/scs-sdk-1.14/`](./plugins/scs-telemetry-bridge/vendor/scs-sdk-1.14/)，并随包含插件的发布包分发；归属说明见 [NOTICE](./NOTICE)。

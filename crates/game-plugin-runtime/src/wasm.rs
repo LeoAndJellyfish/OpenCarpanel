@@ -5,14 +5,14 @@ use std::{
     path::Path,
 };
 
-use opencarpanel_adapter_api::{
+use opensimdash_adapter_api::{
     AdapterDescriptor, AdapterError, AdapterId, AdapterOutput, GameAdapter,
 };
-use opencarpanel_game_plugin_api::{
+use opensimdash_game_plugin_api::{
     GAME_PLUGIN_ABI_VERSION, GamePluginManifest, MAX_PLUGIN_DATAGRAM_BYTES,
     MAX_PLUGIN_MODULE_BYTES, MAX_PLUGIN_OUTPUT_BYTES, PluginDecodeOutput, PluginRuntime,
 };
-use opencarpanel_telemetry_core::MonotonicTimestamp;
+use opensimdash_telemetry_core::MonotonicTimestamp;
 use serde_json::Value;
 use wasmi::{
     Config, Engine, Instance, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder,
@@ -131,12 +131,12 @@ impl WasmGameAdapter {
         let memory = instance
             .get_memory(&store, "memory")
             .ok_or_else(|| wasm_error("WASM decoder does not export memory"))?;
-        let abi_version = typed::<(), i32>(instance, &store, "ocp_plugin_abi_version")?;
-        let input_ptr = typed::<(), i32>(instance, &store, "ocp_input_ptr")?;
-        let input_capacity = typed::<(), i32>(instance, &store, "ocp_input_capacity")?;
-        let output_ptr = typed::<(), i32>(instance, &store, "ocp_output_ptr")?;
-        let output_capacity = typed::<(), i32>(instance, &store, "ocp_output_capacity")?;
-        let decode = typed::<(i32, i64), i32>(instance, &store, "ocp_decode")?;
+        let abi_version = typed::<(), i32>(instance, &store, "osd_plugin_abi_version")?;
+        let input_ptr = typed::<(), i32>(instance, &store, "osd_input_ptr")?;
+        let input_capacity = typed::<(), i32>(instance, &store, "osd_input_capacity")?;
+        let output_ptr = typed::<(), i32>(instance, &store, "osd_output_ptr")?;
+        let output_capacity = typed::<(), i32>(instance, &store, "osd_output_capacity")?;
+        let decode = typed::<(i32, i64), i32>(instance, &store, "osd_decode")?;
         let actual_abi = call(abi_version, &mut store, ())?;
         if actual_abi != i32::from(GAME_PLUGIN_ABI_VERSION) {
             return Err(wasm_error(format!(
@@ -395,8 +395,8 @@ fn wasm_error(message: impl Into<String>) -> WasmPluginError {
 
 #[cfg(test)]
 mod tests {
-    use opencarpanel_game_plugin_api::{PluginRuntime, parse_manifest};
-    use opencarpanel_telemetry_core::{TelemetryEvent, TelemetryUpdate};
+    use opensimdash_game_plugin_api::{PluginRuntime, parse_manifest};
+    use opensimdash_telemetry_core::{TelemetryEvent, TelemetryUpdate};
     use serde_json::json;
     use sha2::Digest as _;
 
@@ -421,12 +421,12 @@ mod tests {
             r#"(module
               (memory (export "memory") 6 64)
               (data (i32.const 65536) "{}")
-              (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
-              (func (export "ocp_input_ptr") (result i32) i32.const 0)
-              (func (export "ocp_input_capacity") (result i32) i32.const 65536)
-              (func (export "ocp_output_ptr") (result i32) i32.const 65536)
-              (func (export "ocp_output_capacity") (result i32) i32.const 262144)
-              (func (export "ocp_decode") (param i32 i64) (result i32) i32.const {})
+              (func (export "osd_plugin_abi_version") (result i32) i32.const 1)
+              (func (export "osd_input_ptr") (result i32) i32.const 0)
+              (func (export "osd_input_capacity") (result i32) i32.const 65536)
+              (func (export "osd_output_ptr") (result i32) i32.const 65536)
+              (func (export "osd_output_capacity") (result i32) i32.const 262144)
+              (func (export "osd_decode") (param i32 i64) (result i32) i32.const {})
             )"#,
             wat_escape(response),
             response.len(),
@@ -457,12 +457,12 @@ mod tests {
         let module = wat::parse_str(
             r#"(module
               (memory (export "memory") 6 64)
-              (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
-              (func (export "ocp_input_ptr") (result i32) i32.const 0)
-              (func (export "ocp_input_capacity") (result i32) i32.const 65536)
-              (func (export "ocp_output_ptr") (result i32) i32.const 65536)
-              (func (export "ocp_output_capacity") (result i32) i32.const 262144)
-              (func (export "ocp_decode") (param i32 i64) (result i32)
+              (func (export "osd_plugin_abi_version") (result i32) i32.const 1)
+              (func (export "osd_input_ptr") (result i32) i32.const 0)
+              (func (export "osd_input_capacity") (result i32) i32.const 65536)
+              (func (export "osd_output_ptr") (result i32) i32.const 65536)
+              (func (export "osd_output_capacity") (result i32) i32.const 262144)
+              (func (export "osd_decode") (param i32 i64) (result i32)
                 (loop $forever br $forever)
                 i32.const 0)
             )"#,
@@ -483,12 +483,12 @@ mod tests {
         let module = wat::parse_str(
             r#"(module
               (memory (export "memory") 65 65)
-              (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
-              (func (export "ocp_input_ptr") (result i32) i32.const 0)
-              (func (export "ocp_input_capacity") (result i32) i32.const 65536)
-              (func (export "ocp_output_ptr") (result i32) i32.const 65536)
-              (func (export "ocp_output_capacity") (result i32) i32.const 262144)
-              (func (export "ocp_decode") (param i32 i64) (result i32) i32.const 0)
+              (func (export "osd_plugin_abi_version") (result i32) i32.const 1)
+              (func (export "osd_input_ptr") (result i32) i32.const 0)
+              (func (export "osd_input_capacity") (result i32) i32.const 65536)
+              (func (export "osd_output_ptr") (result i32) i32.const 65536)
+              (func (export "osd_output_capacity") (result i32) i32.const 262144)
+              (func (export "osd_decode") (param i32 i64) (result i32) i32.const 0)
             )"#,
         )?;
         let manifest = wasm_manifest(&module)?;

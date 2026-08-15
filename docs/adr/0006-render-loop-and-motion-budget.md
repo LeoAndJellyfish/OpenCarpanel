@@ -41,4 +41,4 @@ UDP 样本到达并不严格对齐屏幕刷新。如果每个网络消息直接�
 
 ## References
 
-- [主架构设计：渲染与动态效果](../plans/2026-08-11-opencarpanel-architecture-design.md#12-渲染与动态效果)
+- [主架构设计：渲染与动态效果](../plans/2026-08-11-opensimdash-architecture-design.md#12-渲染与动态效果)

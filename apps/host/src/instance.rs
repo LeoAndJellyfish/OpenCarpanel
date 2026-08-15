@@ -42,7 +42,7 @@ pub struct InstanceMetadata {
     pub pid: u32,
     /// Desktop or headless entry point.
     pub mode: InstanceMode,
-    /// `OpenCarpanel` version reported by the owner.
+    /// `OpenSimDash` version reported by the owner.
     pub version: String,
     /// Wall-clock start time for human diagnostics only.
     pub started_at_unix_ms: u64,
@@ -74,7 +74,7 @@ impl Display for InstanceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::AlreadyRunning { path, owner } => {
-                formatter.write_str("OpenCarpanel is already running")?;
+                formatter.write_str("OpenSimDash is already running")?;
                 if let Some(owner) = owner {
                     write!(
                         formatter,
@@ -216,14 +216,14 @@ impl Drop for InstanceGuard {
 /// Returns the stable per-user runtime directory shared by GUI and CLI.
 #[must_use]
 pub fn default_runtime_directory() -> PathBuf {
-    if let Some(configured) = std::env::var_os("OPENCARPANEL_RUNTIME_DIR") {
+    if let Some(configured) = std::env::var_os("OPENSIMDASH_RUNTIME_DIR") {
         return PathBuf::from(configured);
     }
 
     #[cfg(target_os = "windows")]
     if let Some(local_data) = std::env::var_os("LOCALAPPDATA") {
         return PathBuf::from(local_data)
-            .join("OpenCarpanel")
+            .join("OpenSimDash")
             .join("runtime");
     }
 
@@ -232,11 +232,11 @@ pub fn default_runtime_directory() -> PathBuf {
         return PathBuf::from(user_home)
             .join("Library")
             .join("Application Support")
-            .join("OpenCarpanel")
+            .join("OpenSimDash")
             .join("runtime");
     }
 
-    std::env::temp_dir().join("OpenCarpanel").join("runtime")
+    std::env::temp_dir().join("OpenSimDash").join("runtime")
 }
 
 fn read_metadata(path: &Path) -> Result<Option<InstanceMetadata>, InstanceError> {

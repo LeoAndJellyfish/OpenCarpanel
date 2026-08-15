@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-/// Failure while decoding one `OpenCarpanel` SCS bridge datagram.
+/// Failure while decoding one `OpenSimDash` SCS bridge datagram.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum DecodeError {
@@ -16,7 +16,7 @@ pub enum DecodeError {
         /// Number of bytes still available.
         remaining: usize,
     },
-    /// The packet does not carry the `OpenCarpanel` SCS bridge signature.
+    /// The packet does not carry the `OpenSimDash` SCS bridge signature.
     UnsupportedMagic {
         /// Four bytes observed at the start of the packet.
         actual: [u8; 4],

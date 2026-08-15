@@ -8,11 +8,11 @@ Accepted
 
 ADR-0002 建立了 `GameAdapter` 与统一遥测模型，但首版把适配器编译进 Host。当前 F1 24、F1 25、ETS2 和 ATS 的身份、能力、设置方式与仪表盘表现仍分别硬编码在 Host、桌面端和 Dashboard。继续沿用这种方式会使每个新游戏都修改多个应用，也无法让第三方开发者独立分发支持。
 
-插件必须保持 OpenCarpanel 的本地运行、低延迟、低内存和稳定性目标。直接加载 Rust/C 动态库没有稳定 ABI，并会让第三方代码取得 Host 进程权限；为每个插件启动独立进程则增加常驻内存、IPC 和生命周期复杂度。
+插件必须保持 OpenSimDash 的本地运行、低延迟、低内存和稳定性目标。直接加载 Rust/C 动态库没有稳定 ABI，并会让第三方代码取得 Host 进程权限；为每个插件启动独立进程则增加常驻内存、IPC 和生命周期复杂度。
 
 ## Decision
 
-采用版本化 `.ocp-plugin` 包。每个游戏插件由一份 `manifest.json` 和可选的 `decoder.wasm` 组成：
+采用版本化 `.osd-plugin` 包。每个游戏插件由一份 `manifest.json` 和可选的 `decoder.wasm` 组成：
 
 - manifest 是游戏身份、版本、发布者、输入协议、canonical capabilities、仪表盘 presentation、组件清单和设置向导的唯一事实来源；
 - 内置插件使用相同 manifest，但把 runtime 指向经过编译的 Rust adapter；
@@ -22,7 +22,7 @@ ADR-0002 建立了 `GameAdapter` 与统一遥测模型，但首版把适配器�
 - Dashboard 只执行项目自带组件。插件可选择适用组件、主题和布局预设，但 v1 不执行第三方 JavaScript；
 - 需要游戏内 SDK 的原生桥接仍按 ADR-0007 由可信桌面安装器管理，不在 WASM 插件中获得任意文件写权限。
 
-`.ocp-plugin` v1 是有界 JSON envelope，包含 manifest、Base64 WASM 和 SHA-256。安装器先完整验证，再以 manifest 中经过约束的安全文件名原子写入模块，最后原子替换 manifest。损坏、重复或不兼容插件被隔离并出现在诊断中，不阻止 Host 使用其他插件启动。
+`.osd-plugin` v1 是有界 JSON envelope，包含 manifest、Base64 WASM 和 SHA-256。安装器先完整验证，再以 manifest 中经过约束的安全文件名原子写入模块，最后原子替换 manifest。损坏、重复或不兼容插件被隔离并出现在诊断中，不阻止 Host 使用其他插件启动。
 
 ## Consequences
 

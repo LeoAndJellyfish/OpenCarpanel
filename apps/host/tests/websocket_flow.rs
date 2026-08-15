@@ -1,8 +1,8 @@
 use std::{error::Error, io, time::Duration};
 
 use futures_util::{SinkExt, StreamExt};
-use opencarpanel_host::{EVENT_BUFFER_CAPACITY, RunningHost, spawn_host};
-use opencarpanel_telemetry_core::{MonotonicTimestamp, TelemetryEvent, TelemetrySnapshot};
+use opensimdash_host::{EVENT_BUFFER_CAPACITY, RunningHost, spawn_host};
+use opensimdash_telemetry_core::{MonotonicTimestamp, TelemetryEvent, TelemetrySnapshot};
 use serde_json::{Value, json};
 use tokio::net::{TcpListener, UdpSocket};
 use tokio_tungstenite::{
@@ -177,8 +177,8 @@ async fn browser_origin_must_match_the_requested_host() -> Result<(), Box<dyn Er
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn websocket_connections_are_bounded() -> Result<(), Box<dyn Error>> {
     let host = host().await?;
-    let mut sockets = Vec::with_capacity(opencarpanel_host::MAX_WEBSOCKET_CONNECTIONS);
-    for _ in 0..opencarpanel_host::MAX_WEBSOCKET_CONNECTIONS {
+    let mut sockets = Vec::with_capacity(opensimdash_host::MAX_WEBSOCKET_CONNECTIONS);
+    for _ in 0..opensimdash_host::MAX_WEBSOCKET_CONNECTIONS {
         sockets.push(connect(&host).await?);
     }
 

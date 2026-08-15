@@ -3,7 +3,7 @@ import type {
   Gear,
   SnapshotMessage,
   TelemetrySnapshot,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { interpolateLinear, type LinearInterpolation } from "./interpolate";
 

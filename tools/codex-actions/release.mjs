@@ -28,7 +28,7 @@ export function normalizeVersion(input) {
 
 export function buildReleasePrompt(tag) {
   return [
-    `为 OpenCarpanel 发布 ${tag}。`,
+    `为 OpenSimDash 发布 ${tag}。`,
     "使用 $github-issue-to-release skill 执行完整、可审计的发布闭环。",
     "先检查工作区、origin/main、当前最新版本、目标 tag 与 Release 是否已存在；不要覆盖已有 tag。",
     "根据目标版本完成必要的版本文件、发布说明和工作流文案更新，保留用户已有改动。",

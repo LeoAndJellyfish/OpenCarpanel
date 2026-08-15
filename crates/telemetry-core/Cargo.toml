@@ -1,5 +1,5 @@
 [package]
-name = "opencarpanel-telemetry-core"
+name = "opensimdash-telemetry-core"
 description = "Game-neutral telemetry state and event processing"
 version.workspace = true
 edition.workspace = true

@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
-use opencarpanel_adapter_f1::{
+use opensimdash_adapter_api::{AdapterOutput, GameAdapter};
+use opensimdash_adapter_f1::{
     CAR_STATUS_DATA_LEN, CAR_STATUS_PACKET_LEN, CAR_TELEMETRY2_DATA_LEN, CAR_TELEMETRY2_PACKET_ID,
     CAR_TELEMETRY2_PACKET_LEN, F1_24_CAR_DAMAGE_DATA_LEN, F1_24_CAR_DAMAGE_PACKET_LEN,
     F1_24_PACKET_FORMAT, F1_24Adapter, F1_25_2026_CAR_COUNT, F1_25_2026_CAR_DAMAGE_PACKET_LEN,
@@ -11,7 +11,7 @@ use opencarpanel_adapter_f1::{
     F1_25_CAR_DAMAGE_DATA_LEN, F1_25_CAR_DAMAGE_PACKET_LEN, F1_25_PACKET_FORMAT, F1_25Adapter,
     LAP_DATA_LEN, LAP_DATA_PACKET_ID, LAP_DATA_PACKET_LEN, SESSION_PACKET_LEN,
 };
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     ActiveAeroMode, DrsState, MonotonicTimestamp, Normalized, PitStatus, RaceFlag, SafetyCarStatus,
     WeatherCondition,
 };

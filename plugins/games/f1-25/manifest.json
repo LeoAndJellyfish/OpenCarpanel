@@ -3,7 +3,7 @@
   "id": "f1-25",
   "name": "EA Sports F1 25",
   "version": "1.0.0",
-  "publisher": "OpenCarpanel contributors",
+  "publisher": "OpenSimDash contributors",
   "license": "Apache-2.0",
   "description": "EA Sports F1 25 original 2025 and 2026 Season Pack UDP telemetry.",
   "runtime": {

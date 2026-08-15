@@ -1,13 +1,13 @@
 use std::{error::Error, time::Duration};
 
-use opencarpanel_adapter_f1::{
+use opensimdash_adapter_f1::{
     CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_LEN, F1_25_2026_CAR_TELEMETRY_DATA_LEN,
     F1_25_2026_CAR_TELEMETRY_PACKET_LEN, F1_25_2026_PACKET_FORMAT, PACKET_HEADER_LEN,
 };
-use opencarpanel_adapter_scs::{
+use opensimdash_adapter_scs::{
     ATS_GAME_ID, BRIDGE_MAGIC, BRIDGE_PROTOCOL_V1, BRIDGE_V1_PACKET_LEN, ETS2_GAME_ID,
 };
-use opencarpanel_host::{AdapterSelection, spawn_host, spawn_host_with_adapter_selection};
+use opensimdash_host::{AdapterSelection, spawn_host, spawn_host_with_adapter_selection};
 use tokio::net::{TcpListener, UdpSocket};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -92,7 +92,7 @@ async fn fixed_selection_rejects_another_game_before_accepting_its_own()
 }
 
 async fn wait_for_packet_error(
-    running: &opencarpanel_host::RunningHost,
+    running: &opensimdash_host::RunningHost,
 ) -> Result<(), tokio::time::error::Elapsed> {
     tokio::time::timeout(Duration::from_secs(2), async {
         while running.state().metrics().packet_errors == 0 {

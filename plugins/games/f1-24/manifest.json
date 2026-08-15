@@ -3,7 +3,7 @@
   "id": "f1-24",
   "name": "EA Sports F1 24",
   "version": "1.0.0",
-  "publisher": "OpenCarpanel contributors",
+  "publisher": "OpenSimDash contributors",
   "license": "Apache-2.0",
   "description": "EA Sports F1 24 original 2024 UDP telemetry.",
   "runtime": {

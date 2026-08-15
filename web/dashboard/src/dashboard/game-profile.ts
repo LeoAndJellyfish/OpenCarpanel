@@ -4,7 +4,7 @@ import {
   gameDefaultLayout,
   type GamePluginMetadata,
   type LayoutDocument,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 export type GameFamily = "formula" | "truck" | "neutral";
 export type StatusMode = "drs" | "scs" | "generic";
@@ -44,7 +44,7 @@ export const SUPPORTED_GAME_PRESENTATIONS = gamePresentations(BUILTIN_GAME_PLUGI
 
 const UNKNOWN_GAME_PRESENTATION: GamePresentation = {
   id: "unknown",
-  label: "OPEN CARPANEL",
+  label: "OPENSIMDASH",
   detail: "WAITING FOR GAME TELEMETRY",
   family: "neutral",
   statusMode: "generic",

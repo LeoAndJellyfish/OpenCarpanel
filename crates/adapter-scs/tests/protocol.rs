@@ -1,4 +1,4 @@
-use opencarpanel_adapter_scs::{
+use opensimdash_adapter_scs::{
     ATS_GAME_ID, BRIDGE_JOB_TEXT_LEN, BRIDGE_MAGIC, BRIDGE_PACKET_LEN, BRIDGE_PROTOCOL_V1,
     BRIDGE_PROTOCOL_VERSION, BRIDGE_V1_PACKET_LEN, BridgeGame, BridgePacket, DecodeError,
     ETS2_GAME_ID,

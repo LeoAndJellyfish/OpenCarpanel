@@ -25,15 +25,15 @@
 #include "scssdk_telemetry.h"
 
 #if defined(_WIN32)
-#define OCP_PLUGIN_EXPORT
+#define OSD_PLUGIN_EXPORT
 #else
-#define OCP_PLUGIN_EXPORT __attribute__((visibility("default")))
+#define OSD_PLUGIN_EXPORT __attribute__((visibility("default")))
 #endif
 
 namespace {
 
-using opencarpanel::scs_bridge::Game;
-using opencarpanel::scs_bridge::TelemetryFrame;
+using opensimdash::scs_bridge::Game;
+using opensimdash::scs_bridge::TelemetryFrame;
 
 #if defined(_WIN32)
 using SocketHandle = SOCKET;
@@ -63,9 +63,9 @@ struct PluginState {
     std::uint64_t income = 0;
     std::uint32_t delivery_time = 0;
     std::uint32_t planned_distance_km = 0;
-    std::array<char, opencarpanel::scs_bridge::kJobTextSize> cargo{};
-    std::array<char, opencarpanel::scs_bridge::kJobTextSize> source_city{};
-    std::array<char, opencarpanel::scs_bridge::kJobTextSize> destination_city{};
+    std::array<char, opensimdash::scs_bridge::kJobTextSize> cargo{};
+    std::array<char, opensimdash::scs_bridge::kJobTextSize> source_city{};
+    std::array<char, opensimdash::scs_bridge::kJobTextSize> destination_city{};
     bool fuel_warning = false;
     bool light_parking = false;
     bool light_low_beam = false;
@@ -145,7 +145,7 @@ bool open_socket() noexcept {
     plugin_state.destination = {};
     plugin_state.destination.sin_family = AF_INET;
     plugin_state.destination.sin_port =
-        htons(opencarpanel::scs_bridge::kDestinationPort);
+        htons(opensimdash::scs_bridge::kDestinationPort);
     plugin_state.destination.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     return true;
 }
@@ -160,7 +160,7 @@ std::uint64_t make_session_nonce() noexcept {
 }
 
 std::uint16_t light_bits() noexcept {
-    using namespace opencarpanel::scs_bridge;
+    using namespace opensimdash::scs_bridge;
     std::uint16_t bits = 0;
     bits |= plugin_state.light_parking ? kLightParking : 0;
     bits |= plugin_state.light_low_beam ? kLightLowBeam : 0;
@@ -175,7 +175,7 @@ std::uint16_t light_bits() noexcept {
 }
 
 std::uint16_t state_bits() noexcept {
-    using namespace opencarpanel::scs_bridge;
+    using namespace opensimdash::scs_bridge;
     std::uint16_t bits = 0;
     bits |= plugin_state.fuel_warning ? kStateFuelWarning : 0;
     bits |= plugin_state.job_active ? kStateJobActive : 0;
@@ -215,7 +215,7 @@ void send_frame() noexcept {
         plugin_state.source_city,
         plugin_state.destination_city,
     };
-    const auto packet = opencarpanel::scs_bridge::encode(frame);
+    const auto packet = opensimdash::scs_bridge::encode(frame);
 
 #if defined(_WIN32)
     const int result = sendto(
@@ -285,7 +285,7 @@ SCSAPI_VOID store_bool(
 }
 
 void copy_utf8(
-    std::array<char, opencarpanel::scs_bridge::kJobTextSize>& destination,
+    std::array<char, opensimdash::scs_bridge::kJobTextSize>& destination,
     const char* const source) noexcept {
     destination.fill('\0');
     if (source == nullptr) {
@@ -652,7 +652,7 @@ void unregister_callbacks(const scs_telemetry_init_params_v101_t& params) noexce
 
 }  // namespace
 
-OCP_PLUGIN_EXPORT SCSAPI_RESULT scs_telemetry_init(
+OSD_PLUGIN_EXPORT SCSAPI_RESULT scs_telemetry_init(
     const scs_u32_t version,
     const scs_telemetry_init_params_t* const params) {
     if (version != SCS_TELEMETRY_VERSION_1_01 || params == nullptr) {
@@ -667,7 +667,7 @@ OCP_PLUGIN_EXPORT SCSAPI_RESULT scs_telemetry_init(
 
     Game game;
     if (version_params->common.game_id == nullptr) {
-        log_message(SCS_LOG_TYPE_error, "OpenCarpanel: missing SCS game id");
+        log_message(SCS_LOG_TYPE_error, "OpenSimDash: missing SCS game id");
         game_log = nullptr;
         return SCS_RESULT_unsupported;
     }
@@ -676,7 +676,7 @@ OCP_PLUGIN_EXPORT SCSAPI_RESULT scs_telemetry_init(
     } else if (std::strcmp(version_params->common.game_id, SCS_GAME_ID_ATS) == 0) {
         game = Game::kAts;
     } else {
-        log_message(SCS_LOG_TYPE_error, "OpenCarpanel: unsupported SCS game");
+        log_message(SCS_LOG_TYPE_error, "OpenSimDash: unsupported SCS game");
         game_log = nullptr;
         return SCS_RESULT_unsupported;
     }
@@ -685,24 +685,24 @@ OCP_PLUGIN_EXPORT SCSAPI_RESULT scs_telemetry_init(
     plugin_state.game = game;
     plugin_state.session_nonce = make_session_nonce();
     if (!open_socket()) {
-        log_message(SCS_LOG_TYPE_error, "OpenCarpanel: failed to open loopback UDP socket");
+        log_message(SCS_LOG_TYPE_error, "OpenSimDash: failed to open loopback UDP socket");
         game_log = nullptr;
         return SCS_RESULT_generic_error;
     }
     if (!register_events(*version_params) || !register_channels(*version_params)) {
-        log_message(SCS_LOG_TYPE_error, "OpenCarpanel: failed to register SCS telemetry callbacks");
+        log_message(SCS_LOG_TYPE_error, "OpenSimDash: failed to register SCS telemetry callbacks");
         unregister_callbacks(*version_params);
         close_socket();
         game_log = nullptr;
         return SCS_RESULT_generic_error;
     }
 
-    log_message(SCS_LOG_TYPE_message, "OpenCarpanel: telemetry bridge initialized");
+    log_message(SCS_LOG_TYPE_message, "OpenSimDash: telemetry bridge initialized");
     return SCS_RESULT_ok;
 }
 
-OCP_PLUGIN_EXPORT SCSAPI_VOID scs_telemetry_shutdown() {
-    log_message(SCS_LOG_TYPE_message, "OpenCarpanel: telemetry bridge stopped");
+OSD_PLUGIN_EXPORT SCSAPI_VOID scs_telemetry_shutdown() {
+    log_message(SCS_LOG_TYPE_message, "OpenSimDash: telemetry bridge stopped");
     close_socket();
     game_log = nullptr;
 }

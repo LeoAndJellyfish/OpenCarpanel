@@ -1,7 +1,7 @@
 use crate::{Cursor, DecodeError};
 
-/// Signature of every `OpenCarpanel` SCS bridge datagram.
-pub const BRIDGE_MAGIC: [u8; 4] = *b"OCP\0";
+/// Signature of every `OpenSimDash` SCS bridge datagram.
+pub const BRIDGE_MAGIC: [u8; 4] = *b"OSD\0";
 
 /// Current SCS bridge wire-protocol version emitted by the bundled plugin.
 pub const BRIDGE_PROTOCOL_VERSION: u8 = 2;

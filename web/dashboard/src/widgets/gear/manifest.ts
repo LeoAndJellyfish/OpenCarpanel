@@ -1,4 +1,4 @@
-import { defineWidgetManifest } from "@opencarpanel/widget-sdk";
+import { defineWidgetManifest } from "@opensimdash/widget-sdk";
 
 export const gearManifest = defineWidgetManifest({
   schemaVersion: 1,

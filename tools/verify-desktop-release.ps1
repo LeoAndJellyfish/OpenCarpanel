@@ -30,21 +30,21 @@ if ($release.target_commitish -ne $ExpectedCommit) {
 }
 
 $platformArtifacts = [ordered]@{
-  'windows-x86_64' = "OpenCarpanel_${version}_windows_x64_nsis-setup.exe"
-  'darwin-aarch64' = "OpenCarpanel_${version}_darwin_aarch64_app.app.tar.gz"
-  'darwin-x86_64' = "OpenCarpanel_${version}_darwin_x64_app.app.tar.gz"
+  'windows-x86_64' = "OpenSimDash_${version}_windows_x64_nsis-setup.exe"
+  'darwin-aarch64' = "OpenSimDash_${version}_darwin_aarch64_app.app.tar.gz"
+  'darwin-x86_64' = "OpenSimDash_${version}_darwin_x64_app.app.tar.gz"
 }
 $installerAssets = @(
-  "OpenCarpanel_${version}_windows_x64_msi.msi",
-  "OpenCarpanel_${version}_darwin_aarch64_dmg.dmg",
-  "OpenCarpanel_${version}_darwin_x64_dmg.dmg"
+  "OpenSimDash_${version}_windows_x64_msi.msi",
+  "OpenSimDash_${version}_darwin_aarch64_dmg.dmg",
+  "OpenSimDash_${version}_darwin_x64_dmg.dmg"
 )
 $requiredAssets = @('latest.json') + $installerAssets
 foreach ($artifactName in $platformArtifacts.Values) {
   $requiredAssets += $artifactName
   $requiredAssets += "$artifactName.sig"
 }
-$requiredAssets += "OpenCarpanel_${version}_windows_x64_msi.msi.sig"
+$requiredAssets += "OpenSimDash_${version}_windows_x64_msi.msi.sig"
 
 $assetByName = @{}
 foreach ($asset in $release.assets) {
@@ -68,7 +68,7 @@ if ($unexpectedAssets.Count -gt 0) {
   throw "Release contains unexpected assets: $($unexpectedAssets -join ', ')."
 }
 
-$temporaryDirectory = Join-Path ([IO.Path]::GetTempPath()) "opencarpanel-release-$([guid]::NewGuid())"
+$temporaryDirectory = Join-Path ([IO.Path]::GetTempPath()) "opensimdash-release-$([guid]::NewGuid())"
 New-Item -ItemType Directory -Path $temporaryDirectory | Out-Null
 try {
   $manifestPath = Join-Path $temporaryDirectory 'latest.json'

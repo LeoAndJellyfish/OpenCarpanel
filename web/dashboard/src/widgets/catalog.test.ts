@@ -6,7 +6,7 @@ import {
   type BuiltinGameId,
   type GamePluginMetadata,
   type WidgetType,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { addWidget, removeWidgetsByType } from "../editor/document";
 import { builtinWidgetManifestsForGame, builtinWidgetManifestsForPlugin } from "./catalog";

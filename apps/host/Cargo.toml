@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-host"
-description = "Local OpenCarpanel host process"
+name = "opensimdash-host"
+description = "Local OpenSimDash host process"
 build = "build.rs"
 version.workspace = true
 edition.workspace = true
@@ -16,14 +16,14 @@ futures-util = "0.3.34"
 fs2 = "0.4.3"
 getrandom = "0.3.4"
 if-addrs = "0.15.0"
-opencarpanel-adapter-api = { path = "../../crates/adapter-api" }
-opencarpanel-adapter-f1 = { path = "../../crates/adapter-f1" }
-opencarpanel-adapter-scs = { path = "../../crates/adapter-scs" }
-opencarpanel-config = { path = "../../crates/config" }
-opencarpanel-game-plugin-api = { path = "../../crates/game-plugin-api" }
-opencarpanel-game-plugin-runtime = { path = "../../crates/game-plugin-runtime" }
-opencarpanel-protocol = { path = "../../crates/protocol" }
-opencarpanel-telemetry-core = { path = "../../crates/telemetry-core" }
+opensimdash-adapter-api = { path = "../../crates/adapter-api" }
+opensimdash-adapter-f1 = { path = "../../crates/adapter-f1" }
+opensimdash-adapter-scs = { path = "../../crates/adapter-scs" }
+opensimdash-config = { path = "../../crates/config" }
+opensimdash-game-plugin-api = { path = "../../crates/game-plugin-api" }
+opensimdash-game-plugin-runtime = { path = "../../crates/game-plugin-runtime" }
+opensimdash-protocol = { path = "../../crates/protocol" }
+opensimdash-telemetry-core = { path = "../../crates/telemetry-core" }
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"

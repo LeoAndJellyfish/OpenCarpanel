@@ -1,4 +1,4 @@
-//! Contracts shared by all `OpenCarpanel` game adapters.
+//! Contracts shared by all `OpenSimDash` game adapters.
 
 mod adapter;
 

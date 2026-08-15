@@ -1,5 +1,5 @@
 /**
- * Generated from the committed OpenCarpanel JSON Schemas.
+ * Generated from the committed OpenSimDash JSON Schemas.
  * Do not edit by hand; run `npm run generate:web-types`.
  */
 

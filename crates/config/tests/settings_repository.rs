@@ -1,6 +1,6 @@
 use std::{error::Error, fs};
 
-use opencarpanel_config::{AppSettings, SettingsRepository};
+use opensimdash_config::{AppSettings, SettingsRepository};
 
 #[test]
 fn settings_are_created_saved_and_loaded_atomically() -> Result<(), Box<dyn Error>> {

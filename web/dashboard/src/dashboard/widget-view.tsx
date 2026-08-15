@@ -1,4 +1,4 @@
-import type { WidgetInstance } from "@opencarpanel/widget-sdk";
+import type { WidgetInstance } from "@opensimdash/widget-sdk";
 
 import type { ConnectionView } from "../connection/client";
 import type { TelemetryRenderLoop } from "../telemetry/render-loop";

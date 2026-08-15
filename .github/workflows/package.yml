@@ -64,7 +64,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo test --locked --workspace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cargo build --locked -p opencarpanel-example-game-plugin --target wasm32-unknown-unknown --release
+          cargo build --locked -p opensimdash-example-game-plugin --target wasm32-unknown-unknown --release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run check:web
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -125,16 +125,18 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: OpenCarpanel v__VERSION__ — Sandboxed Game Plugins
+          releaseName: OpenSimDash v__VERSION__ — Project Rename
           releaseBody: |
-            OpenCarpanel v0.4.0 introduces a versioned game-plugin contract, sandboxed cross-platform WASM decoders, dynamic desktop and dashboard metadata, and a third-party SDK/tooling workflow. F1 24, F1 25 (including the 2026 Season Pack), ETS2, and ATS now share the same manifest model.
+            OpenSimDash v0.4.1 establishes the new identity across product surfaces, packages, binaries, settings, the native SCS bridge, updater assets, and the third-party WASM ABI.
 
-            See `docs/releases/v0.4.0.md` for the security limits, installation workflow, compatibility, and verification notes.
+            Game plugin packages now require the `.osd-plugin` extension and the `osd_*` ABI. This is an intentional pre-1.0 breaking change; old plugin packages and identifiers are not migrated or accepted.
+
+            See `docs/releases/v0.4.1.md` for the complete rename scope, breaking changes, installation workflow, and verification notes.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
           updaterJsonPreferNsis: true
-          releaseAssetNamePattern: "OpenCarpanel_[version]_[platform]_[arch]_[bundle][setup][ext]"
+          releaseAssetNamePattern: "OpenSimDash_[version]_[platform]_[arch]_[bundle][setup][ext]"
           retryAttempts: 2
 
   verify-and-publish:

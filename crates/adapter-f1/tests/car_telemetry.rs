@@ -1,16 +1,14 @@
 use std::{error::Error, io};
 
-use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
-use opencarpanel_adapter_f1::{
+use opensimdash_adapter_api::{AdapterOutput, GameAdapter};
+use opensimdash_adapter_f1::{
     CAR_TELEMETRY_DATA_LEN, CAR_TELEMETRY_PACKET_LEN, DecodeError, F1_24_PACKET_FORMAT,
     F1_24Adapter, F1_25_2026_CAR_COUNT, F1_25_2026_CAR_TELEMETRY_DATA_LEN,
     F1_25_2026_CAR_TELEMETRY_PACKET_LEN, F1_25_2026_PACKET_FORMAT, F1_25_PACKET_FORMAT,
     F1_25Adapter, PACKET_HEADER_LEN, decode_f1_24_player_car_telemetry,
     decode_f1_25_player_car_telemetry,
 };
-use opencarpanel_telemetry_core::{
-    DrsState, Gear, MonotonicTimestamp, Normalized, TelemetryUpdate,
-};
+use opensimdash_telemetry_core::{DrsState, Gear, MonotonicTimestamp, Normalized, TelemetryUpdate};
 
 const LEGACY_PLAYER_INDEX: u8 = 7;
 const SEASON_PACK_PLAYER_INDEX: u8 = 23;

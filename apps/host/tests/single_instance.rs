@@ -28,7 +28,7 @@ fn two_headless_entry_points_report_shared_instance_ownership() -> Result<(), Bo
     assert!(!second.status.success());
     let stderr = String::from_utf8_lossy(&second.stderr);
     assert!(
-        stderr.contains("OpenCarpanel is already running"),
+        stderr.contains("OpenSimDash is already running"),
         "{stderr}"
     );
     assert!(stderr.contains("headless"), "{stderr}");
@@ -41,7 +41,7 @@ fn third_party_port_conflict_is_not_misreported_as_an_instance() -> Result<(), B
     let occupied = TcpListener::bind("127.0.0.1:0")?;
     let port = occupied.local_addr()?.port();
     let output = host_command(&temp.path().join("data"), &temp.path().join("runtime"))
-        .env("OPENCARPANEL_HTTP_BIND", format!("127.0.0.1:{port}"))
+        .env("OPENSIMDASH_HTTP_BIND", format!("127.0.0.1:{port}"))
         .output()?;
 
     assert!(!output.status.success());
@@ -52,12 +52,12 @@ fn third_party_port_conflict_is_not_misreported_as_an_instance() -> Result<(), B
 }
 
 fn host_command(data: &Path, runtime: &Path) -> Command {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_opencarpanel-host"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_opensimdash-host"));
     command
-        .env("OPENCARPANEL_DATA_DIR", data)
-        .env("OPENCARPANEL_RUNTIME_DIR", runtime)
-        .env("OPENCARPANEL_HTTP_BIND", "127.0.0.1:0")
-        .env("OPENCARPANEL_UDP_BIND", "127.0.0.1:0")
+        .env("OPENSIMDASH_DATA_DIR", data)
+        .env("OPENSIMDASH_RUNTIME_DIR", runtime)
+        .env("OPENSIMDASH_HTTP_BIND", "127.0.0.1:0")
+        .env("OPENSIMDASH_UDP_BIND", "127.0.0.1:0")
         .env("RUST_LOG", "off")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

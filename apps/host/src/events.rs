@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
-use opencarpanel_protocol::{EventMessage, ResyncRequiredMessage};
-use opencarpanel_telemetry_core::TelemetryEvent;
+use opensimdash_protocol::{EventMessage, ResyncRequiredMessage};
+use opensimdash_telemetry_core::TelemetryEvent;
 use tokio::sync::{Mutex, broadcast};
 
 /// Maximum number of reliable telemetry events retained for reconnect replay.

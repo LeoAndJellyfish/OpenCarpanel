@@ -8,7 +8,7 @@ namespace {
 
 template <std::size_t Size>
 bool matches(
-    const std::array<std::uint8_t, opencarpanel::scs_bridge::kPacketSize>& packet,
+    const std::array<std::uint8_t, opensimdash::scs_bridge::kPacketSize>& packet,
     const std::size_t offset,
     const std::array<std::uint8_t, Size>& expected) {
     for (std::size_t index = 0; index < Size; ++index) {
@@ -22,7 +22,7 @@ bool matches(
 }  // namespace
 
 int main() {
-    using namespace opencarpanel::scs_bridge;
+    using namespace opensimdash::scs_bridge;
 
     TelemetryFrame frame{};
     frame.game = Game::kAts;
@@ -56,7 +56,7 @@ int main() {
 
     const auto packet = encode(frame);
     constexpr std::array<std::uint8_t, 44> expected_base{
-        0x4f, 0x43, 0x50, 0x00, 0x02, 0x02, 0x00, 0x00,
+        0x4f, 0x53, 0x44, 0x00, 0x02, 0x02, 0x00, 0x00,
         0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01,
         0x0d, 0x0c, 0x0b, 0x0a,
         0x00, 0x00, 0x48, 0xc1,

@@ -1,11 +1,11 @@
 use std::{error::Error, io};
 
-use opencarpanel_adapter_api::{AdapterOutput, GameAdapter};
-use opencarpanel_adapter_scs::{
+use opensimdash_adapter_api::{AdapterOutput, GameAdapter};
+use opensimdash_adapter_scs::{
     ATS_GAME_ID, AtsAdapter, BRIDGE_JOB_TEXT_LEN, BRIDGE_MAGIC, BRIDGE_PACKET_LEN,
     BRIDGE_PROTOCOL_V1, BRIDGE_PROTOCOL_VERSION, BRIDGE_V1_PACKET_LEN, ETS2_GAME_ID, Ets2Adapter,
 };
-use opencarpanel_telemetry_core::{DrsState, Gear, MonotonicTimestamp, Normalized};
+use opensimdash_telemetry_core::{DrsState, Gear, MonotonicTimestamp, Normalized};
 
 fn packet_v1(game: u8, gear: i32) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(BRIDGE_V1_PACKET_LEN);

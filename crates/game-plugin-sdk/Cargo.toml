@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-game-plugin-sdk"
-description = "Rust guest SDK for OpenCarpanel ABI v1 game decoders"
+name = "opensimdash-game-plugin-sdk"
+description = "Rust guest SDK for OpenSimDash ABI v1 game decoders"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,8 +8,8 @@ license.workspace = true
 publish = false
 
 [dependencies]
-opencarpanel-game-plugin-api = { path = "../game-plugin-api" }
-opencarpanel-telemetry-core = { path = "../telemetry-core" }
+opensimdash-game-plugin-api = { path = "../game-plugin-api" }
+opensimdash-telemetry-core = { path = "../telemetry-core" }
 serde_json = "1.0.151"
 
 [lints]

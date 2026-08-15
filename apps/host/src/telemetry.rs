@@ -8,9 +8,9 @@ use std::{
     time::Instant,
 };
 
-use opencarpanel_game_plugin_runtime::PluginLoadIssue;
-use opencarpanel_protocol::EventMessage;
-use opencarpanel_telemetry_core::{
+use opensimdash_game_plugin_runtime::PluginLoadIssue;
+use opensimdash_protocol::EventMessage;
+use opensimdash_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetrySnapshot,
 };
 use tokio::{

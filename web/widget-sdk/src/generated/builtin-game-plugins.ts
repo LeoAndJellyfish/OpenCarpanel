@@ -1,5 +1,5 @@
 /**
- * Generated from the committed OpenCarpanel JSON Schemas.
+ * Generated from the committed OpenSimDash JSON Schemas.
  * Do not edit by hand; run `npm run generate:web-types`.
  */
 import type { GamePluginMetadata } from "./server-message";
@@ -9,7 +9,7 @@ export const BUILTIN_GAME_PLUGINS = [
     "id": "ats",
     "name": "American Truck Simulator",
     "version": "1.0.0",
-    "publisher": "OpenCarpanel contributors",
+    "publisher": "OpenSimDash contributors",
     "description": "American Truck Simulator telemetry through the bundled SCS SDK bridge.",
     "protocolVersion": "scs-bridge/v1+v2 (SDK 1.14)",
     "ingress": {
@@ -62,7 +62,7 @@ export const BUILTIN_GAME_PLUGINS = [
     "id": "ets2",
     "name": "Euro Truck Simulator 2",
     "version": "1.0.0",
-    "publisher": "OpenCarpanel contributors",
+    "publisher": "OpenSimDash contributors",
     "description": "Euro Truck Simulator 2 telemetry through the bundled SCS SDK bridge.",
     "protocolVersion": "scs-bridge/v1+v2 (SDK 1.14)",
     "ingress": {
@@ -115,7 +115,7 @@ export const BUILTIN_GAME_PLUGINS = [
     "id": "f1-24",
     "name": "EA Sports F1 24",
     "version": "1.0.0",
-    "publisher": "OpenCarpanel contributors",
+    "publisher": "OpenSimDash contributors",
     "description": "EA Sports F1 24 original 2024 UDP telemetry.",
     "protocolVersion": "2024/v27.2x",
     "ingress": {
@@ -181,7 +181,7 @@ export const BUILTIN_GAME_PLUGINS = [
     "id": "f1-25",
     "name": "EA Sports F1 25",
     "version": "1.0.0",
-    "publisher": "OpenCarpanel contributors",
+    "publisher": "OpenSimDash contributors",
     "description": "EA Sports F1 25 original 2025 and 2026 Season Pack UDP telemetry.",
     "protocolVersion": "2025/v3 + 2026/v10",
     "ingress": {

@@ -1,6 +1,6 @@
 use std::{error::Error, fs, path::Path};
 
-use opencarpanel_config::generate_layout_schema;
+use opensimdash_config::generate_layout_schema;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

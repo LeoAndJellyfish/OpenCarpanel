@@ -1,6 +1,6 @@
 use std::{error::Error, io};
 
-use opencarpanel_host::spawn_host;
+use opensimdash_host::spawn_host;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream, UdpSocket},

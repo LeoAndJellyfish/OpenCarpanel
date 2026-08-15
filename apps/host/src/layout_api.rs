@@ -7,11 +7,11 @@ use axum::{
     http::{HeaderMap, StatusCode, header},
     response::{IntoResponse, Response},
 };
-use opencarpanel_config::{
+use opensimdash_config::{
     BreakpointName, ComponentType, ConfigError, GridPlacement, InstanceId, LayoutDocument,
     LayoutId, LayoutRepository, MAX_LAYOUT_BYTES, ThemeSettings, ValidationError, WidgetInstance,
 };
-use opencarpanel_game_plugin_api::{GamePluginMetadata, PluginLayoutPreset};
+use opensimdash_game_plugin_api::{GamePluginMetadata, PluginLayoutPreset};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -351,7 +351,7 @@ struct LegacyBuiltInLayoutSpec {
 fn legacy_builtin_layout_spec(id: &LayoutId) -> Option<LegacyBuiltInLayoutSpec> {
     let spec = match id.as_str() {
         DEFAULT_LAYOUT_ID => LegacyBuiltInLayoutSpec {
-            name: "OpenCarpanel Default",
+            name: "OpenSimDash Default",
             background: "#07090c",
             foreground: "#f2f0e9",
             accent: "#d9ff43",
@@ -414,7 +414,7 @@ fn plugin_layout(
     };
 
     let name = if id.as_str() == DEFAULT_LAYOUT_ID {
-        "OpenCarpanel Default".to_owned()
+        "OpenSimDash Default".to_owned()
     } else {
         format!("{} Default", plugin.presentation.short_name)
     };

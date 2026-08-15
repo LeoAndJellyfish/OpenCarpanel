@@ -1,7 +1,7 @@
-use opencarpanel_adapter_api::{
+use opensimdash_adapter_api::{
     AdapterDescriptor, AdapterError, AdapterId, AdapterOutput, CapabilitySet, GameAdapter,
 };
-use opencarpanel_telemetry_core::{DrsState, MonotonicTimestamp, TelemetryEvent, TelemetryField};
+use opensimdash_telemetry_core::{DrsState, MonotonicTimestamp, TelemetryEvent, TelemetryField};
 use serde_json::json;
 
 use crate::mapping::{

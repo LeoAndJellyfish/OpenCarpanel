@@ -1,7 +1,7 @@
 use std::{error::Error, io, time::Duration};
 
-use opencarpanel_adapter_api::AdapterId;
-use opencarpanel_telemetry_replay::{
+use opensimdash_adapter_api::AdapterId;
+use opensimdash_telemetry_replay::{
     CaptureHeader, CaptureReader, CaptureRecord, CaptureWriter, DatagramSink, ReplayClock,
     replay_records,
 };

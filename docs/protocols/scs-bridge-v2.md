@@ -1,4 +1,4 @@
-# OpenCarpanel SCS bridge protocol v2
+# OpenSimDash SCS bridge protocol v2
 
 v2 是随包 SCS SDK 1.14 插件当前发送的 188-byte 本机协议，在 v1 的前 44 bytes 后追加导航、油量、灯光和配送任务。Host 同时接受 [v1](scs-bridge-v1.md) 与 v2，不会按长度猜测版本。
 
@@ -6,7 +6,7 @@ v2 是随包 SCS SDK 1.14 插件当前发送的 188-byte 本机协议，在 v1 �
 
 ```text
 ETS2 / ATS SCS Telemetry SDK callbacks
-  → opencarpanel-scs-telemetry native plugin
+  → opensimdash-scs-telemetry native plugin
   → fixed 188-byte UDP 127.0.0.1:20777
   → adapter-scs v2 defensive decoder
   → canonical vehicle / navigation / lights / job state
@@ -18,7 +18,7 @@ ETS2 / ATS SCS Telemetry SDK callbacks
 
 | Offset | Bytes | Type | Field | Validation / semantics |
 | ---: | ---: | --- | --- | --- |
-| 0 | 4 | `[u8;4]` | magic `OCP\0` | exact |
+| 0 | 4 | `[u8;4]` | magic `OSD\0` | exact |
 | 4 | 1 | `u8` | version | `2` |
 | 5 | 1 | `u8` | game | `1` ETS2；`2` ATS |
 | 6 | 2 | `u8 + u8` | flags / reserved | 均为 `0` |

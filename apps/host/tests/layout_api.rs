@@ -1,8 +1,8 @@
 use std::{error::Error, fs, io, time::Duration};
 
 use futures_util::{SinkExt, StreamExt};
-use opencarpanel_config::{LayoutDocument, LayoutId, LayoutRepository, MAX_LAYOUT_BYTES};
-use opencarpanel_host::{RunningHost, spawn_host_with_layout_repository};
+use opensimdash_config::{LayoutDocument, LayoutId, LayoutRepository, MAX_LAYOUT_BYTES};
+use opensimdash_host::{RunningHost, spawn_host_with_layout_repository};
 use serde_json::{Value, json};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},

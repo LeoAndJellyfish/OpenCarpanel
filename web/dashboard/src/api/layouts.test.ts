@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_LAYOUT } from "@opencarpanel/widget-sdk";
+import { DEFAULT_LAYOUT } from "@opensimdash/widget-sdk";
 
 import { LayoutConflictError, loadLayout, saveLayout } from "./layouts";
 

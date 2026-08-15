@@ -22,7 +22,7 @@ test("rejects incomplete, leading-zero, and shell-like versions", () => {
 
 test("builds a bounded release task for the selected tag", () => {
   const prompt = buildReleasePrompt("v0.4.0");
-  assert.match(prompt, /OpenCarpanel 发布 v0\.4\.0/);
+  assert.match(prompt, /OpenSimDash 发布 v0\.4\.0/);
   assert.match(prompt, /\$github-issue-to-release skill/);
   assert.match(prompt, /精确提交 SHA/);
   assert.match(prompt, /latest\.json/);

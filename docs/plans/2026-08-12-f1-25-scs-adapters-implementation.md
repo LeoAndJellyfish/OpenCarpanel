@@ -25,7 +25,7 @@ Build one 1352-byte packet for format 2024 and one for 2025. Assert `F1_24Adapte
 
 **Step 2: Run tests to verify the new crate is absent**
 
-Run: `cargo test -p opencarpanel-adapter-f1`
+Run: `cargo test -p opensimdash-adapter-f1`
 
 Expected: FAIL because the package does not exist.
 
@@ -42,8 +42,8 @@ Expose `F1_24Adapter`, `F1_25Adapter`, constants for both adapter IDs/formats, a
 Run:
 
 ```powershell
-cargo test -p opencarpanel-adapter-f1
-cargo clippy -p opencarpanel-adapter-f1 --all-targets -- -D warnings
+cargo test -p opensimdash-adapter-f1
+cargo clippy -p opensimdash-adapter-f1 --all-targets -- -D warnings
 ```
 
 Expected: all positive, truncation, version, length, enum and cross-format tests pass.
@@ -73,11 +73,11 @@ git commit -m "feat(f1): add shared F1 24 and F1 25 adapters"
 
 **Step 1: Write wire-contract tests**
 
-Define an exact v1 fixture with magic `OCP\0`, version 1, ETS2/ATS game byte, zero flags/reserved bytes, session nonce, u32 frame sequence, and finite little-endian vehicle fields. Test every truncation point plus wrong magic, version, game, flags, reserved fields, NaN/Infinity and out-of-range pedals.
+Define an exact v1 fixture with magic `OSD\0`, version 1, ETS2/ATS game byte, zero flags/reserved bytes, session nonce, u32 frame sequence, and finite little-endian vehicle fields. Test every truncation point plus wrong magic, version, game, flags, reserved fields, NaN/Infinity and out-of-range pedals.
 
 **Step 2: Run tests to verify failure**
 
-Run: `cargo test -p opencarpanel-adapter-scs`
+Run: `cargo test -p opensimdash-adapter-scs`
 
 Expected: FAIL because the package does not exist.
 
@@ -94,8 +94,8 @@ Share one parser and mapper. `Ets2Adapter` rejects ATS game IDs as unsupported p
 Run:
 
 ```powershell
-cargo test -p opencarpanel-adapter-scs
-cargo clippy -p opencarpanel-adapter-scs --all-targets -- -D warnings
+cargo test -p opensimdash-adapter-scs
+cargo clippy -p opensimdash-adapter-scs --all-targets -- -D warnings
 ```
 
 Expected: all contract and mapping tests pass without unsafe code.
@@ -129,7 +129,7 @@ Send F1 24, then ATS before the active timeout and assert F1 remains published. 
 
 **Step 3: Run focused tests to verify failure**
 
-Run: `cargo test -p opencarpanel-host --test multi_game_ingestion`
+Run: `cargo test -p opensimdash-host --test multi_game_ingestion`
 
 Expected: FAIL because registry/configuration does not exist.
 
@@ -139,7 +139,7 @@ Each pipeline owns `Box<dyn GameAdapter>` plus its own reducer and reusable outp
 
 **Step 5: Implement selection configuration**
 
-Add `AdapterSelection::{Auto,F1_24,F1_25,Ets2,Ats}` to `HostConfig`, default `Auto`. Main reads `OPENCARPANEL_GAME` with strict values and actionable errors. Auto mode uses a two-second source lease; fixed mode only attempts the selected pipeline while retaining static metadata for every supported adapter.
+Add `AdapterSelection::{Auto,F1_24,F1_25,Ets2,Ats}` to `HostConfig`, default `Auto`. Main reads `OPENSIMDASH_GAME` with strict values and actionable errors. Auto mode uses a two-second source lease; fixed mode only attempts the selected pipeline while retaining static metadata for every supported adapter.
 
 **Step 6: Make active adapter metadata observable**
 
@@ -150,9 +150,9 @@ Store immutable adapter summaries and an atomic active index in `HostState`. Kee
 Run:
 
 ```powershell
-cargo test -p opencarpanel-host --test multi_game_ingestion
-cargo test -p opencarpanel-host --test udp_ingestion
-cargo test -p opencarpanel-host --test end_to_end_latency --release -- --nocapture
+cargo test -p opensimdash-host --test multi_game_ingestion
+cargo test -p opensimdash-host --test udp_ingestion
+cargo test -p opensimdash-host --test end_to_end_latency --release -- --nocapture
 ```
 
 Expected: all four sources work and F1 24 p95 remains below 100 ms.
@@ -187,8 +187,8 @@ Use the compile-time adapter list, not a dynamic map from untrusted strings. Rep
 Run:
 
 ```powershell
-cargo test -p opencarpanel-host --test health
-cargo test -p opencarpanel-host --test diagnostics
+cargo test -p opensimdash-host --test health
+cargo test -p opensimdash-host --test diagnostics
 ```
 
 Expected: exact JSON assertions pass and no sensitive field appears.
@@ -279,7 +279,7 @@ Rust/Web CI additionally builds and tests the SCS plugin on Windows/macOS. Packa
 
 **Step 4: Write user setup and troubleshooting docs**
 
-Document F1 25 UDP Telemetry On, loopback IP, port 20777, 60 Hz, and UDP mode `F1 25 / 2025`. Document exact ETS2/ATS plugin directories, SDK confirmation dialog, game restart, diagnostic fields and how to lock selection with `OPENCARPANEL_GAME`.
+Document F1 25 UDP Telemetry On, loopback IP, port 20777, 60 Hz, and UDP mode `F1 25 / 2025`. Document exact ETS2/ATS plugin directories, SDK confirmation dialog, game restart, diagnostic fields and how to lock selection with `OPENSIMDASH_GAME`.
 
 **Step 5: Run package smoke**
 
@@ -289,7 +289,7 @@ Run:
 npm run build:scs-plugin
 npm run package:host
 npm run test:package-smoke
-Get-ChildItem -Recurse dist/release/OpenCarpanel-*
+Get-ChildItem -Recurse dist/release/OpenSimDash-*
 ```
 
 Expected: Host, platform plugin, Apache license, SCS license, NOTICE, docs and build info are present.

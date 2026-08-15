@@ -1,10 +1,10 @@
-# OpenCarpanel ETS2 / ATS 快速开始
+# OpenSimDash ETS2 / ATS 快速开始
 
-Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向外发送仪表 UDP。OpenCarpanel 随包提供一个最小 SCS Telemetry SDK 插件：游戏调用插件，插件把驾驶、导航、油量、灯光与任务状态编码为固定 188-byte v2 报文，发送到同机 `127.0.0.1:20777`，随后由 Rust Host 转发给手机/iPad。Host 也兼容旧插件的 44-byte v1 基础报文。
+Euro Truck Simulator 2 与 American Truck Simulator 不会像 F1 一样直接向外发送仪表 UDP。OpenSimDash 随包提供一个最小 SCS Telemetry SDK 插件：游戏调用插件，插件把驾驶、导航、油量、灯光与任务状态编码为固定 188-byte v2 报文，发送到同机 `127.0.0.1:20777`，随后由 Rust Host 转发给手机/iPad。Host 也兼容旧插件的 44-byte v1 基础报文。
 
 ## 1. 使用桌面安装向导（推荐）
 
-完全退出 ETS2/ATS。在 OpenCarpanel“游戏设置”中选择对应游戏后，控制中心会自动执行以下只读检查：
+完全退出 ETS2/ATS。在 OpenSimDash“游戏设置”中选择对应游戏后，控制中心会自动执行以下只读检查：
 
 1. Windows 读取 Steam 注册表位置与常见安装目录；macOS 读取用户的 Steam 数据目录。
 2. 解析 `steamapps/libraryfolders.vdf`，覆盖默认库和额外 Steam 游戏库。
@@ -27,9 +27,9 @@ npm run build:scs-plugin
 
 产物位于 `target/scs-plugin-package/`。当前平台对应文件：
 
-- Windows：`opencarpanel-scs-telemetry.dll`
-- macOS：`opencarpanel-scs-telemetry.dylib`（SCS SDK 1.14 游戏插件 ABI 为 `x86_64`）
-- Linux：`opencarpanel-scs-telemetry.so`
+- Windows：`opensimdash-scs-telemetry.dll`
+- macOS：`opensimdash-scs-telemetry.dylib`（SCS SDK 1.14 游戏插件 ABI 为 `x86_64`）
+- Linux：`opensimdash-scs-telemetry.so`
 
 ## 3. 手工安装到游戏
 
@@ -43,7 +43,7 @@ npm run build:scs-plugin
 
 ETS2 和 ATS 可以各放一份相同文件。不要把 DLL 放在游戏根目录或 `bin/win_x86`。
 
-Apple Silicon 版 OpenCarpanel 桌面应用本身仍为原生 `arm64`；随包的 SCS bridge 则固定为 `x86_64`，因为它由游戏进程加载，而 SDK 1.14 头文件只定义了 x86/x64 ABI。桌面应用仅负责复制该文件，不会在自己的进程内加载它。Apple Silicon 上的实际游戏加载仍依赖游戏支持的 Intel/Rosetta 插件 ABI，并保留在发布清单中进行实机验收。
+Apple Silicon 版 OpenSimDash 桌面应用本身仍为原生 `arm64`；随包的 SCS bridge 则固定为 `x86_64`，因为它由游戏进程加载，而 SDK 1.14 头文件只定义了 x86/x64 ABI。桌面应用仅负责复制该文件，不会在自己的进程内加载它。Apple Silicon 上的实际游戏加载仍依赖游戏支持的 Intel/Rosetta 插件 ABI，并保留在发布清单中进行实机验收。
 
 重新启动游戏时，SCS 会提示已启用高级 SDK 功能；接受提示并进入驾驶状态。插件文件名与 ETS2LA 的 `scs-telemetry` 不同，两者可以并存。
 
@@ -52,8 +52,8 @@ Apple Silicon 版 OpenCarpanel 桌面应用本身仍为原生 `arm64`；随包�
 Host 使用默认 UDP 20777。通常保留自动识别即可；排障时固定游戏：
 
 ```powershell
-$env:OPENCARPANEL_GAME = "ets2" # 美卡改为 ats
-.\target\release\opencarpanel-host.exe
+$env:OPENSIMDASH_GAME = "ets2" # 美卡改为 ats
+.\target\release\opensimdash-host.exe
 ```
 
 成功驾驶后，`/api/v1/diagnostics` 的 `activeAdapter` 应为 `ets2` 或 `ats`，对应 adapter 的 `packetsRecognized` 应持续增长。
@@ -68,6 +68,6 @@ $env:OPENCARPANEL_GAME = "ets2" # 美卡改为 ats
 | 基础速度/转速正常，但任务、导航、油量或灯光缺失 | 仍在运行 44-byte v1 旧插件；完全退出游戏，在“游戏设置”中更新 SCS Bridge，确认状态为 `CURRENT` 后重新启动游戏 |
 | RPM 上限暂时为空 | 车辆配置事件尚未到达；进入车辆并开始驾驶后会更新 |
 | 仪表显示 `DATA STALE` | 游戏暂停或进入菜单时插件有意停止发送；回到驾驶后自动恢复 |
-| 插件初始化失败 | 在游戏的 `game.log.txt` 中搜索 `OpenCarpanel:`；插件会记录 socket 或 SDK callback 注册错误 |
+| 插件初始化失败 | 在游戏的 `game.log.txt` 中搜索 `OpenSimDash:`；插件会记录 socket 或 SDK callback 注册错误 |
 
 插件不监听端口、不接受网络输入、不读取存档，只向 IPv4 loopback 发送；手机仍只连接 Host 的配对 HTTP/WebSocket。协议和安全边界见 [SCS bridge v2](protocols/scs-bridge-v2.md)，旧版兼容布局见 [v1](protocols/scs-bridge-v1.md)。

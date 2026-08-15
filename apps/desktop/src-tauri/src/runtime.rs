@@ -10,12 +10,12 @@ use std::{
     time::Duration,
 };
 
-use opencarpanel_config::{AppSettings, SettingsRepository};
-use opencarpanel_game_plugin_api::PluginSource;
-use opencarpanel_game_plugin_runtime::{
+use opensimdash_config::{AppSettings, SettingsRepository};
+use opensimdash_game_plugin_api::PluginSource;
+use opensimdash_game_plugin_runtime::{
     PluginInstallReceipt, install_package, remove_installed_plugin,
 };
-use opencarpanel_host::{
+use opensimdash_host::{
     HostConfig, HostDiagnostics, InstanceGuard, InstanceMode, PairedDevice, RunningHost, bind_host,
     dashboard_url, default_data_directory, default_runtime_directory, pairing_url, qr_svg,
 };
@@ -521,7 +521,7 @@ mod tests {
     use std::{fs, net::TcpListener};
 
     use base64::{Engine as _, engine::general_purpose::STANDARD};
-    use opencarpanel_game_plugin_api::{
+    use opensimdash_game_plugin_api::{
         GAME_PLUGIN_ABI_VERSION, GAME_PLUGIN_PACKAGE_VERSION, GamePluginPackage, PluginRuntime,
         parse_manifest,
     };
@@ -572,12 +572,12 @@ mod tests {
         let module = wat::parse_str(
             r#"(module
               (memory (export "memory") 6 64)
-              (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
-              (func (export "ocp_input_ptr") (result i32) i32.const 0)
-              (func (export "ocp_input_capacity") (result i32) i32.const 65536)
-              (func (export "ocp_output_ptr") (result i32) i32.const 65536)
-              (func (export "ocp_output_capacity") (result i32) i32.const 262144)
-              (func (export "ocp_decode") (param i32 i64) (result i32) i32.const 0)
+              (func (export "osd_plugin_abi_version") (result i32) i32.const 1)
+              (func (export "osd_input_ptr") (result i32) i32.const 0)
+              (func (export "osd_input_capacity") (result i32) i32.const 65536)
+              (func (export "osd_output_ptr") (result i32) i32.const 65536)
+              (func (export "osd_output_capacity") (result i32) i32.const 262144)
+              (func (export "osd_decode") (param i32 i64) (result i32) i32.const 0)
             )"#,
         )?;
         let mut manifest = parse_manifest(include_bytes!(
@@ -590,7 +590,7 @@ mod tests {
             module: "decoder.wasm".to_owned(),
             sha256: format!("{:x}", Sha256::digest(&module)),
         };
-        let package_path = temp.path().join("desktop-test-sim.ocp-plugin");
+        let package_path = temp.path().join("desktop-test-sim.osd-plugin");
         fs::write(
             &package_path,
             serde_json::to_vec(&GamePluginPackage {

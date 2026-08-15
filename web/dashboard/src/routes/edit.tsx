@@ -4,7 +4,7 @@ import {
   type BreakpointName,
   type LayoutDocument,
   type WidgetManifest,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import {
@@ -351,7 +351,7 @@ export function EditRoute() {
     <main class="editor-shell">
       <header class="editor-header">
         <div>
-          <p class="eyebrow">OpenCarpanel / Layout Lab</p>
+          <p class="eyebrow">OpenSimDash / Layout Lab</p>
           <strong>{layout.name}</strong>
         </div>
         <div class="editor-preview-controls">

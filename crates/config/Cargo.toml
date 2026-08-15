@@ -1,5 +1,5 @@
 [package]
-name = "opencarpanel-config"
+name = "opensimdash-config"
 description = "Versioned settings, layout, and theme persistence"
 version.workspace = true
 edition.workspace = true

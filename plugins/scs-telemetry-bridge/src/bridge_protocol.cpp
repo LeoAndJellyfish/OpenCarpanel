@@ -3,7 +3,7 @@
 #include <cstring>
 #include <limits>
 
-namespace opencarpanel::scs_bridge {
+namespace opensimdash::scs_bridge {
 namespace {
 
 static_assert(sizeof(float) == sizeof(std::uint32_t));
@@ -58,10 +58,9 @@ void write_text(
 
 std::array<std::uint8_t, kPacketSize> encode(const TelemetryFrame& frame) noexcept {
     std::array<std::uint8_t, kPacketSize> packet{};
-    packet[0] = 'O';
-    packet[1] = 'C';
-    packet[2] = 'P';
-    packet[3] = 0;
+    for (std::size_t index = 0; index < kMagic.size(); ++index) {
+        packet[index] = kMagic[index];
+    }
     packet[4] = kProtocolVersion;
     packet[5] = static_cast<std::uint8_t>(frame.game);
     packet[6] = 0;
@@ -94,4 +93,4 @@ std::array<std::uint8_t, kPacketSize> encode(const TelemetryFrame& frame) noexce
     return packet;
 }
 
-}  // namespace opencarpanel::scs_bridge
+}  // namespace opensimdash::scs_bridge

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_GAME_PLUGINS, type GamePluginMetadata } from "@opencarpanel/widget-sdk";
+import { BUILTIN_GAME_PLUGINS, type GamePluginMetadata } from "@opensimdash/widget-sdk";
 
 import type { HostDiagnostics } from "./desktop-api";
 import { formatAge, gameProfile, telemetryIsLive } from "./model";
@@ -7,7 +7,7 @@ import { formatAge, gameProfile, telemetryIsLive } from "./model";
 function diagnostics(activeAdapter: string | null, age: number | null): HostDiagnostics {
   return {
     status: "ok",
-    version: "0.4.0",
+    version: "0.4.1",
     protocolVersion: 1,
     adapter: activeAdapter ?? "auto",
     adapterSelection: "auto",

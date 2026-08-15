@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, error::Error};
 
-use opencarpanel_config::{
+use opensimdash_config::{
     BreakpointName, ComponentType, GridPlacement, HostSettings, InstanceId, LayoutDocument,
     LayoutId, ThemeSettings, ValidationError, WidgetInstance,
 };

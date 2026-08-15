@@ -307,7 +307,7 @@ export function App() {
       const info = await checkForUpdates();
       setUpdateInfo(info);
       setUpdateProgress(IDLE_UPDATE_PROGRESS);
-      setMessage(info.available ? `发现 OpenCarpanel ${info.version}` : "当前已经是最新版本");
+      setMessage(info.available ? `发现 OpenSimDash ${info.version}` : "当前已经是最新版本");
     } catch (reason) {
       setUpdateProgress((current) => failUpdateProgress(current));
       setError(errorText(reason));
@@ -355,7 +355,7 @@ export function App() {
             <i />
           </div>
           <div>
-            <strong>OPEN<span>CARPANEL</span></strong>
+            <strong>OPEN<span>SIMDASH</span></strong>
           </div>
         </div>
 
@@ -698,7 +698,7 @@ function PairingView({
         </div>
         <div class={pairing ? "qr-stage is-ready" : "qr-stage"}>
           {qrSource ? (
-            <img src={qrSource} alt="OpenCarpanel 一次性配对二维码" />
+            <img src={qrSource} alt="OpenSimDash 一次性配对二维码" />
           ) : (
             <div class="qr-idle" aria-hidden="true"><span /><span /><span /><span /><i>QR</i></div>
           )}
@@ -784,7 +784,7 @@ function GamesView({
           disabled={busy === "plugin-install"}
           type="button"
           onClick={onInstallExternal}
-        >{busy === "plugin-install" ? "正在校验并加载…" : "安装 .ocp-plugin"}</button>
+        >{busy === "plugin-install" ? "正在校验并加载…" : "安装 .osd-plugin"}</button>
       </div>
       {data.diagnostics.pluginLoadIssues.length > 0 && (
         <div class="plugin-issues" role="status">

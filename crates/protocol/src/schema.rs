@@ -5,8 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use opencarpanel_game_plugin_api::{GamePluginManifest, GamePluginPackage};
-use opencarpanel_telemetry_core::{TelemetryEvent, TelemetrySnapshot, TelemetryUpdate};
+use opensimdash_game_plugin_api::{GamePluginManifest, GamePluginPackage};
+use opensimdash_telemetry_core::{TelemetryEvent, TelemetrySnapshot, TelemetryUpdate};
 use schemars::{Schema, schema_for};
 
 use crate::{ClientMessage, ServerMessage};

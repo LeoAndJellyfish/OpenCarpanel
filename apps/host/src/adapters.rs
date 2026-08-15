@@ -6,16 +6,16 @@ use std::{
     str::FromStr,
 };
 
-use opencarpanel_adapter_api::{AdapterError, AdapterId, AdapterOutput, GameAdapter};
-use opencarpanel_adapter_f1::{F1_24Adapter, F1_25Adapter};
-use opencarpanel_adapter_scs::{AtsAdapter, Ets2Adapter};
-use opencarpanel_game_plugin_api::{
+use opensimdash_adapter_api::{AdapterError, AdapterId, AdapterOutput, GameAdapter};
+use opensimdash_adapter_f1::{F1_24Adapter, F1_25Adapter};
+use opensimdash_adapter_scs::{AtsAdapter, Ets2Adapter};
+use opensimdash_game_plugin_api::{
     GamePluginManifest, GamePluginMetadata, PluginRuntime, PluginSource, parse_manifest,
 };
-use opencarpanel_game_plugin_runtime::{
+use opensimdash_game_plugin_runtime::{
     MAX_PLUGIN_LOAD_ISSUES, PluginLoadIssue, WasmGameAdapter, load_installed_plugins,
 };
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetryReducer, TelemetrySnapshot,
 };
 
@@ -406,8 +406,8 @@ pub(crate) enum RegistryOutcome {
 
 #[cfg(test)]
 mod tests {
-    use opencarpanel_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
-    use opencarpanel_adapter_scs::{
+    use opensimdash_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
+    use opensimdash_adapter_scs::{
         BRIDGE_MAGIC, BRIDGE_PROTOCOL_V1, BRIDGE_V1_PACKET_LEN, ETS2_GAME_ID,
     };
 

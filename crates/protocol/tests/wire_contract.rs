@@ -1,12 +1,12 @@
 use std::{error::Error, fs, io, path::Path};
 
-use opencarpanel_protocol::{
+use opensimdash_protocol::{
     CapabilitiesMessage, ClientHello, ClientMessage, ClientPayload, ErrorCode, ErrorMessage,
     EventAckMessage, EventMessage, ResyncRequiredMessage, ServerHello, ServerMessage,
     ServerPayload, SnapshotMessage, SnapshotRequestMessage, StaleMessage, StaleReason,
     WireDecodeError, decode_client_message, decode_server_message,
 };
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetrySnapshot,
 };
 use serde_json::{Value, json};

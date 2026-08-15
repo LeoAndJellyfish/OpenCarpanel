@@ -1,5 +1,5 @@
 [package]
-name = "opencarpanel-protocol"
+name = "opensimdash-protocol"
 description = "Versioned client and host protocol types"
 version.workspace = true
 edition.workspace = true
@@ -8,8 +8,8 @@ license.workspace = true
 publish = false
 
 [dependencies]
-opencarpanel-game-plugin-api = { path = "../game-plugin-api" }
-opencarpanel-telemetry-core = { path = "../telemetry-core" }
+opensimdash-game-plugin-api = { path = "../game-plugin-api" }
+opensimdash-telemetry-core = { path = "../telemetry-core" }
 schemars = "1.2.2"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"

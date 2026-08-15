@@ -1,13 +1,13 @@
 use std::{error::Error, fs, path::Path};
 
-use opencarpanel_protocol::generate_schema_documents;
+use opensimdash_protocol::generate_schema_documents;
 
 #[test]
 fn generated_schema_bundle_has_stable_paths_and_valid_json() -> Result<(), Box<dyn Error>> {
     let documents = generate_schema_documents()?;
     let paths = documents
         .iter()
-        .map(opencarpanel_protocol::SchemaDocument::relative_path)
+        .map(opensimdash_protocol::SchemaDocument::relative_path)
         .collect::<Vec<_>>();
 
     assert_eq!(

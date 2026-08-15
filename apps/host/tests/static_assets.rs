@@ -1,6 +1,6 @@
 use std::{error::Error, io};
 
-use opencarpanel_host::spawn_host;
+use opensimdash_host::spawn_host;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream, UdpSocket},
@@ -36,7 +36,7 @@ async fn host_serves_the_spa_with_strict_headers_and_never_masks_unknown_api_rou
         assert!(response.head.contains("referrer-policy: no-referrer"));
         assert!(response.head.contains("content-security-policy:"));
         assert!(!response.head.contains("unsafe-inline"));
-        assert!(response.body.contains("OpenCarpanel"));
+        assert!(response.body.contains("OpenSimDash"));
         assert!(!response.body.contains("https://"));
     }
 

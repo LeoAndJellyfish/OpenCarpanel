@@ -1,7 +1,7 @@
 use axum::{Json, extract::State};
-use opencarpanel_game_plugin_api::GamePluginMetadata;
-use opencarpanel_game_plugin_runtime::PluginLoadIssue;
-use opencarpanel_protocol::PROTOCOL_VERSION;
+use opensimdash_game_plugin_api::GamePluginMetadata;
+use opensimdash_game_plugin_runtime::PluginLoadIssue;
+use opensimdash_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 
 use crate::{http::HttpState, websocket::MAX_WEBSOCKET_CONNECTIONS};
@@ -65,7 +65,7 @@ pub struct AdapterDiagnostics {
     /// Game ingress protocol versions accepted by this build.
     pub protocol_version: String,
     /// Canonical telemetry fields supplied by the adapter.
-    pub capabilities: Vec<opencarpanel_telemetry_core::TelemetryField>,
+    pub capabilities: Vec<opensimdash_telemetry_core::TelemetryField>,
     /// Datagrams accepted by this adapter.
     pub packets_recognized: u64,
     /// Age of this adapter's newest accepted datagram.

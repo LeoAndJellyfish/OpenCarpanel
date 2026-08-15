@@ -1,8 +1,8 @@
 use std::{error::Error, time::Duration};
 
-use opencarpanel_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
-use opencarpanel_host::spawn_host;
-use opencarpanel_telemetry_core::Gear;
+use opensimdash_adapter_f1::{CAR_TELEMETRY_PACKET_LEN, PACKET_HEADER_LEN};
+use opensimdash_host::spawn_host;
+use opensimdash_telemetry_core::Gear;
 use tokio::net::{TcpListener, UdpSocket};
 
 fn synthetic_player_packet() -> Vec<u8> {

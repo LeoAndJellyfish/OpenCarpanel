@@ -1,14 +1,14 @@
-//! Guest-side helpers for implementing an `OpenCarpanel` ABI v1 decoder in Rust.
+//! Guest-side helpers for implementing an `OpenSimDash` ABI v1 decoder in Rust.
 //!
 //! The [`export_game_plugin!`] macro owns fixed input/output buffers and exports
 //! the complete core-WASM ABI without granting WASI or Host imports.
 
-use opencarpanel_game_plugin_api::{
+use opensimdash_game_plugin_api::{
     GAME_PLUGIN_ABI_VERSION, MAX_PLUGIN_DATAGRAM_BYTES, MAX_PLUGIN_OUTPUT_BYTES, PluginDecodeOutput,
 };
 
-pub use opencarpanel_game_plugin_api;
-pub use opencarpanel_telemetry_core;
+pub use opensimdash_game_plugin_api;
+pub use opensimdash_telemetry_core;
 
 /// Result of decoding one Host-owned input datagram.
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +58,7 @@ pub fn encode_result(result: DecodeResult, output: &mut [u8]) -> i32 {
     }
 }
 
-/// Exports one [`GamePlugin`] implementation as an `OpenCarpanel` core-WASM module.
+/// Exports one [`GamePlugin`] implementation as an `OpenSimDash` core-WASM module.
 ///
 /// The generated module has no imports. Build it for `wasm32-unknown-unknown`
 /// with `crate-type = ["cdylib"]` and `panic = "abort"`.
@@ -66,41 +66,41 @@ pub fn encode_result(result: DecodeResult, output: &mut [u8]) -> i32 {
 macro_rules! export_game_plugin {
     ($plugin:ty) => {
         std::thread_local! {
-            static OCP_PLUGIN: std::cell::RefCell<$plugin> =
+            static OSD_PLUGIN: std::cell::RefCell<$plugin> =
                 std::cell::RefCell::new(<$plugin as std::default::Default>::default());
-            static OCP_INPUT: std::cell::RefCell<std::boxed::Box<[u8]>> =
+            static OSD_INPUT: std::cell::RefCell<std::boxed::Box<[u8]>> =
                 std::cell::RefCell::new(vec![0_u8; $crate::INPUT_CAPACITY].into_boxed_slice());
-            static OCP_OUTPUT: std::cell::RefCell<std::boxed::Box<[u8]>> =
+            static OSD_OUTPUT: std::cell::RefCell<std::boxed::Box<[u8]>> =
                 std::cell::RefCell::new(vec![0_u8; $crate::OUTPUT_CAPACITY].into_boxed_slice());
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_plugin_abi_version() -> i32 {
-            i32::from($crate::opencarpanel_game_plugin_api::GAME_PLUGIN_ABI_VERSION)
+        pub extern "C" fn osd_plugin_abi_version() -> i32 {
+            i32::from($crate::opensimdash_game_plugin_api::GAME_PLUGIN_ABI_VERSION)
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_input_ptr() -> i32 {
-            OCP_INPUT.with(|buffer| buffer.borrow_mut().as_mut_ptr() as i32)
+        pub extern "C" fn osd_input_ptr() -> i32 {
+            OSD_INPUT.with(|buffer| buffer.borrow_mut().as_mut_ptr() as i32)
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_input_capacity() -> i32 {
+        pub extern "C" fn osd_input_capacity() -> i32 {
             i32::try_from($crate::INPUT_CAPACITY).unwrap_or(0)
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_output_ptr() -> i32 {
-            OCP_OUTPUT.with(|buffer| buffer.borrow_mut().as_mut_ptr() as i32)
+        pub extern "C" fn osd_output_ptr() -> i32 {
+            OSD_OUTPUT.with(|buffer| buffer.borrow_mut().as_mut_ptr() as i32)
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_output_capacity() -> i32 {
+        pub extern "C" fn osd_output_capacity() -> i32 {
             i32::try_from($crate::OUTPUT_CAPACITY).unwrap_or(0)
         }
 
         #[unsafe(no_mangle)]
-        pub extern "C" fn ocp_decode(input_len: i32, received_at_us: i64) -> i32 {
+        pub extern "C" fn osd_decode(input_len: i32, received_at_us: i64) -> i32 {
             let Ok(input_len) = usize::try_from(input_len) else {
                 return -5;
             };
@@ -110,15 +110,15 @@ macro_rules! export_game_plugin {
             if input_len > $crate::INPUT_CAPACITY {
                 return -5;
             }
-            OCP_INPUT.with(|input| {
-                OCP_PLUGIN.with(|plugin| {
+            OSD_INPUT.with(|input| {
+                OSD_PLUGIN.with(|plugin| {
                     let input = input.borrow();
                     let result = <$plugin as $crate::GamePlugin>::decode(
                         &mut *plugin.borrow_mut(),
                         &input[..input_len],
                         received_at_us,
                     );
-                    OCP_OUTPUT
+                    OSD_OUTPUT
                         .with(|output| $crate::encode_result(result, &mut output.borrow_mut()))
                 })
             })
@@ -128,7 +128,7 @@ macro_rules! export_game_plugin {
 
 #[cfg(test)]
 mod tests {
-    use opencarpanel_game_plugin_api::PluginDecodeOutput;
+    use opensimdash_game_plugin_api::PluginDecodeOutput;
 
     use super::*;
 

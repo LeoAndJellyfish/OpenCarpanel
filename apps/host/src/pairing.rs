@@ -17,7 +17,7 @@ use subtle::ConstantTimeEq;
 use tokio::{sync::Mutex, time::Instant};
 use tracing::error;
 
-use opencarpanel_protocol::ClientHello;
+use opensimdash_protocol::ClientHello;
 
 const PAIRING_TOKEN_BYTES: usize = 16;
 const DEVICE_SESSION_BYTES: usize = 32;

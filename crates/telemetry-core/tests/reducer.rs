@@ -1,4 +1,4 @@
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     Gear, JobState, MonotonicTimestamp, Normalized, TelemetryReducer, TelemetryUpdate,
     TyreCornerState,
 };

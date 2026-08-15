@@ -2,7 +2,7 @@ import {
   BUILTIN_GAME_PLUGINS,
   GAME_DEFAULT_LAYOUTS,
   type GamePluginMetadata,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 import { describe, expect, it } from "vitest";
 
 import { gamePresentation, SUPPORTED_GAME_PRESENTATIONS } from "./game-profile";

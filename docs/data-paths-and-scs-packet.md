@@ -13,7 +13,7 @@
 1. **F1 24 / F1 25：游戏原生 UDP。** 游戏按官方格式直接把数据报发到 Host 的 UDP `20777`。F1 24 adapter 只接受 format `2024`；F1 25 adapter 依据公共头精确选择原始 `2025` 或 Season Pack `2026` 布局，不按相近偏移猜测。
 2. **ETS2 / ATS：SCS SDK 回调桥接。** 游戏加载随包插件，在未暂停帧的 `FRAME_END` 回调中，把当前状态编码为固定 188-byte v2 报文，并非阻塞地发到同机 `127.0.0.1:20777`。Host 仍接受旧插件的 44-byte v1 报文。
 
-四条输入在 `AdapterRegistry` 中都有独立 adapter/reducer。自动模式对当前来源保持两秒粘性，防止同时运行多款游戏时画面来回切换；也可以用 `OPENCARPANEL_GAME=f1-24|f1-25|ets2|ats` 固定来源。随后 Host 把统一遥测通过已配对的 HTTP/WebSocket 送到手机或 iPad；Dashboard 使用统一模型中的 `meta.gameId` 自动选择游戏视觉与独立用户布局，不从某个速度/RPM 字段反向猜游戏。
+四条输入在 `AdapterRegistry` 中都有独立 adapter/reducer。自动模式对当前来源保持两秒粘性，防止同时运行多款游戏时画面来回切换；也可以用 `OPENSIMDASH_GAME=f1-24|f1-25|ets2|ats` 固定来源。随后 Host 把统一遥测通过已配对的 HTTP/WebSocket 送到手机或 iPad；Dashboard 使用统一模型中的 `meta.gameId` 自动选择游戏视觉与独立用户布局，不从某个速度/RPM 字段反向猜游戏。
 
 ## F1 原生 UDP：三套精确 wire layout
 
@@ -34,14 +34,14 @@
 ## v1：44 字节基础包逐 byte 看
 
 <p align="center">
-  <img src="./assets/scs-bridge-v1-packet.svg" width="100%" alt="OpenCarpanel SCS bridge v1 固定 44 字节数据包的逐字节数组与字段说明">
+  <img src="./assets/scs-bridge-v1-packet.svg" width="100%" alt="OpenSimDash SCS bridge v1 固定 44 字节数据包的逐字节数组与字段说明">
 </p>
 
 最上方的 `00..43` 是从零开始的 byte offset。彩色长条仍是一段连续数组；竖线表示每个单独字节，颜色和标签表示字段边界。所有整数和 IEEE-754 `float32` 均为小端序。
 
 | Offset | 长度 | Wire type | 字段 | 语义与校验 |
 | ---: | ---: | --- | --- | --- |
-| `0` | 4 | `[u8; 4]` | magic | 固定为 ASCII `OCP\0` |
+| `0` | 4 | `[u8; 4]` | magic | 固定为 ASCII `OSD\0` |
 | `4` | 1 | `u8` | version | 固定为 `1` |
 | `5` | 1 | `u8` | game | `1 = ETS2`，`2 = ATS` |
 | `6` | 1 | `u8` | flags | v1 必须为 `0` |
@@ -60,7 +60,7 @@
 ## v2：188 字节扩展包分段图
 
 <p align="center">
-  <img src="./assets/scs-bridge-v2-packet.svg" width="100%" alt="OpenCarpanel SCS bridge v2 固定 188 字节数据包的分段数组与字段说明">
+  <img src="./assets/scs-bridge-v2-packet.svg" width="100%" alt="OpenSimDash SCS bridge v2 固定 188 字节数据包的分段数组与字段说明">
 </p>
 
 v2 保留 offset `0..43` 的所有 v1 字段，把 version 改为 `2`，再追加以下区域：
@@ -81,7 +81,7 @@ v2 保留 offset `0..43` 的所有 v1 字段，把 version 改为 `2`，再追�
 
 ETS2LA 随包使用 `truckermudgeon/scs-sdk-plugin` 的 RenCloud fork，把 SCS callback 写入 32 KiB `SCSTelemetry` shared memory，并由主程序约以 60 Hz 读取。这是成熟且字段丰富的方案，但默认依赖第三方布局会把版本和故障边界交给外部项目。
 
-OpenCarpanel 选择自有、版本化的 loopback UDP bridge：游戏进程内只保留固定状态和非阻塞发送，解析、诊断与网络服务都留在 Rust Host。v2 直接从同一套官方 SDK callbacks/configuration attributes 提供 Dashboard 需要的导航、油量、灯光和任务字段。未来仍可以把 ETS2LA 共享内存兼容作为可选 ingress，让已安装该插件的用户避免重复安装，而不改变当前协议。
+OpenSimDash 选择自有、版本化的 loopback UDP bridge：游戏进程内只保留固定状态和非阻塞发送，解析、诊断与网络服务都留在 Rust Host。v2 直接从同一套官方 SDK callbacks/configuration attributes 提供 Dashboard 需要的导航、油量、灯光和任务字段。未来仍可以把 ETS2LA 共享内存兼容作为可选 ingress，让已安装该插件的用户避免重复安装，而不改变当前协议。
 
 ## 延伸阅读
 

@@ -1,8 +1,9 @@
 use std::{error::Error, time::Duration};
 
-use opencarpanel_config::SettingsRepository;
-use opencarpanel_host::{
+use opensimdash_config::SettingsRepository;
+use opensimdash_host::{
     HostConfig, InstanceGuard, InstanceMode, bind_host, default_data_directory,
+    migrate_previous_data_directory,
 };
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
@@ -10,7 +11,7 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() {
     if let Err(error) = run().await {
-        eprintln!("OpenCarpanel 启动失败：{error}");
+        eprintln!("OpenSimDash 启动失败：{error}");
         std::process::exit(1);
     }
 }
@@ -22,6 +23,7 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
         )
         .try_init()?;
 
+    let migrated = migrate_previous_data_directory(InstanceMode::Headless)?;
     let _instance = InstanceGuard::acquire(InstanceMode::Headless)?;
     let data_directory = default_data_directory();
     let loaded = SettingsRepository::new(&data_directory).load()?;
@@ -34,30 +36,33 @@ async fn run() -> Result<(), Box<dyn Error + Send + Sync>> {
     }
     let mut config = HostConfig::from_settings(&loaded.settings.host, data_directory)?;
     config.apply_environment_overrides()?;
+    if migrated {
+        info!("migrated the previous user profile to OpenSimDash");
+    }
 
     let running = bind_host(config).await?;
     info!(
         http_address = %running.http_address(),
         udp_address = %running.udp_address(),
         adapter_selection = %running.state().adapter_selection(),
-        "OpenCarpanel Host is ready"
+        "OpenSimDash Host is ready"
     );
     let pairing_token = running
         .issue_pairing_token(Duration::from_secs(15 * 60))
         .await?;
-    let pairing_url = opencarpanel_host::pairing_url(running.http_address(), &pairing_token);
-    let dashboard_url = opencarpanel_host::dashboard_url(running.http_address());
-    println!("\nOpenCarpanel 已启动。请让手机/iPad 与电脑连接同一局域网。\n");
+    let pairing_url = opensimdash_host::pairing_url(running.http_address(), &pairing_token);
+    let dashboard_url = opensimdash_host::dashboard_url(running.http_address());
+    println!("\nOpenSimDash 已启动。请让手机/iPad 与电脑连接同一局域网。\n");
     println!("配对地址（15 分钟内一次有效）：\n{pairing_url}\n");
     println!("扫描二维码：\n");
-    match opencarpanel_host::terminal_qr(&pairing_url) {
+    match opensimdash_host::terminal_qr(&pairing_url) {
         Ok(qr) => println!("{qr}"),
         Err(error) => warn!(%error, "could not render terminal pairing QR code"),
     }
     println!("\n配对后可打开编辑器：{dashboard_url}/edit");
     println!("本机诊断：{dashboard_url}/api/v1/diagnostics\n");
     println!(
-        "游戏遥测 UDP 目标端口：{}\n选择游戏可在桌面控制中心设置，或使用 OPENCARPANEL_GAME=auto|<游戏插件ID>（当前：{}）。\n按 Ctrl+C 退出。\n",
+        "游戏遥测 UDP 目标端口：{}\n选择游戏可在桌面控制中心设置，或使用 OPENSIMDASH_GAME=auto|<游戏插件ID>（当前：{}）。\n按 Ctrl+C 退出。\n",
         running.udp_address().port(),
         running.state().adapter_selection(),
     );

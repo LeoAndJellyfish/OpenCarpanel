@@ -1,6 +1,6 @@
-# OpenCarpanel 游戏插件开发指南
+# OpenSimDash 游戏插件开发指南
 
-OpenCarpanel v0.4 的游戏插件把“识别上游数据包并转换成统一遥测”做成可独立安装的单元。第三方插件是一个 `.ocp-plugin` 文件：版本化 manifest 加一份跨平台 core WebAssembly decoder。安装插件不需要重新编译 OpenCarpanel。
+OpenSimDash v0.4 的游戏插件把“识别上游数据包并转换成统一遥测”做成可独立安装的单元。第三方插件是一个 `.osd-plugin` 文件：版本化 manifest 加一份跨平台 core WebAssembly decoder。安装插件不需要重新编译 OpenSimDash。
 
 ## 能做什么
 
@@ -14,7 +14,7 @@ ABI v1 不允许插件提供可执行 JavaScript/CSS、加载本机动态库、�
 
 ## 包结构
 
-`.ocp-plugin` 是一个不超过 4 MiB 的 JSON 文件：
+`.osd-plugin` 是一个不超过 4 MiB 的 JSON 文件：
 
 ```text
 GamePluginPackage v1
@@ -49,15 +49,15 @@ manifest 的主要字段如下：
 
 ```text
 memory
-ocp_plugin_abi_version() -> i32
-ocp_input_ptr() -> i32
-ocp_input_capacity() -> i32
-ocp_output_ptr() -> i32
-ocp_output_capacity() -> i32
-ocp_decode(input_len: i32, received_at_us: i64) -> i32
+osd_plugin_abi_version() -> i32
+osd_input_ptr() -> i32
+osd_input_capacity() -> i32
+osd_output_ptr() -> i32
+osd_output_capacity() -> i32
+osd_decode(input_len: i32, received_at_us: i64) -> i32
 ```
 
-Host 先把一份 UDP 数据报复制到 input buffer，再调用 `ocp_decode`：
+Host 先把一份 UDP 数据报复制到 input buffer，再调用 `osd_decode`：
 
 | 返回值 | 含义 |
 | --- | --- |
@@ -82,7 +82,7 @@ Host 先把一份 UDP 数据报复制到 input buffer，再调用 `ocp_decode`�
 
 ## 用 Rust SDK 创建插件
 
-仓库提供可运行的 [`examples/game-plugin-rust`](../examples/game-plugin-rust/)：它识别六字节数据包 `OCP1 + little-endian u16 km/h`，再输出标准 `vehicle.speedMps`。
+仓库提供可运行的 [`examples/game-plugin-rust`](../examples/game-plugin-rust/)：它识别六字节数据包 `OSD1 + little-endian u16 km/h`，再输出标准 `vehicle.speedMps`。
 
 核心实现只需要 `Default + GamePlugin`：
 
@@ -104,21 +104,21 @@ export_game_plugin!(MyPlugin);
 
 ```powershell
 rustup target add wasm32-unknown-unknown
-cargo build -p opencarpanel-example-game-plugin --target wasm32-unknown-unknown --release
-cargo run -p opencarpanel-game-plugin-cli -- pack examples/game-plugin-rust/manifest.json target/wasm32-unknown-unknown/release/opencarpanel_example_game_plugin.wasm example-sim.ocp-plugin
-cargo run -p opencarpanel-game-plugin-cli -- validate example-sim.ocp-plugin
+cargo build -p opensimdash-example-game-plugin --target wasm32-unknown-unknown --release
+cargo run -p opensimdash-game-plugin-cli -- pack examples/game-plugin-rust/manifest.json target/wasm32-unknown-unknown/release/opensimdash_example_game_plugin.wasm example-sim.osd-plugin
+cargo run -p opensimdash-game-plugin-cli -- validate example-sim.osd-plugin
 ```
 
 `pack` 会用实际模块文件名、ABI 版本和 SHA-256 替换 manifest 中的 runtime 占位值，然后用与 Host 相同的 loader 完成校验。
 
 ## 安装与诊断
 
-在桌面控制中心打开“游戏设置”，选择“安装 `.ocp-plugin`”。成功后 Host 会在进程内重载插件注册表，数据源选择、设置步骤和手机布局会立即出现。用户明确点击“卸载此插件”后，桌面端会先把仍固定在该插件上的来源切回自动模式，再删除插件目录并重载 Host。
+在桌面控制中心打开“游戏设置”，选择“安装 `.osd-plugin`”。成功后 Host 会在进程内重载插件注册表，数据源选择、设置步骤和手机布局会立即出现。用户明确点击“卸载此插件”后，桌面端会先把仍固定在该插件上的来源切回自动模式，再删除插件目录并重载 Host。
 
 安装内容只保存在当前用户数据目录的 `game-plugins/<id>/`：
 
-- Windows：`%LOCALAPPDATA%\OpenCarpanel\game-plugins\<id>\`
-- macOS：`~/Library/Application Support/OpenCarpanel/game-plugins/<id>/`
+- Windows：`%LOCALAPPDATA%\OpenSimDash\game-plugins\<id>\`
+- macOS：`~/Library/Application Support/OpenSimDash/game-plugins/<id>/`
 
 `/api/v1/diagnostics` 的 `supportedAdapters[].plugin` 显示已加载元数据，`pluginLoadIssues` 显示哈希、ABI、导出或冲突等脱敏错误。固定插件缺失或加载失败时，Host 会回退到自动识别并记录原因。
 
@@ -127,7 +127,7 @@ cargo run -p opencarpanel-game-plugin-cli -- validate example-sim.ocp-plugin
 - package、manifest 与 ABI v1 当前都要求精确版本 `1`；未知版本会被拒绝，不做猜测性兼容。
 - manifest 使用严格字段校验；面向未来的字段应先进入新 schema/ABI，再由 Host 明确支持。
 - 插件 `version` 使用 SemVer；同一 `id` 的新包视为原地升级。
-- canonical telemetry 字段来自版本化 Rust/JSON Schema。新增字段由 OpenCarpanel 发版提供，插件不能通过 manifest 发明可执行前端能力。
+- canonical telemetry 字段来自版本化 Rust/JSON Schema。新增字段由 OpenSimDash 发版提供，插件不能通过 manifest 发明可执行前端能力。
 - `presentation.widgets` 只是一份申请清单；Dashboard 只展示它与当前可信内置 widget registry 的交集。
 - 插件状态保存在当前 WASM 实例内，Host 或应用重启后会重建，不能依赖持久 guest 内存。
 
@@ -146,10 +146,10 @@ CI 会比较 native `AdapterDescriptor` 与 manifest 的 ID、名称、协议版
 ## 发布前检查
 
 ```powershell
-cargo test -p opencarpanel-example-game-plugin
-cargo run -p opencarpanel-game-plugin-cli -- validate your-plugin.ocp-plugin
-cargo test -p opencarpanel-game-plugin-runtime
-cargo test -p opencarpanel-host --test game_plugins
+cargo test -p opensimdash-example-game-plugin
+cargo run -p opensimdash-game-plugin-cli -- validate your-plugin.osd-plugin
+cargo test -p opensimdash-game-plugin-runtime
+cargo test -p opensimdash-host --test game_plugins
 npm run check:web
 npm run test:web
 ```

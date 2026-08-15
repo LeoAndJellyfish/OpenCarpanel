@@ -1,10 +1,10 @@
 //! Minimal six-byte UDP decoder used by the game plugin development guide.
 
-use opencarpanel_game_plugin_api::PluginDecodeOutput;
-use opencarpanel_game_plugin_sdk::{DecodeResult, GamePlugin, export_game_plugin};
-use opencarpanel_telemetry_core::{MonotonicTimestamp, TelemetryUpdate};
+use opensimdash_game_plugin_api::PluginDecodeOutput;
+use opensimdash_game_plugin_sdk::{DecodeResult, GamePlugin, export_game_plugin};
+use opensimdash_telemetry_core::{MonotonicTimestamp, TelemetryUpdate};
 
-const MAGIC: &[u8; 4] = b"OCP1";
+const MAGIC: &[u8; 4] = b"OSD1";
 const PACKET_BYTES: usize = 6;
 
 #[derive(Debug, Default)]
@@ -43,9 +43,9 @@ mod tests {
     fn recognizes_only_the_example_packet_and_normalizes_speed() -> Result<(), &'static str> {
         let mut plugin = ExamplePlugin;
         assert_eq!(plugin.decode(b"other", 1), DecodeResult::Unrecognized);
-        assert_eq!(plugin.decode(b"OCP1", 1), DecodeResult::Invalid);
+        assert_eq!(plugin.decode(b"OSD1", 1), DecodeResult::Invalid);
 
-        let DecodeResult::Recognized(output) = plugin.decode(b"OCP1\x68\x01", 42) else {
+        let DecodeResult::Recognized(output) = plugin.decode(b"OSD1\x68\x01", 42) else {
             return Err("example packet was not recognized");
         };
         assert_eq!(output.updates.len(), 1);

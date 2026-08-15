@@ -17,11 +17,11 @@ const packageDirectory = path.join(
   projectRoot,
   "dist",
   "release",
-  `OpenCarpanel-${packageMetadata.version}-${targetName}`,
+  `OpenSimDash-${packageMetadata.version}-${targetName}`,
 );
 const executable = path.join(
   packageDirectory,
-  process.platform === "win32" ? "OpenCarpanel.exe" : "OpenCarpanel",
+  process.platform === "win32" ? "OpenSimDash.exe" : "OpenSimDash",
 );
 
 if (!existsSync(executable)) {
@@ -36,11 +36,11 @@ const host = spawn(executable, [], {
   cwd: packageDirectory,
   env: {
     ...process.env,
-    OPENCARPANEL_DATA_DIR: dataDirectory,
-    OPENCARPANEL_RUNTIME_DIR: path.join(dataDirectory, "runtime"),
-    OPENCARPANEL_GAME: "auto",
-    OPENCARPANEL_HTTP_BIND: `127.0.0.1:${httpPort}`,
-    OPENCARPANEL_UDP_BIND: `127.0.0.1:${udpPort}`,
+    OPENSIMDASH_DATA_DIR: dataDirectory,
+    OPENSIMDASH_RUNTIME_DIR: path.join(dataDirectory, "runtime"),
+    OPENSIMDASH_GAME: "auto",
+    OPENSIMDASH_HTTP_BIND: `127.0.0.1:${httpPort}`,
+    OPENSIMDASH_UDP_BIND: `127.0.0.1:${udpPort}`,
   },
   stdio: ["ignore", "pipe", "pipe"],
   windowsHide: true,
@@ -206,7 +206,7 @@ function f1Packet(format, gameYear) {
 
 function scsPacket(gameId) {
   const packet = Buffer.alloc(188);
-  Buffer.from([0x4f, 0x43, 0x50, 0]).copy(packet, 0);
+  Buffer.from("OSD\0", "ascii").copy(packet, 0);
   packet.writeUInt8(2, 4);
   packet.writeUInt8(gameId, 5);
   packet.writeBigUInt64LE(0x1112_1314_1516_1718n, 8);
@@ -278,5 +278,5 @@ function platformName(value) {
   if (value === "darwin") {
     return "macos";
   }
-  throw new Error(`OpenCarpanel release smoke does not support ${value}.`);
+  throw new Error(`OpenSimDash release smoke does not support ${value}.`);
 }

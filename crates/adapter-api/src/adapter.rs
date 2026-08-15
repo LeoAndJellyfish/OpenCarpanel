@@ -5,7 +5,7 @@ use std::{
     iter::FromIterator,
 };
 
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     MonotonicTimestamp, TelemetryEvent, TelemetryField, TelemetryUpdate,
 };
 

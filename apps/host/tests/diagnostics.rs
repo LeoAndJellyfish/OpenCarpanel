@@ -1,6 +1,6 @@
 use std::{error::Error, io, time::Duration};
 
-use opencarpanel_host::spawn_host;
+use opensimdash_host::spawn_host;
 use serde_json::Value;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -44,7 +44,7 @@ async fn diagnostics_are_local_bounded_and_sanitized() -> Result<(), Box<dyn Err
     assert_eq!(body["connections"]["active"], 0);
     assert_eq!(
         body["connections"]["limit"],
-        opencarpanel_host::MAX_WEBSOCKET_CONNECTIONS
+        opensimdash_host::MAX_WEBSOCKET_CONNECTIONS
     );
 
     let serialized = serde_json::to_string(&body)?;

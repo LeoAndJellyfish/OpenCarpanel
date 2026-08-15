@@ -1,4 +1,4 @@
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     ActiveAeroMode, AeroState, ConditionsState, DamageState, DriverStatus, DrsState, Gear,
     LapUpdate, MonotonicTimestamp, Normalized, PitStatus, RaceFlag, ResultStatus, SafetyCarStatus,
     SessionUpdate, TelemetryEvent, TelemetryUpdate, TyreCornerState, TyreUpdate, VehicleUpdate,

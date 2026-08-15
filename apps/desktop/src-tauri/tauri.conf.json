@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenCarpanel",
-  "version": "0.4.0",
-  "identifier": "io.github.leoandjellyfish.opencarpanel",
+  "productName": "OpenSimDash",
+  "version": "0.4.1",
+  "identifier": "io.github.leoandjellyfish.opensimdash",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "OpenCarpanel Control Center",
+        "title": "OpenSimDash Control Center",
         "width": 1240,
         "height": 800,
         "minWidth": 860,
@@ -33,8 +33,8 @@
     "targets": "all",
     "category": "Utility",
     "shortDescription": "Local multi-game driving telemetry control center",
-    "longDescription": "OpenCarpanel receives local game telemetry and serves a low-latency dashboard to phones and tablets on your LAN.",
-    "copyright": "Copyright 2026 OpenCarpanel contributors",
+    "longDescription": "OpenSimDash receives local game telemetry and serves a low-latency dashboard to phones and tablets on your LAN.",
+    "copyright": "Copyright 2026 OpenSimDash contributors",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -48,7 +48,7 @@
       "resources/**/*"
     ],
     "externalBin": [
-      "binaries/opencarpanel-host"
+      "binaries/opensimdash-host"
     ],
     "windows": {
       "nsis": {
@@ -63,7 +63,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/LeoAndJellyfish/OpenCarpanel/releases/latest/download/latest.json"
+        "https://github.com/LeoAndJellyfish/OpenSimDash/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4NUM5REU0QzJDMjMwQUMKUldTc01NTEM1SjFjT050TXJ6Q2ZCbzg2YThzL2Zsb2hPRDI1bDN1U1RRVWVxZVRNbURNN1ltUm0K"
     }

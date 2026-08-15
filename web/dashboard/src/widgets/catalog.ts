@@ -2,8 +2,8 @@ import type {
   GamePluginMetadata,
   WidgetManifest,
   WidgetType,
-} from "@opencarpanel/widget-sdk";
-import { BUILTIN_GAME_PLUGINS } from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
+import { BUILTIN_GAME_PLUGINS } from "@opensimdash/widget-sdk";
 
 import { statusManifest } from "../dashboard/status-manifest";
 import { gearManifest } from "./gear";

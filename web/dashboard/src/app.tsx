@@ -17,7 +17,7 @@ export function App() {
       fallback={
         <main class="connection-shell">
           <section class="connection-card" aria-live="polite">
-            <p class="eyebrow">OpenCarpanel</p>
+            <p class="eyebrow">OpenSimDash</p>
             <h1>正在载入布局编辑器</h1>
           </section>
         </main>

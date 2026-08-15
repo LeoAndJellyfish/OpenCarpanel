@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-game-plugin-cli"
-description = "Developer validator and packer for .ocp-plugin files"
+name = "opensimdash-game-plugin-cli"
+description = "Developer validator and packer for .osd-plugin files"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,13 +8,13 @@ license.workspace = true
 publish = false
 
 [[bin]]
-name = "opencarpanel-plugin"
+name = "opensimdash-plugin"
 path = "src/main.rs"
 
 [dependencies]
 base64 = "0.22.1"
-opencarpanel-game-plugin-api = { path = "../../crates/game-plugin-api" }
-opencarpanel-game-plugin-runtime = { path = "../../crates/game-plugin-runtime" }
+opensimdash-game-plugin-api = { path = "../../crates/game-plugin-api" }
+opensimdash-game-plugin-runtime = { path = "../../crates/game-plugin-runtime" }
 serde_json = "1.0.151"
 sha2 = "0.10.9"
 

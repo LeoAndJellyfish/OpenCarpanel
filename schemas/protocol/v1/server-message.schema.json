@@ -1439,7 +1439,7 @@
       "description": "Origin of a plugin visible in diagnostics and management UI.",
       "oneOf": [
         {
-          "description": "Shipped and compiled with `OpenCarpanel`.",
+          "description": "Shipped and compiled with `OpenSimDash`.",
           "type": "string",
           "const": "builtin"
         },

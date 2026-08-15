@@ -16,11 +16,11 @@ const BACKUP_LIMIT: usize = 3;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ScsPluginState {
-    /// No `OpenCarpanel` plugin exists at the derived target.
+    /// No `OpenSimDash` plugin exists at the derived target.
     Missing,
     /// Installed bytes match the artifact bundled with this desktop version.
     Current,
-    /// A regular `OpenCarpanel` plugin exists but differs from this version.
+    /// A regular `OpenSimDash` plugin exists but differs from this version.
     Outdated,
 }
 
@@ -208,7 +208,7 @@ fn bundled_plugin(app: &AppHandle) -> Result<PathBuf, String> {
                 .map_err(|error| path_error(&development, &error));
         }
     }
-    Err("桌面安装包中缺少当前平台的 SCS bridge，请重新安装 OpenCarpanel".to_owned())
+    Err("桌面安装包中缺少当前平台的 SCS bridge，请重新安装 OpenSimDash".to_owned())
 }
 
 fn locate_bundled_plugin(resource_directory: &Path) -> Option<PathBuf> {
@@ -278,7 +278,7 @@ fn binary_directory(game_directory: &Path, game: &str) -> PathBuf {
     let app_name = match game {
         "ets2" => "Euro Truck Simulator 2.app",
         "ats" => "American Truck Simulator.app",
-        _ => "OpenCarpanel Unsupported Game.app",
+        _ => "OpenSimDash Unsupported Game.app",
     };
     game_directory.join(app_name).join("Contents").join("MacOS")
 }
@@ -290,17 +290,17 @@ fn binary_directory(game_directory: &Path, _game: &str) -> PathBuf {
 
 #[cfg(target_os = "windows")]
 const fn plugin_filename() -> &'static str {
-    "opencarpanel-scs-telemetry.dll"
+    "opensimdash-scs-telemetry.dll"
 }
 
 #[cfg(target_os = "macos")]
 const fn plugin_filename() -> &'static str {
-    "opencarpanel-scs-telemetry.dylib"
+    "opensimdash-scs-telemetry.dylib"
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 const fn plugin_filename() -> &'static str {
-    "opencarpanel-scs-telemetry.so"
+    "opensimdash-scs-telemetry.so"
 }
 
 fn validate_game(game: &str) -> Result<(), String> {

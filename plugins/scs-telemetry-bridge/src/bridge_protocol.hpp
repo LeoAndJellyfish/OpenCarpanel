@@ -4,12 +4,13 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace opencarpanel::scs_bridge {
+namespace opensimdash::scs_bridge {
 
 inline constexpr std::size_t kPacketSize = 188;
 inline constexpr std::size_t kJobTextSize = 32;
 inline constexpr std::uint8_t kProtocolVersion = 2;
 inline constexpr std::uint16_t kDestinationPort = 20777;
+inline constexpr std::array<std::uint8_t, 4> kMagic{'O', 'S', 'D', 0};
 
 inline constexpr std::uint16_t kLightParking = 1U << 0U;
 inline constexpr std::uint16_t kLightLowBeam = 1U << 1U;
@@ -60,4 +61,4 @@ struct TelemetryFrame {
 
 [[nodiscard]] std::array<std::uint8_t, kPacketSize> encode(const TelemetryFrame& frame) noexcept;
 
-}  // namespace opencarpanel::scs_bridge
+}  // namespace opensimdash::scs_bridge

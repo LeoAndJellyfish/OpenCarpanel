@@ -4,7 +4,7 @@ import {
   type GridPlacement,
   type LayoutDocument,
   type WidgetInstance,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 import type { JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 

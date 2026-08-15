@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use opencarpanel_config::AppSettings;
-use opencarpanel_game_plugin_runtime::{MAX_PLUGIN_PACKAGE_BYTES, verify_package};
+use opensimdash_config::AppSettings;
+use opensimdash_game_plugin_runtime::{
+    MAX_PLUGIN_PACKAGE_BYTES, ensure_plugin_package_extension, verify_package,
+};
 use serde::Serialize;
 use tauri::{AppHandle, Manager as _, State, ipc::Channel};
 use tauri_plugin_autostart::ManagerExt as _;
@@ -176,13 +178,14 @@ pub async fn install_game_plugin(
         let selected = handle
             .dialog()
             .file()
-            .set_title("安装 OpenCarpanel 游戏插件")
-            .add_filter("OpenCarpanel 游戏插件", &["ocp-plugin"])
+            .set_title("安装 OpenSimDash 游戏插件")
+            .add_filter("OpenSimDash 游戏插件", &["osd-plugin"])
             .blocking_pick_file();
         let Some(selected) = selected else {
             return Ok(None);
         };
         let package_path = selected.into_path().map_err(|error| error.to_string())?;
+        ensure_plugin_package_extension(&package_path).map_err(|error| error.to_string())?;
         let metadata = std::fs::metadata(&package_path).map_err(|error| error.to_string())?;
         if !metadata.is_file() || metadata.len() > MAX_PLUGIN_PACKAGE_BYTES {
             return Err("插件包必须是不超过 4 MiB 的普通文件".to_owned());

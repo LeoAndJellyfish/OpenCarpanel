@@ -1,7 +1,7 @@
-use opencarpanel_adapter_api::{
+use opensimdash_adapter_api::{
     AdapterDescriptor, AdapterError, AdapterId, AdapterOutput, CapabilitySet, GameAdapter,
 };
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     DrsState, Gear, JobState, LightsState, MonotonicTimestamp, NavigationState, Normalized,
     TelemetryField, TelemetryUpdate, VehicleUpdate,
 };

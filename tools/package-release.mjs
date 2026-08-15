@@ -23,13 +23,13 @@ const executableSource = path.join(
   projectRoot,
   "target",
   "release",
-  process.platform === "win32" ? "opencarpanel-host.exe" : "opencarpanel-host",
+  process.platform === "win32" ? "opensimdash-host.exe" : "opensimdash-host",
 );
 const dashboardIndex = path.join(projectRoot, "web", "dashboard", "dist", "index.html");
 const scsPluginStage = path.join(projectRoot, "target", "scs-plugin-package");
 const scsPluginName = process.platform === "win32"
-  ? "opencarpanel-scs-telemetry.dll"
-  : "opencarpanel-scs-telemetry.dylib";
+  ? "opensimdash-scs-telemetry.dll"
+  : "opensimdash-scs-telemetry.dylib";
 const scsPluginSource = path.join(scsPluginStage, scsPluginName);
 const requiredPackageInputs = [
   [path.join(projectRoot, "LICENSE"), "project license"],
@@ -64,7 +64,7 @@ if (statSync(dashboardIndex).mtimeMs > statSync(executableSource).mtimeMs) {
 const releaseRoot = path.resolve(projectRoot, "dist", "release");
 const packageDirectory = path.resolve(
   releaseRoot,
-  `OpenCarpanel-${packageMetadata.version}-${targetName}`,
+  `OpenSimDash-${packageMetadata.version}-${targetName}`,
 );
 if (!packageDirectory.startsWith(`${releaseRoot}${path.sep}`)) {
   throw new Error("Resolved release package escaped the release output directory.");
@@ -72,7 +72,7 @@ if (!packageDirectory.startsWith(`${releaseRoot}${path.sep}`)) {
 rmSync(packageDirectory, { recursive: true, force: true });
 mkdirSync(packageDirectory, { recursive: true });
 
-const executableName = process.platform === "win32" ? "OpenCarpanel.exe" : "OpenCarpanel";
+const executableName = process.platform === "win32" ? "OpenSimDash.exe" : "OpenSimDash";
 const executableDestination = path.join(packageDirectory, executableName);
 copyFileSync(executableSource, executableDestination);
 if (process.platform !== "win32") {
@@ -126,7 +126,7 @@ writeFileSync(
   `${JSON.stringify(
     {
       schemaVersion: 1,
-      application: "OpenCarpanel",
+      application: "OpenSimDash",
       version: packageMetadata.version,
       target: targetName,
       executable: executableName,
@@ -149,5 +149,5 @@ function platformName(value) {
   if (value === "darwin") {
     return "macos";
   }
-  throw new Error(`OpenCarpanel release packaging does not support ${value}.`);
+  throw new Error(`OpenSimDash release packaging does not support ${value}.`);
 }

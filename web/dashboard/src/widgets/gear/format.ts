@@ -1,4 +1,4 @@
-import type { Gear } from "@opencarpanel/widget-sdk";
+import type { Gear } from "@opensimdash/widget-sdk";
 
 export function formatGear(gear: Gear | undefined): string {
   if (gear === "neutral") {

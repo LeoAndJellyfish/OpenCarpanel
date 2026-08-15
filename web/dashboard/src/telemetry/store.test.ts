@@ -1,4 +1,4 @@
-import type { Gear, SnapshotMessage } from "@opencarpanel/widget-sdk";
+import type { Gear, SnapshotMessage } from "@opensimdash/widget-sdk";
 import { describe, expect, it, vi } from "vitest";
 
 import { TelemetryStore } from "./store";

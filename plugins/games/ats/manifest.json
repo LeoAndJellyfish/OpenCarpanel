@@ -3,7 +3,7 @@
   "id": "ats",
   "name": "American Truck Simulator",
   "version": "1.0.0",
-  "publisher": "OpenCarpanel contributors",
+  "publisher": "OpenSimDash contributors",
   "license": "Apache-2.0",
   "description": "American Truck Simulator telemetry through the bundled SCS SDK bridge.",
   "runtime": {
@@ -11,7 +11,7 @@
     "entrypoint": "ats"
   },
   "protocol": {
-    "name": "OpenCarpanel SCS bridge",
+    "name": "OpenSimDash SCS bridge",
     "version": "scs-bridge/v1+v2 (SDK 1.14)"
   },
   "ingress": {

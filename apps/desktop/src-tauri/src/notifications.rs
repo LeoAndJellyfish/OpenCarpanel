@@ -25,16 +25,16 @@ pub fn start(app: AppHandle, runtime: Arc<DesktopRuntime>) {
             {
                 let (title, body) = match (&previous, &current) {
                     (Some(_), Some(game)) => {
-                        ("OpenCarpanel 已切换游戏", format!("当前遥测来源：{game}"))
+                        ("OpenSimDash 已切换游戏", format!("当前遥测来源：{game}"))
                     }
                     (None, Some(game)) => {
-                        ("OpenCarpanel 已连接游戏", format!("已开始接收 {game} 遥测"))
+                        ("OpenSimDash 已连接游戏", format!("已开始接收 {game} 遥测"))
                     }
                     (Some(game), None) => (
-                        "OpenCarpanel 游戏数据已暂停",
+                        "OpenSimDash 游戏数据已暂停",
                         format!("{game} 已停止发送遥测，Host 仍在运行"),
                     ),
-                    (None, None) => ("OpenCarpanel", "Host 正在等待游戏数据".to_owned()),
+                    (None, None) => ("OpenSimDash", "Host 正在等待游戏数据".to_owned()),
                 };
                 let _notification = app.notification().builder().title(title).body(body).show();
             }

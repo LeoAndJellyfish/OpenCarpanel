@@ -3,7 +3,7 @@ import type {
   BreakpointName,
   GridPlacement,
   LayoutDocument,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 export interface GridDelta {
   readonly columns: number;

@@ -12,7 +12,7 @@
 
 ## Working rules
 
-- Read the accepted [architecture design](2026-08-11-opencarpanel-architecture-design.md) and all ADRs before Task 1.
+- Read the accepted [architecture design](2026-08-11-opensimdash-architecture-design.md) and all ADRs before Task 1.
 - Use the EA F1 24 document linked from [`docs/protocols/f1-24.md`](../protocols/f1-24.md) as the only authority for packet sizes and offsets. Record its revision before transcribing layouts.
 - Keep commits limited to one task. Do not combine an adapter change with UI work.
 - Write tests before implementation for packet parsing, state transitions, protocol compatibility and migrations.
@@ -111,7 +111,7 @@ Add `serde` with derive and `schemars` to `telemetry-core`. Pin compatible versi
 **Step 2: Write the failing model contract test**
 
 ```rust
-use opencarpanel_telemetry_core::{Gear, TelemetrySnapshot};
+use opensimdash_telemetry_core::{Gear, TelemetrySnapshot};
 
 #[test]
 fn absent_game_data_stays_absent() {
@@ -124,15 +124,15 @@ fn absent_game_data_stays_absent() {
 
 #[test]
 fn normalized_inputs_reject_out_of_range_values() {
-    assert!(opencarpanel_telemetry_core::Normalized::new(0.75).is_ok());
-    assert!(opencarpanel_telemetry_core::Normalized::new(1.01).is_err());
+    assert!(opensimdash_telemetry_core::Normalized::new(0.75).is_ok());
+    assert!(opensimdash_telemetry_core::Normalized::new(1.01).is_err());
 }
 ```
 
 Run:
 
 ```powershell
-cargo test -p opencarpanel-telemetry-core --test model_contract
+cargo test -p opensimdash-telemetry-core --test model_contract
 ```
 
 Expected: FAIL because the public model does not exist.
@@ -150,8 +150,8 @@ Create explicit `Meta`, `VehicleState`, `LapState`, `SessionState`, `TyreState`,
 **Step 4: Run focused and workspace tests**
 
 ```powershell
-cargo test -p opencarpanel-telemetry-core --test model_contract
-cargo clippy -p opencarpanel-telemetry-core --all-targets -- -D warnings
+cargo test -p opensimdash-telemetry-core --test model_contract
+cargo clippy -p opensimdash-telemetry-core --all-targets -- -D warnings
 ```
 
 Expected: PASS.
@@ -208,8 +208,8 @@ Use typed `AdapterId`, `AdapterDescriptor`, `CapabilitySet`, `TelemetryUpdate`, 
 **Step 4: Verify dependency direction**
 
 ```powershell
-cargo tree -p opencarpanel-adapter-api
-cargo test -p opencarpanel-adapter-api
+cargo tree -p opensimdash-adapter-api
+cargo test -p opensimdash-adapter-api
 ```
 
 Expected: only adapter-api points to telemetry-core; tests pass.
@@ -273,8 +273,8 @@ Add a small schema export binary or integration test that writes deterministic f
 **Step 4: Run contract tests**
 
 ```powershell
-cargo test -p opencarpanel-protocol
-cargo run -p opencarpanel-protocol --bin export-schema
+cargo test -p opensimdash-protocol
+cargo run -p opensimdash-protocol --bin export-schema
 git diff --exit-code -- schemas
 ```
 
@@ -315,7 +315,7 @@ Build bytes field-by-field in the test rather than transmuting a Rust struct. Co
 Run:
 
 ```powershell
-cargo test -p opencarpanel-adapter-f1-24 --test header_decoder
+cargo test -p opensimdash-adapter-f1-24 --test header_decoder
 ```
 
 Expected: FAIL because `PacketHeader::decode` does not exist.
@@ -329,8 +329,8 @@ The cursor exposes checked `read_u8`, `read_u16_le`, `read_u32_le`, `read_u64_le
 Use constants derived from the recorded official spec. Return typed errors containing expected/actual values but never include the entire datagram in normal logs.
 
 ```powershell
-cargo test -p opencarpanel-adapter-f1-24 --test header_decoder
-cargo clippy -p opencarpanel-adapter-f1-24 --all-targets -- -D warnings
+cargo test -p opensimdash-adapter-f1-24 --test header_decoder
+cargo clippy -p opensimdash-adapter-f1-24 --all-targets -- -D warnings
 ```
 
 Expected: PASS.
@@ -382,8 +382,8 @@ Add session-change and out-of-order frame tests. A new session clears stale game
 **Step 5: Implement reducer and run tests**
 
 ```powershell
-cargo test -p opencarpanel-adapter-f1-24
-cargo test -p opencarpanel-telemetry-core
+cargo test -p opensimdash-adapter-f1-24
+cargo test -p opensimdash-telemetry-core
 ```
 
 Expected: PASS.
@@ -422,8 +422,8 @@ Recording requires an explicit output path under the ignored `captures/` directo
 **Step 4: Verify**
 
 ```powershell
-cargo test -p opencarpanel-telemetry-replay
-cargo run -p opencarpanel-telemetry-replay -- --help
+cargo test -p opensimdash-telemetry-replay
+cargo run -p opensimdash-telemetry-replay -- --help
 ```
 
 Expected: tests pass; help lists `record` and `replay` without opening a socket.
@@ -467,8 +467,8 @@ Write to a unique temporary file in the destination directory, flush it, sync wh
 **Step 4: Verify**
 
 ```powershell
-cargo test -p opencarpanel-config
-cargo clippy -p opencarpanel-config --all-targets -- -D warnings
+cargo test -p opensimdash-config
+cargo clippy -p opensimdash-config --all-targets -- -D warnings
 ```
 
 Expected: PASS.
@@ -513,8 +513,8 @@ Bind the configured F1 port, reuse a bounded receive buffer, call the adapter an
 **Step 4: Verify health and shutdown**
 
 ```powershell
-cargo test -p opencarpanel-host --test health
-cargo run -p opencarpanel-host
+cargo test -p opensimdash-host --test health
+cargo run -p opensimdash-host
 ```
 
 Expected: health test passes; Ctrl+C exits cleanly without a backtrace.
@@ -558,7 +558,7 @@ Use a latest-value primitive for snapshots and a fixed-capacity ring for events.
 **Step 4: Verify**
 
 ```powershell
-cargo test -p opencarpanel-host --test websocket_flow
+cargo test -p opensimdash-host --test websocket_flow
 ```
 
 Expected: PASS, including the intentionally slow client case.

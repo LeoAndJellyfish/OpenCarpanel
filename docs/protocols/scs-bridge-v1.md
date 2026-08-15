@@ -1,4 +1,4 @@
-# OpenCarpanel SCS bridge protocol v1
+# OpenSimDash SCS bridge protocol v1
 
 逐字节阵列图、四款游戏完整链路和 ETS2LA 方案对照见[游戏数据链路与 SCS 数据包协议图解](../data-paths-and-scs-packet.md)。
 
@@ -8,7 +8,7 @@ v1 是仍受 Host 支持的 44-byte 兼容输入。自扩展导航、灯光、�
 
 ```text
 ETS2 / ATS SCS Telemetry SDK callbacks
-  → opencarpanel-scs-telemetry native plugin
+  → opensimdash-scs-telemetry native plugin
   → non-blocking UDP 127.0.0.1:20777
   → adapter-scs defensive decoder
   → canonical telemetry snapshot
@@ -22,7 +22,7 @@ v1 长度必须恰好为 44 bytes。所有整数与 IEEE-754 `float32` 使用小
 
 | Offset | Type | Field | Validation |
 | ---: | --- | --- | --- |
-| 0 | `[u8;4]` | magic `OCP\0` | exact |
+| 0 | `[u8;4]` | magic `OSD\0` | exact |
 | 4 | `u8` | version | `1` |
 | 5 | `u8` | game | `1` ETS2；`2` ATS |
 | 6 | `u8` | flags | `0` |

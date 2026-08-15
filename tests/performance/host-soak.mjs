@@ -14,7 +14,7 @@ const defaults = {
     projectRoot,
     "target",
     "release",
-    process.platform === "win32" ? "opencarpanel-host.exe" : "opencarpanel-host",
+    process.platform === "win32" ? "opensimdash-host.exe" : "opensimdash-host",
   ),
 };
 
@@ -144,7 +144,7 @@ try {
     );
   }
 
-  console.log("OpenCarpanel Host soak passed");
+  console.log("OpenSimDash Host soak passed");
   console.log(
     `duration=${options.durationSeconds}s rate=${options.hz}Hz sent=${packetsSent} clients=${options.clients}`,
   );

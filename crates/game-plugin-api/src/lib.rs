@@ -8,8 +8,8 @@ use std::{
     path::{Component, Path},
 };
 
-use opencarpanel_adapter_api::AdapterId;
-use opencarpanel_telemetry_core::{TelemetryEvent, TelemetryField, TelemetryUpdate};
+use opensimdash_adapter_api::AdapterId;
+use opensimdash_telemetry_core::{TelemetryEvent, TelemetryField, TelemetryUpdate};
 use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -230,7 +230,7 @@ pub enum PluginSetup {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum PluginSource {
-    /// Shipped and compiled with `OpenCarpanel`.
+    /// Shipped and compiled with `OpenSimDash`.
     Builtin,
     /// Installed in the current user's data directory.
     Installed,

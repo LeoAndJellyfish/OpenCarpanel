@@ -9,7 +9,7 @@
 ```powershell
 npm ci
 npm run build:web
-cargo build --release --locked -p opencarpanel-host
+cargo build --release --locked -p opensimdash-host
 ```
 
 完整的两小时、四客户端、60 Hz 合成 F1 24 回放：
@@ -29,7 +29,7 @@ node tests/performance/host-soak.mjs --duration-seconds 30 --sample-interval-sec
 ## 延迟边界
 
 ```powershell
-cargo test -p opencarpanel-host --test end_to_end_latency --release -- --nocapture
+cargo test -p opensimdash-host --test end_to_end_latency --release -- --nocapture
 ```
 
 这个自动化门禁测量本机 UDP 发包到 WebSocket snapshot，不包含真实游戏发包和浏览器 rAF 绘制；不得把它写成手机端完整延迟成绩。

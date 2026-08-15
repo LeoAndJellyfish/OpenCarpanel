@@ -1,4 +1,4 @@
-use opencarpanel_adapter_f1::{
+use opensimdash_adapter_f1::{
     DecodeError, F1_24_PACKET_FORMAT, F1_25_2026_PACKET_FORMAT, F1_25_PACKET_FORMAT,
     PACKET_HEADER_LEN, PacketHeader,
 };

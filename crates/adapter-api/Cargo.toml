@@ -1,5 +1,5 @@
 [package]
-name = "opencarpanel-adapter-api"
+name = "opensimdash-adapter-api"
 description = "Stable contract implemented by game telemetry adapters"
 version.workspace = true
 edition.workspace = true
@@ -8,7 +8,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
-opencarpanel-telemetry-core = { path = "../telemetry-core" }
+opensimdash-telemetry-core = { path = "../telemetry-core" }
 
 [lints]
 workspace = true

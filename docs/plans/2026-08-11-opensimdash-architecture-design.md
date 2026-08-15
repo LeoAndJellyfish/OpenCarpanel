@@ -1,4 +1,4 @@
-# OpenCarpanel 架构设计
+# OpenSimDash 架构设计
 
 - **状态：** Accepted
 - **日期：** 2026-08-11
@@ -9,7 +9,7 @@
 
 ## 1. 摘要
 
-OpenCarpanel 采用 **Rust 模块化单体 Host + PWA-ready Web App**。电脑端 Host 接收游戏遥测，将每个游戏的专属协议转换成统一语义模型，再通过局域网 WebSocket 推送给手机或 iPad。Host 同时托管前端静态文件、布局配置 API、配对流程和本地诊断信息。
+OpenSimDash 采用 **Rust 模块化单体 Host + PWA-ready Web App**。电脑端 Host 接收游戏遥测，将每个游戏的专属协议转换成统一语义模型，再通过局域网 WebSocket 推送给手机或 iPad。Host 同时托管前端静态文件、布局配置 API、配对流程和本地诊断信息。
 
 首个适配器使用 F1 24 官方 UDP 遥测规格。移动端首版以本地 HTTP Web App 交付；完整 PWA 安装和 Service Worker 需要 HTTPS 安全上下文，因此不作为 MVP 的阻塞条件。面板由内置组件、声明式数据绑定、响应式网格和主题令牌组成，不执行用户 JavaScript。
 
@@ -40,7 +40,7 @@ OpenCarpanel 采用 **Rust 模块化单体 Host + PWA-ready Web App**。电脑�
 | 兼容性 | 协议和配置均可版本化迁移 | 至少保留前一个稳定版本的读取兼容 |
 | 隐私 | 默认无远程遥测、无云端账户、无云端配置 | 网络审计和发布清单 |
 
-延迟指标不声称覆盖游戏内部物理计算到 UDP 发包的时间，因为该部分不受 OpenCarpanel 控制。
+延迟指标不声称覆盖游戏内部物理计算到 UDP 发包的时间，因为该部分不受 OpenSimDash 控制。
 
 ### 2.3 MVP 不包含
 
@@ -76,7 +76,7 @@ flowchart LR
     Client --> Editor["Layout Editor"]
     Editor -->|"带版本的配置命令"| Config["config"]
     Config --> Files["原子写入 JSON"]
-    Host["opencarpanel-host"] --- Adapter
+    Host["opensimdash-host"] --- Adapter
     Host --- Core
     Host --- WS
     Host --- Config
@@ -94,7 +94,7 @@ flowchart LR
 ## 5. 仓库与模块边界
 
 ```text
-OpenCarpanel/
+OpenSimDash/
 ├─ apps/
 │  └─ host/                    # 唯一桌面可执行程序
 ├─ crates/
@@ -250,7 +250,7 @@ Service Worker 只在安全上下文注册。普通局域网 IP 的 HTTP 页面�
 MVP 不使用数据库。数据规模小，主要是可审阅的设置和面板文档：
 
 ```text
-<OS application data>/OpenCarpanel/
+<OS application data>/OpenSimDash/
 ├─ settings.json
 ├─ clients.json
 ├─ layouts/

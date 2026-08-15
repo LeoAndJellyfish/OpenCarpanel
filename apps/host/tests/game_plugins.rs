@@ -1,12 +1,12 @@
 use std::{collections::BTreeSet, error::Error, fs, net::SocketAddr};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use opencarpanel_game_plugin_api::{
+use opensimdash_game_plugin_api::{
     GAME_PLUGIN_ABI_VERSION, GAME_PLUGIN_PACKAGE_VERSION, GamePluginPackage, PluginRuntime,
     PluginSource, parse_manifest,
 };
-use opencarpanel_game_plugin_runtime::install_package;
-use opencarpanel_host::{AdapterSelection, HostConfig, bind_host};
+use opensimdash_game_plugin_runtime::install_package;
+use opensimdash_host::{AdapterSelection, HostConfig, bind_host};
 use sha2::{Digest as _, Sha256};
 use tempfile::tempdir;
 use tokio::net::UdpSocket;
@@ -20,12 +20,12 @@ async fn installed_wasm_plugin_is_discovered_selected_and_decodes_udp() -> Resul
         r#"(module
           (memory (export "memory") 6 64)
           (data (i32.const 65536) "{}")
-          (func (export "ocp_plugin_abi_version") (result i32) i32.const 1)
-          (func (export "ocp_input_ptr") (result i32) i32.const 0)
-          (func (export "ocp_input_capacity") (result i32) i32.const 65536)
-          (func (export "ocp_output_ptr") (result i32) i32.const 65536)
-          (func (export "ocp_output_capacity") (result i32) i32.const 262144)
-          (func (export "ocp_decode") (param i32 i64) (result i32) i32.const {})
+          (func (export "osd_plugin_abi_version") (result i32) i32.const 1)
+          (func (export "osd_input_ptr") (result i32) i32.const 0)
+          (func (export "osd_input_capacity") (result i32) i32.const 65536)
+          (func (export "osd_output_ptr") (result i32) i32.const 65536)
+          (func (export "osd_output_capacity") (result i32) i32.const 262144)
+          (func (export "osd_decode") (param i32 i64) (result i32) i32.const {})
         )"#,
         wat_escape(response),
         response.len(),
@@ -35,7 +35,7 @@ async fn installed_wasm_plugin_is_discovered_selected_and_decodes_udp() -> Resul
     manifest.id = "community-sim".to_owned();
     manifest.name = "Community Sim".to_owned();
     manifest.version = "1.0.0".to_owned();
-    manifest.publisher = "OpenCarpanel test".to_owned();
+    manifest.publisher = "OpenSimDash test".to_owned();
     manifest.runtime = PluginRuntime::Wasm {
         abi_version: GAME_PLUGIN_ABI_VERSION,
         module: "decoder.wasm".to_owned(),
@@ -46,7 +46,7 @@ async fn installed_wasm_plugin_is_discovered_selected_and_decodes_udp() -> Resul
         manifest,
         module_base64: STANDARD.encode(&module),
     };
-    let package_path = temporary.path().join("community-sim.ocp-plugin");
+    let package_path = temporary.path().join("community-sim.osd-plugin");
     fs::write(&package_path, serde_json::to_vec(&package)?)?;
     let plugins_root = temporary.path().join("game-plugins");
     let receipt = install_package(&plugins_root, &package_path, &BTreeSet::new())?;

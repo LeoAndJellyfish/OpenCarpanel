@@ -2,7 +2,7 @@ import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
 import {
   BUILTIN_GAME_PLUGINS,
   type GamePluginMetadata,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import type { UpdateProgressEvent } from "./update-progress";
 
@@ -123,7 +123,7 @@ export interface UpdateInfo {
 const demoQr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><rect width="18" height="18" fill="#f4f7f1"/><g fill="#07090d"><path d="M1 1h6v6H1zm1 1v4h4V2zm9-1h6v6h-6zm1 1v4h4V2zM1 11h6v6H1zm1 1v4h4v-4z"/><path d="M9 9h2v2H9zm3 0h1v1h-1zm2 0h3v2h-1v-1h-2zm-6 3h2v1H9v2H8zm3 0h2v2h-1v2h-2v-1h1zm3 1h3v1h-1v3h-2v-1h1v-1h-1z"/></g></svg>`;
 
 let demoState: DesktopBootstrap = {
-  version: "0.4.0",
+  version: "0.4.1",
   autostartEnabled: false,
   settings: {
     schemaVersion: 1,
@@ -144,7 +144,7 @@ let demoState: DesktopBootstrap = {
   },
   diagnostics: {
     status: "ok",
-    version: "0.4.0",
+    version: "0.4.1",
     protocolVersion: 1,
     adapter: "f1-25",
     adapterSelection: "auto",
@@ -190,7 +190,7 @@ let demoState: DesktopBootstrap = {
     resetToDefaults: false,
     quarantinedPath: null,
   },
-  dataDirectory: "C:\\Users\\Driver\\AppData\\Local\\OpenCarpanel",
+  dataDirectory: "C:\\Users\\Driver\\AppData\\Local\\OpenSimDash",
   trayAvailable: true,
 };
 
@@ -285,7 +285,7 @@ function demoScsStatus(game: "ets2" | "ats"): ScsPluginStatus {
   return {
     game,
     gameDirectory,
-    pluginPath: `${gameDirectory}\\bin\\win_x64\\plugins\\opencarpanel-scs-telemetry.dll`,
+    pluginPath: `${gameDirectory}\\bin\\win_x64\\plugins\\opensimdash-scs-telemetry.dll`,
     state: "missing",
     bundledSha256: "4b5b1c8f6f4de25e9ec83c19df438f622474dcb1ad8ff19ee728b74b5f45c3b1",
     installedSha256: null,

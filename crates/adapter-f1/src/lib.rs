@@ -125,8 +125,8 @@ const F1_25_PROTOCOL: F1Protocol = F1Protocol {
 /// player index, ratio, or enum value.
 pub fn decode_f1_24_player_car_telemetry(
     datagram: &[u8],
-    received_at: opencarpanel_telemetry_core::MonotonicTimestamp,
-) -> Result<opencarpanel_telemetry_core::TelemetryUpdate, DecodeError> {
+    received_at: opensimdash_telemetry_core::MonotonicTimestamp,
+) -> Result<opensimdash_telemetry_core::TelemetryUpdate, DecodeError> {
     decode_player_car_telemetry(datagram, received_at, F1_24_PROTOCOL)
 }
 
@@ -138,22 +138,22 @@ pub fn decode_f1_24_player_car_telemetry(
 /// player index, ratio, or enum value.
 pub fn decode_f1_25_player_car_telemetry(
     datagram: &[u8],
-    received_at: opencarpanel_telemetry_core::MonotonicTimestamp,
-) -> Result<opencarpanel_telemetry_core::TelemetryUpdate, DecodeError> {
+    received_at: opensimdash_telemetry_core::MonotonicTimestamp,
+) -> Result<opensimdash_telemetry_core::TelemetryUpdate, DecodeError> {
     decode_player_car_telemetry(datagram, received_at, F1_25_PROTOCOL)
 }
 
 fn decode_player_car_telemetry(
     datagram: &[u8],
-    received_at: opencarpanel_telemetry_core::MonotonicTimestamp,
+    received_at: opensimdash_telemetry_core::MonotonicTimestamp,
     protocol: F1Protocol,
-) -> Result<opencarpanel_telemetry_core::TelemetryUpdate, DecodeError> {
+) -> Result<opensimdash_telemetry_core::TelemetryUpdate, DecodeError> {
     let (header, payload, layout) = decode_header_and_layout(datagram, protocol)?;
     let sample = decode_car_telemetry_sample(&header, payload, datagram.len(), layout)?;
     let drs = if sample.drs_active {
-        opencarpanel_telemetry_core::DrsState::Active
+        opensimdash_telemetry_core::DrsState::Active
     } else {
-        opencarpanel_telemetry_core::DrsState::Unknown
+        opensimdash_telemetry_core::DrsState::Unknown
     };
     map_player_sample(&header, sample, received_at, drs)
 }

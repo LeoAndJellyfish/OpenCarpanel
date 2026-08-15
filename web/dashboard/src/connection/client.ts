@@ -3,11 +3,11 @@ import {
   parseServerMessage,
   type ClientMessage,
   type ServerMessage,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
 import { readDeviceSession, writeDeviceSession } from "./session";
 
-const LAST_EVENT_SEQUENCE_KEY = "opencarpanel.last-event-sequence.v1";
+const LAST_EVENT_SEQUENCE_KEY = "opensimdash.last-event-sequence.v1";
 
 export type ConnectionPhase =
   | "connecting"

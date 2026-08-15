@@ -1,4 +1,4 @@
-import type { BreakpointName, LayoutDocument } from "@opencarpanel/widget-sdk";
+import type { BreakpointName, LayoutDocument } from "@opensimdash/widget-sdk";
 import { useEffect, useRef } from "preact/hooks";
 
 import type { ConnectionView } from "../connection/client";
@@ -55,7 +55,7 @@ export function Dashboard({
       />
       <footer class="drive-footer">
         <span>{presentation.label} / {presentation.detail}</span>
-        <span>OPEN CARPANEL — 01</span>
+        <span>OPENSIMDASH — 01</span>
       </footer>
     </main>
   );

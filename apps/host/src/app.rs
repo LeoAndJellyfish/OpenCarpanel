@@ -7,9 +7,9 @@ use std::{
     sync::Arc,
 };
 
-use opencarpanel_adapter_api::AdapterError;
-use opencarpanel_config::{HostSettings, LayoutRepository, ValidationError};
-use opencarpanel_telemetry_core::TelemetrySnapshot;
+use opensimdash_adapter_api::AdapterError;
+use opensimdash_config::{HostSettings, LayoutRepository, ValidationError};
+use opensimdash_telemetry_core::TelemetrySnapshot;
 use tokio::{
     net::{TcpListener, UdpSocket},
     sync::{Semaphore, watch},
@@ -94,18 +94,18 @@ impl HostConfig {
     /// Returns [`HostEnvironmentError`] when an override cannot be parsed or is
     /// outside the supported publication-rate set.
     pub fn apply_environment_overrides(&mut self) -> Result<(), HostEnvironmentError> {
-        if let Ok(address) = std::env::var("OPENCARPANEL_HTTP_BIND") {
+        if let Ok(address) = std::env::var("OPENSIMDASH_HTTP_BIND") {
             self.http_address = address.parse().map_err(HostEnvironmentError::HttpAddress)?;
         }
-        if let Ok(address) = std::env::var("OPENCARPANEL_UDP_BIND") {
+        if let Ok(address) = std::env::var("OPENSIMDASH_UDP_BIND") {
             self.udp_address = address.parse().map_err(HostEnvironmentError::UdpAddress)?;
         }
-        if let Ok(selection) = std::env::var("OPENCARPANEL_GAME") {
+        if let Ok(selection) = std::env::var("OPENSIMDASH_GAME") {
             self.adapter_selection = selection
                 .parse()
                 .map_err(HostEnvironmentError::AdapterSelection)?;
         }
-        if let Ok(snapshot_hz) = std::env::var("OPENCARPANEL_SNAPSHOT_HZ") {
+        if let Ok(snapshot_hz) = std::env::var("OPENSIMDASH_SNAPSHOT_HZ") {
             let snapshot_hz = snapshot_hz
                 .parse::<u16>()
                 .map_err(HostEnvironmentError::SnapshotRate)?;
@@ -122,13 +122,13 @@ impl HostConfig {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum HostEnvironmentError {
-    /// `OPENCARPANEL_HTTP_BIND` is not a socket address.
+    /// `OPENSIMDASH_HTTP_BIND` is not a socket address.
     HttpAddress(AddrParseError),
-    /// `OPENCARPANEL_UDP_BIND` is not a socket address.
+    /// `OPENSIMDASH_UDP_BIND` is not a socket address.
     UdpAddress(AddrParseError),
-    /// `OPENCARPANEL_GAME` names no compiled adapter selection.
+    /// `OPENSIMDASH_GAME` names no compiled adapter selection.
     AdapterSelection(crate::ParseAdapterSelectionError),
-    /// `OPENCARPANEL_SNAPSHOT_HZ` is not an integer.
+    /// `OPENSIMDASH_SNAPSHOT_HZ` is not an integer.
     SnapshotRate(std::num::ParseIntError),
     /// Parsed snapshot rate is not one of the bounded supported values.
     UnsupportedSnapshotRate(u16),
@@ -138,20 +138,20 @@ impl Display for HostEnvironmentError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::HttpAddress(error) => {
-                write!(formatter, "invalid OPENCARPANEL_HTTP_BIND: {error}")
+                write!(formatter, "invalid OPENSIMDASH_HTTP_BIND: {error}")
             }
             Self::UdpAddress(error) => {
-                write!(formatter, "invalid OPENCARPANEL_UDP_BIND: {error}")
+                write!(formatter, "invalid OPENSIMDASH_UDP_BIND: {error}")
             }
             Self::AdapterSelection(error) => {
-                write!(formatter, "invalid OPENCARPANEL_GAME: {error}")
+                write!(formatter, "invalid OPENSIMDASH_GAME: {error}")
             }
             Self::SnapshotRate(error) => {
-                write!(formatter, "invalid OPENCARPANEL_SNAPSHOT_HZ: {error}")
+                write!(formatter, "invalid OPENSIMDASH_SNAPSHOT_HZ: {error}")
             }
             Self::UnsupportedSnapshotRate(rate) => write!(
                 formatter,
-                "OPENCARPANEL_SNAPSHOT_HZ must be 20, 30, or 60; got {rate}"
+                "OPENSIMDASH_SNAPSHOT_HZ must be 20, 30, or 60; got {rate}"
             ),
         }
     }
@@ -656,13 +656,13 @@ async fn run_supervised(
 /// Returns the shared per-user application-data directory.
 #[must_use]
 pub fn default_data_directory() -> PathBuf {
-    if let Some(configured) = std::env::var_os("OPENCARPANEL_DATA_DIR") {
+    if let Some(configured) = std::env::var_os("OPENSIMDASH_DATA_DIR") {
         return PathBuf::from(configured);
     }
 
     #[cfg(target_os = "windows")]
     if let Some(local_data) = std::env::var_os("LOCALAPPDATA") {
-        return PathBuf::from(local_data).join("OpenCarpanel");
+        return PathBuf::from(local_data).join("OpenSimDash");
     }
 
     #[cfg(target_os = "macos")]
@@ -670,8 +670,8 @@ pub fn default_data_directory() -> PathBuf {
         return PathBuf::from(user_home)
             .join("Library")
             .join("Application Support")
-            .join("OpenCarpanel");
+            .join("OpenSimDash");
     }
 
-    std::env::temp_dir().join("OpenCarpanel")
+    std::env::temp_dir().join("OpenSimDash")
 }

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use opencarpanel_telemetry_core::{
+use opensimdash_telemetry_core::{
     Gear, Normalized, TELEMETRY_SCHEMA_VERSION, TelemetryField, TelemetrySnapshot, TelemetryUpdate,
 };
 use schemars::schema_for;

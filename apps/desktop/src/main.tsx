@@ -5,7 +5,7 @@ import "./styles.css";
 
 const root = document.querySelector<HTMLDivElement>("#app");
 if (!root) {
-  throw new Error("OpenCarpanel desktop root is missing");
+  throw new Error("OpenSimDash desktop root is missing");
 }
 
 render(<App />, root);

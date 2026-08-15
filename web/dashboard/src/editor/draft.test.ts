@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_LAYOUT, cloneLayout } from "@opencarpanel/widget-sdk";
+import { DEFAULT_LAYOUT, cloneLayout } from "@opensimdash/widget-sdk";
 
 import { clearLayoutDraft, loadLayoutDraft, saveLayoutDraft } from "./draft";
 
@@ -36,7 +36,7 @@ describe("layout drafts", () => {
 
   it("discards malformed drafts instead of surfacing runtime errors", () => {
     const storage = new MemoryStorage();
-    storage.setItem("opencarpanel.layout-draft.v1.default", "{broken");
+    storage.setItem("opensimdash.layout-draft.v1.default", "{broken");
     expect(loadLayoutDraft(storage, "default")).toBeUndefined();
     expect(storage.values.size).toBe(0);
   });

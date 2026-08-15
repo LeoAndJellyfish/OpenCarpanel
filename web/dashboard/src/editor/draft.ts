@@ -2,9 +2,9 @@ import {
   type LayoutDocument,
   LayoutParseError,
   parseLayoutDocument,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 
-const DRAFT_PREFIX = "opencarpanel.layout-draft.v1.";
+const DRAFT_PREFIX = "opensimdash.layout-draft.v1.";
 
 export interface LayoutDraft {
   readonly baseRevision: number;

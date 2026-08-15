@@ -4,9 +4,9 @@ use std::{
     io::{self, Read, Write},
 };
 
-use opencarpanel_adapter_api::AdapterId;
+use opensimdash_adapter_api::AdapterId;
 
-const MAGIC: [u8; 8] = *b"OCPUDP01";
+const MAGIC: [u8; 8] = *b"OSDUDP01";
 const FORMAT_VERSION: u16 = 1;
 
 /// Maximum payload accepted from one UDP datagram.
@@ -78,7 +78,7 @@ impl CaptureRecord {
 pub enum CaptureError {
     /// Underlying stream operation failed.
     Io(io::Error),
-    /// File does not begin with the `OpenCarpanel` capture signature.
+    /// File does not begin with the `OpenSimDash` capture signature.
     InvalidMagic,
     /// File uses a capture format this build cannot read.
     UnsupportedVersion {
@@ -118,7 +118,7 @@ impl Display for CaptureError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(error) => write!(formatter, "capture I/O failed: {error}"),
-            Self::InvalidMagic => formatter.write_str("not an OpenCarpanel UDP capture"),
+            Self::InvalidMagic => formatter.write_str("not an OpenSimDash UDP capture"),
             Self::UnsupportedVersion { expected, actual } => write!(
                 formatter,
                 "unsupported capture format {actual}; expected {expected}"

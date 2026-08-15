@@ -1,4 +1,4 @@
-import type { ThemeSettings } from "@opencarpanel/widget-sdk";
+import type { ThemeSettings } from "@opensimdash/widget-sdk";
 
 export const THEME_PRESETS = [
   {

@@ -1,4 +1,4 @@
-//! Supervised local UDP and HTTP runtime for `OpenCarpanel`.
+//! Supervised local UDP and HTTP runtime for `OpenSimDash`.
 
 mod adapters;
 mod app;
@@ -7,6 +7,7 @@ mod events;
 mod http;
 mod instance;
 mod layout_api;
+mod migration;
 mod onboarding;
 mod pairing;
 mod shutdown;
@@ -27,6 +28,7 @@ pub use events::EVENT_BUFFER_CAPACITY;
 pub use instance::{
     InstanceError, InstanceGuard, InstanceMetadata, InstanceMode, default_runtime_directory,
 };
+pub use migration::migrate_previous_data_directory;
 pub use onboarding::{dashboard_url, pairing_url, qr_svg, terminal_qr};
 pub use pairing::{PairedDevice, PairingError};
 pub use telemetry::{HostMetrics, HostState};

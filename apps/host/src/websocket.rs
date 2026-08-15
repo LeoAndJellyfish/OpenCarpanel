@@ -9,7 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use futures_util::StreamExt;
-use opencarpanel_protocol::{
+use opensimdash_protocol::{
     CapabilitiesMessage, ClientHello, ClientPayload, ErrorCode, ErrorMessage, PROTOCOL_VERSION,
     ServerHello, ServerMessage, ServerPayload, SnapshotMessage, WireDecodeError,
     decode_client_message,
@@ -232,7 +232,7 @@ async fn handle_client_message(
     socket: &mut WebSocket,
     incoming: Option<Result<Message, axum::Error>>,
     snapshot_receiver: &tokio::sync::watch::Receiver<
-        Arc<opencarpanel_telemetry_core::TelemetrySnapshot>,
+        Arc<opensimdash_telemetry_core::TelemetrySnapshot>,
     >,
 ) -> bool {
     let Some(incoming) = incoming else {
@@ -306,12 +306,12 @@ async fn send_replay(
 
 async fn send_snapshot(
     socket: &mut WebSocket,
-    snapshot: opencarpanel_telemetry_core::TelemetrySnapshot,
+    snapshot: opensimdash_telemetry_core::TelemetrySnapshot,
 ) -> Result<(), axum::Error> {
-    let captured_at_us = snapshot.meta.captured_at.map_or(
-        0,
-        opencarpanel_telemetry_core::MonotonicTimestamp::as_micros,
-    );
+    let captured_at_us = snapshot
+        .meta
+        .captured_at
+        .map_or(0, opensimdash_telemetry_core::MonotonicTimestamp::as_micros);
     send_payload(
         socket,
         ServerPayload::Snapshot(SnapshotMessage {

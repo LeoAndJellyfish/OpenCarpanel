@@ -1,6 +1,6 @@
 [package]
-name = "opencarpanel-example-game-plugin"
-description = "Minimal third-party OpenCarpanel game plugin example"
+name = "opensimdash-example-game-plugin"
+description = "Minimal third-party OpenSimDash game plugin example"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-opencarpanel-game-plugin-api = { path = "../../crates/game-plugin-api" }
-opencarpanel-game-plugin-sdk = { path = "../../crates/game-plugin-sdk" }
-opencarpanel-telemetry-core = { path = "../../crates/telemetry-core" }
+opensimdash-game-plugin-api = { path = "../../crates/game-plugin-api" }
+opensimdash-game-plugin-sdk = { path = "../../crates/game-plugin-sdk" }
+opensimdash-telemetry-core = { path = "../../crates/telemetry-core" }
 
 [lints]
 workspace = true

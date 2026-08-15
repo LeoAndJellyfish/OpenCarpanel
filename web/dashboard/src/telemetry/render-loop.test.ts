@@ -1,4 +1,4 @@
-import type { SnapshotMessage } from "@opencarpanel/widget-sdk";
+import type { SnapshotMessage } from "@opensimdash/widget-sdk";
 import { describe, expect, it, vi } from "vitest";
 
 import { TelemetryRenderLoop, type FrameDriver } from "./render-loop";

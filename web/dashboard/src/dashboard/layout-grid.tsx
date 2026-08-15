@@ -3,7 +3,7 @@ import type {
   GridPlacement,
   LayoutDocument,
   WidgetInstance,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 import type { ComponentChildren, Ref } from "preact";
 
 import type { ConnectionView } from "../connection/client";

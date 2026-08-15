@@ -19,13 +19,18 @@ mod updater;
 ///
 /// Returns a Tauri setup or event-loop failure.
 pub fn run() -> Result<(), Box<dyn Error>> {
+    let migrated =
+        opensimdash_host::migrate_previous_data_directory(opensimdash_host::InstanceMode::Desktop)?;
     let _log_guard = match setup_logging() {
         Ok(guard) => Some(guard),
         Err(error) => {
-            eprintln!("OpenCarpanel file logging is unavailable: {error}");
+            eprintln!("OpenSimDash file logging is unavailable: {error}");
             None
         }
     };
+    if migrated {
+        tracing::info!("migrated the previous user profile to OpenSimDash");
+    }
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -65,8 +70,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
                 Err(error) => {
                     let handle = app.handle().clone();
                     app.dialog()
-                        .message(format!("OpenCarpanel 无法启动。\n\n{error}"))
-                        .title("OpenCarpanel 启动失败")
+                        .message(format!("OpenSimDash 无法启动。\n\n{error}"))
+                        .title("OpenSimDash 启动失败")
                         .kind(MessageDialogKind::Error)
                         .show(move |_| handle.exit(1));
                 }
@@ -109,11 +114,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 }
 
 fn setup_logging() -> Result<tracing_appender::non_blocking::WorkerGuard, Box<dyn Error>> {
-    let log_directory = opencarpanel_host::default_data_directory().join("logs");
+    let log_directory = opensimdash_host::default_data_directory().join("logs");
     std::fs::create_dir_all(&log_directory)?;
     let file = tracing_appender::rolling::RollingFileAppender::builder()
         .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("opencarpanel")
+        .filename_prefix("opensimdash")
         .filename_suffix("log")
         .max_log_files(7)
         .build(log_directory)?;

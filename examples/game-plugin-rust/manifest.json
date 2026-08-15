@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "publisher": "Example plugin developer",
   "license": "Apache-2.0",
-  "description": "Minimal OCP1 UDP decoder for the OpenCarpanel plugin tutorial.",
+  "description": "Minimal OSD1 UDP decoder for the OpenSimDash plugin tutorial.",
   "runtime": {
     "kind": "wasm",
     "abiVersion": 1,
@@ -14,7 +14,7 @@
   },
   "protocol": {
     "name": "Example UDP",
-    "version": "OCP1/1"
+    "version": "OSD1/1"
   },
   "ingress": {
     "kind": "shared_udp",
@@ -26,7 +26,7 @@
   ],
   "presentation": {
     "shortName": "EXAMPLE",
-    "detail": "GENERIC / OCP1 UDP",
+    "detail": "GENERIC / OSD1 UDP",
     "family": "generic",
     "statusMode": "generic",
     "layoutPreset": "generic",
@@ -45,7 +45,7 @@
     "kind": "udp",
     "steps": [
       "Enable the producer's UDP telemetry",
-      "Send OCP1 datagrams to the OpenCarpanel Host"
+      "Send OSD1 datagrams to the OpenSimDash Host"
     ]
   }
 }

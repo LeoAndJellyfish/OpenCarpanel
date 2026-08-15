@@ -6,7 +6,7 @@ Superseded in part by [ADR-0008](0008-tauri-desktop-embedded-host.md). Rust 模�
 
 ## Context
 
-OpenCarpanel 需要在 Windows/macOS 常驻运行，接收高频 UDP、托管本地 Web App，并保持较低内存和简单安装。项目初期团队和部署规模都不需要多个独立服务。Electron/Node 可以提升早期开发速度，Tauri 可以提供完整桌面窗口，但两者都会让常驻 WebView 成为基础成本。
+OpenSimDash 需要在 Windows/macOS 常驻运行，接收高频 UDP、托管本地 Web App，并保持较低内存和简单安装。项目初期团队和部署规模都不需要多个独立服务。Electron/Node 可以提升早期开发速度，Tauri 可以提供完整桌面窗口，但两者都会让常驻 WebView 成为基础成本。
 
 ## Decision
 
@@ -39,4 +39,4 @@ OpenCarpanel 需要在 Windows/macOS 常驻运行，接收高频 UDP、托管本
 
 ## References
 
-- [主架构设计](../plans/2026-08-11-opencarpanel-architecture-design.md)
+- [主架构设计](../plans/2026-08-11-opensimdash-architecture-design.md)

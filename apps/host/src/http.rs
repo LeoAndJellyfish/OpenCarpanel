@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use axum::{Json, Router, extract::State, routing::get};
-use opencarpanel_config::{LayoutRepository, MAX_LAYOUT_BYTES};
-use opencarpanel_protocol::PROTOCOL_VERSION;
+use opensimdash_config::{LayoutRepository, MAX_LAYOUT_BYTES};
+use opensimdash_protocol::PROTOCOL_VERSION;
 use serde::Serialize;
 use tokio::sync::Semaphore;
 

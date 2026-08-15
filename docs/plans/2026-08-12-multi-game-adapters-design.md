@@ -1,4 +1,4 @@
-# OpenCarpanel 多游戏输入与适配器设计
+# OpenSimDash 多游戏输入与适配器设计
 
 ## 状态
 
@@ -79,7 +79,7 @@ SCS 插件只向硬编码的 IPv4 loopback 和固定端口发送，不从环境�
 
 仓库 vendor SCS SDK 1.14 必需头文件和 `sdk_license.txt`，在 `NOTICE` 与发布包中保留 SCS Software 版权和许可。插件源代码使用项目 Apache-2.0；官方 SDK 头文件保持原许可。Windows、macOS 构建进入 package workflow；Linux 源码和构建定义保持可用，但当前发布矩阵不承诺 Linux Host artifact。
 
-每个平台发布包在 `plugins/scs/` 放入游戏侧插件、SCS SDK 许可和安装说明，并在包根提供统一及分游戏快速开始。Windows 安装到 `<game>/bin/win_x64/plugins/`；macOS 使用游戏 app bundle 内官方插件目录。SDK 1.14 vendored 头文件只定义 x86/x64，因此 macOS bridge 固定交叉编译为 x86_64，即使承载安装向导的 Tauri 桌面端是原生 arm64；两者不会在同一进程中链接。用户仍只启动一个 OpenCarpanel Host。
+每个平台发布包在 `plugins/scs/` 放入游戏侧插件、SCS SDK 许可和安装说明，并在包根提供统一及分游戏快速开始。Windows 安装到 `<game>/bin/win_x64/plugins/`；macOS 使用游戏 app bundle 内官方插件目录。SDK 1.14 vendored 头文件只定义 x86/x64，因此 macOS bridge 固定交叉编译为 x86_64，即使承载安装向导的 Tauri 桌面端是原生 arm64；两者不会在同一进程中链接。用户仍只启动一个 OpenSimDash Host。
 
 ## 7. 验证与完成条件
 

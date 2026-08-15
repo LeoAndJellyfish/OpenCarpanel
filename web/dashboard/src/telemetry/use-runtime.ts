@@ -4,7 +4,7 @@ import {
   type BuiltinGameId,
   type GamePluginMetadata,
   type ServerMessage,
-} from "@opencarpanel/widget-sdk";
+} from "@opensimdash/widget-sdk";
 import { useEffect, useState } from "preact/hooks";
 
 import { TelemetryConnection, type ConnectionView } from "../connection/client";

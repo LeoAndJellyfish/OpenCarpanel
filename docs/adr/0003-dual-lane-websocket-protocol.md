@@ -44,4 +44,4 @@ MVP 采用 JSON。协议封装保留编码协商字段，只有性能数据证�
 
 ## References
 
-- [主架构设计：实时传输与背压](../plans/2026-08-11-opencarpanel-architecture-design.md#8-实时传输与背压)
+- [主架构设计：实时传输与背压](../plans/2026-08-11-opensimdash-architecture-design.md#8-实时传输与背压)

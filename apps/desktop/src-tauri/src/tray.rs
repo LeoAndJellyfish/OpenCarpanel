@@ -20,13 +20,13 @@ pub fn setup(app: &App) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, MENU_SHOW, "打开控制中心", true, None::<&str>)?;
     let dashboard = MenuItem::with_id(app, MENU_DASHBOARD, "打开手机仪表盘", true, None::<&str>)?;
     let pair = MenuItem::with_id(app, MENU_PAIR, "配对新设备", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, MENU_QUIT, "退出 OpenCarpanel", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, MENU_QUIT, "退出 OpenSimDash", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &dashboard, &pair, &quit])?;
 
     let mut tray = TrayIconBuilder::with_id("main")
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .tooltip("OpenCarpanel · Host 正在运行")
+        .tooltip("OpenSimDash · Host 正在运行")
         .on_menu_event(|app, event| match event.id().as_ref() {
             MENU_SHOW => show_main_window(app),
             MENU_DASHBOARD => open_dashboard(app),

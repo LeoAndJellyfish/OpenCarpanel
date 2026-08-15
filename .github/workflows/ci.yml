@@ -61,7 +61,7 @@ jobs:
         run: cargo test --locked --workspace
 
       - name: Build the third-party plugin SDK example
-        run: cargo build --locked -p opencarpanel-example-game-plugin --target wasm32-unknown-unknown --release
+        run: cargo build --locked -p opensimdash-example-game-plugin --target wasm32-unknown-unknown --release
 
   web:
     name: Web (Node 22)

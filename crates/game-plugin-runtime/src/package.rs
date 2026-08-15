@@ -9,7 +9,7 @@ use std::{
 
 use atomic_write_file::AtomicWriteFile;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use opencarpanel_game_plugin_api::{
+use opensimdash_game_plugin_api::{
     GamePluginManifest, MAX_PLUGIN_MODULE_BYTES, PluginRuntime, parse_manifest, parse_package,
 };
 use serde::Serialize;
@@ -17,7 +17,9 @@ use sha2::{Digest as _, Sha256};
 
 const MANIFEST_FILENAME: &str = "manifest.json";
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
-/// Maximum on-disk `.ocp-plugin` package size.
+/// Canonical filename extension for installable game plugin packages.
+pub const PLUGIN_PACKAGE_EXTENSION: &str = "osd-plugin";
+/// Maximum on-disk `.osd-plugin` package size.
 pub const MAX_PLUGIN_PACKAGE_BYTES: u64 = 4 * 1024 * 1024;
 /// Maximum number of external decoders loaded into one Host process.
 pub const MAX_INSTALLED_GAME_PLUGINS: usize = 16;
@@ -64,7 +66,7 @@ pub struct PluginInstallReceipt {
     pub publisher: String,
 }
 
-/// Verifies one in-memory `.ocp-plugin` envelope.
+/// Verifies one in-memory `.osd-plugin` envelope.
 ///
 /// # Errors
 ///
@@ -111,6 +113,7 @@ pub fn install_package(
     package_path: &Path,
     reserved_ids: &BTreeSet<String>,
 ) -> Result<PluginInstallReceipt, PluginPackageError> {
+    ensure_plugin_package_extension(package_path)?;
     let metadata = fs::metadata(package_path).map_err(|error| io_error("read package", &error))?;
     if !metadata.is_file() || metadata.len() > MAX_PLUGIN_PACKAGE_BYTES {
         return Err(package_error(
@@ -154,6 +157,21 @@ pub fn install_package(
         version: verified.manifest.version,
         publisher: verified.manifest.publisher,
     })
+}
+
+/// Requires the canonical `.osd-plugin` filename extension.
+///
+/// # Errors
+///
+/// Returns [`PluginPackageError`] for every missing, differently cased, or
+/// otherwise non-canonical extension.
+pub fn ensure_plugin_package_extension(path: &Path) -> Result<(), PluginPackageError> {
+    if path.extension().and_then(std::ffi::OsStr::to_str) != Some(PLUGIN_PACKAGE_EXTENSION) {
+        return Err(package_error(
+            "plugin package filename must end in .osd-plugin",
+        ));
+    }
+    Ok(())
 }
 
 /// Loads every valid external plugin in stable id order.
@@ -268,7 +286,7 @@ pub fn plugin_directory(
     plugins_root: &Path,
     plugin_id: &str,
 ) -> Result<PathBuf, PluginPackageError> {
-    opencarpanel_adapter_api::AdapterId::new(plugin_id.to_owned())
+    opensimdash_adapter_api::AdapterId::new(plugin_id.to_owned())
         .map_err(|_| package_error("plugin id is invalid"))?;
     Ok(plugins_root.join(plugin_id))
 }
@@ -333,7 +351,7 @@ fn reject_symlink(path: &Path, kind: &str) -> Result<(), PluginPackageError> {
 }
 
 fn safe_directory_id(value: &str) -> Option<String> {
-    opencarpanel_adapter_api::AdapterId::new(value.to_owned())
+    opensimdash_adapter_api::AdapterId::new(value.to_owned())
         .ok()
         .map(|id| id.as_str().to_owned())
 }
@@ -365,7 +383,7 @@ fn io_error(operation: &str, error: &std::io::Error) -> PluginPackageError {
 #[cfg(test)]
 mod tests {
     use base64::engine::general_purpose::STANDARD;
-    use opencarpanel_game_plugin_api::{
+    use opensimdash_game_plugin_api::{
         GAME_PLUGIN_PACKAGE_VERSION, GamePluginPackage, PluginRuntime,
     };
 
@@ -394,6 +412,14 @@ mod tests {
     fn plugin_directory_never_accepts_path_components() {
         assert!(plugin_directory(Path::new("plugins"), "../escape").is_err());
         assert!(plugin_directory(Path::new("plugins"), "safe-game").is_ok());
+    }
+
+    #[test]
+    fn package_extension_is_strict_and_canonical() {
+        assert!(ensure_plugin_package_extension(Path::new("example.osd-plugin")).is_ok());
+        assert!(ensure_plugin_package_extension(Path::new("example.plugin")).is_err());
+        assert!(ensure_plugin_package_extension(Path::new("example.OSD-PLUGIN")).is_err());
+        assert!(ensure_plugin_package_extension(Path::new("example")).is_err());
     }
 
     #[test]

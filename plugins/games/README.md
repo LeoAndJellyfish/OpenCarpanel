@@ -1,7 +1,7 @@
 # Game plugins
 
 Each directory is one complete game-support declaration. Built-in plugins use
-the same manifest schema as installable `.ocp-plugin` packages; only their
+the same manifest schema as installable `.osd-plugin` packages; only their
 `runtime.kind` differs.
 
 | Plugin | Decoder | Setup |

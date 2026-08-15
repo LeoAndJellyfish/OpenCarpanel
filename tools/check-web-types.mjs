@@ -14,7 +14,7 @@ async function files(directory) {
     .sort((left, right) => left.localeCompare(right));
 }
 
-const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "opencarpanel-web-types-"));
+const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "opensimdash-web-types-"));
 try {
   await generateWebTypes(temporaryDirectory);
   const generatedFiles = await files(temporaryDirectory);

@@ -30,7 +30,7 @@ Assert `F1_25Adapter` and `decode_f1_25_player_car_telemetry` accept both 2025 a
 
 **Step 4: Run the focused tests and observe failure**
 
-Run: `cargo +stable test -p opencarpanel-adapter-f1`
+Run: `cargo +stable test -p opensimdash-adapter-f1`
 
 Expected: FAIL because format 2026 and its layout constants are not implemented yet.
 
@@ -58,7 +58,7 @@ Change `decode_player_sample` to accept the selected layout. Validate exact tota
 
 **Step 4: Run focused tests**
 
-Run: `cargo +stable test -p opencarpanel-adapter-f1`
+Run: `cargo +stable test -p opensimdash-adapter-f1`
 
 Expected: PASS, including index 23 and malformed cross-layout cases.
 
@@ -79,7 +79,7 @@ Add a fifth datagram case for format 2026 while keeping `supportedAdapters` equa
 
 **Step 3: Run Host tests**
 
-Run: `cargo +stable test -p opencarpanel-host`
+Run: `cargo +stable test -p opensimdash-host`
 
 Expected: PASS with both UDP formats sharing the stable adapter.
 
@@ -123,7 +123,7 @@ Set game/family data attributes, dynamic footer labels, profile-specific backgro
 
 Run: `npm run test:web`
 
-Run: `cargo +stable test -p opencarpanel-host --test layout_api`
+Run: `cargo +stable test -p opensimdash-host --test layout_api`
 
 Expected: PASS with profile switching and five safe default layout IDs including the legacy default.
 

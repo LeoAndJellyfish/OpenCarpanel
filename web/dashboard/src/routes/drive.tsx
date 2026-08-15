@@ -1,4 +1,4 @@
-import { cloneLayout, type LayoutDocument } from "@opencarpanel/widget-sdk";
+import { cloneLayout, type LayoutDocument } from "@opensimdash/widget-sdk";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
 import { loadLayout } from "../api/layouts";

@@ -29,18 +29,18 @@ const releaseDirectory = process.env.CARGO_BUILD_TARGET
   : path.join(targetDirectory, "release");
 const hostSource = path.join(
   releaseDirectory,
-  `opencarpanel-host${executableExtension}`,
+  `opensimdash-host${executableExtension}`,
 );
 const hostDestination = path.join(
   binaryDirectory,
-  `opencarpanel-host-${triple}${executableExtension}`,
+  `opensimdash-host-${triple}${executableExtension}`,
 );
 
 const pluginName = process.platform === "win32"
-  ? "opencarpanel-scs-telemetry.dll"
+  ? "opensimdash-scs-telemetry.dll"
   : process.platform === "darwin"
-    ? "opencarpanel-scs-telemetry.dylib"
-    : "opencarpanel-scs-telemetry.so";
+    ? "opensimdash-scs-telemetry.dylib"
+    : "opensimdash-scs-telemetry.so";
 const scsStage = path.join(targetDirectory, "scs-plugin-package");
 const pluginSource = path.join(scsStage, pluginName);
 const pluginDestinationDirectory = path.join(resourceDirectory, "plugins", "scs");

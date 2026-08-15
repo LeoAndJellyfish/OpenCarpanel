@@ -1,6 +1,6 @@
 use std::{error::Error, fs};
 
-use opencarpanel_config::{
+use opensimdash_config::{
     ConfigError, LayoutDocument, LayoutId, LayoutRepository, migrate_layout_json,
 };
 

@@ -2,7 +2,7 @@
 
 ## 目标与边界
 
-OpenCarpanel 的现有 `f1-25` adapter 只接受 F1 25 原始 UDP format `2025`。本次让同一个稳定 adapter 同时接受 EA 官方提供的两种 F1 25 UDP mode：原始 format `2025` 和 2026 Season Pack format `2026`。用户继续使用 `OPENCARPANEL_GAME=f1-25`，自动模式、诊断 API、Dashboard 的 `gameId` 也继续显示 `f1-25`；切换游戏内 UDP mode 不产生新的逻辑游戏来源。
+OpenSimDash 的现有 `f1-25` adapter 只接受 F1 25 原始 UDP format `2025`。本次让同一个稳定 adapter 同时接受 EA 官方提供的两种 F1 25 UDP mode：原始 format `2025` 和 2026 Season Pack format `2026`。用户继续使用 `OPENSIMDASH_GAME=f1-25`，自动模式、诊断 API、Dashboard 的 `gameId` 也继续显示 `f1-25`；切换游戏内 UDP mode 不产生新的逻辑游戏来源。
 
 本阶段只扩展 Dashboard 已消费的 Car Telemetry packet（packet id `6`、version `1`）：速度、油门、刹车、档位、RPM、DRS 和转速灯。2026 新增的 Car Telemetry 2 packet（id `16`）以及主动空气动力学等新字段暂不映射，避免在统一模型中加入未经产品设计的字段。
 

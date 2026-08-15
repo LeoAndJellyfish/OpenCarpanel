@@ -64,7 +64,7 @@ if (process.platform === "darwin") {
 process.stdout.write(`SCS telemetry plugin staged at ${stageDirectory}\n`);
 
 function verifyMacosGameAbi() {
-  const plugin = path.join(stageDirectory, "opencarpanel-scs-telemetry.dylib");
+  const plugin = path.join(stageDirectory, "opensimdash-scs-telemetry.dylib");
   const result = spawnSync("file", [plugin], { encoding: "utf8" });
   if (result.error) {
     throw result.error;

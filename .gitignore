@@ -47,7 +47,7 @@ pnpm-debug.log*
 !.env.example
 *.local.json
 *.local.toml
-.opencarpanel/
+.opensimdash/
 /runtime/
 /logs/
 *.log

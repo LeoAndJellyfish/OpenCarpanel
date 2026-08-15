@@ -16,8 +16,8 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-use opencarpanel_adapter_api::AdapterId;
-use opencarpanel_telemetry_replay::{
+use opensimdash_adapter_api::AdapterId;
+use opensimdash_telemetry_replay::{
     CaptureHeader, CaptureReader, CaptureRecord, CaptureWriter, DatagramSink, MAX_DATAGRAM_LEN,
     SystemReplayClock, replay_stream,
 };
@@ -280,9 +280,9 @@ fn unspecified_address(target_ip: IpAddr) -> SocketAddr {
 
 fn print_help() {
     println!(
-        "OpenCarpanel telemetry capture/replay\n\n\
-         Usage:\n  opencarpanel-telemetry-replay record [OPTIONS]\n  \
-         opencarpanel-telemetry-replay replay [OPTIONS]\n\n\
+        "OpenSimDash telemetry capture/replay\n\n\
+         Usage:\n  opensimdash-telemetry-replay record [OPTIONS]\n  \
+         opensimdash-telemetry-replay replay [OPTIONS]\n\n\
          Commands:\n  record  Capture bounded UDP datagrams to a local file\n  \
          replay  Replay a capture to a configurable UDP target\n\n\
          Run a command with --help for its options."
@@ -291,7 +291,7 @@ fn print_help() {
 
 fn print_record_help() {
     println!(
-        "Usage: opencarpanel-telemetry-replay record --output PATH [OPTIONS]\n\n\
+        "Usage: opensimdash-telemetry-replay record --output PATH [OPTIONS]\n\n\
          Options:\n  --output PATH        New capture file; existing files are never overwritten\n  \
          --bind ADDRESS      UDP listen address (default: {DEFAULT_F1_ADDRESS})\n  \
          --adapter ID        Adapter slug (default: f1-24)\n  \
@@ -302,7 +302,7 @@ fn print_record_help() {
 
 fn print_replay_help() {
     println!(
-        "Usage: opencarpanel-telemetry-replay replay --input PATH [OPTIONS]\n\n\
+        "Usage: opensimdash-telemetry-replay replay --input PATH [OPTIONS]\n\n\
          Options:\n  --input PATH         Capture file to replay\n  \
          --target ADDRESS    UDP target (default: {DEFAULT_REPLAY_TARGET})\n  \
          --speed MULTIPLIER  Timing multiplier; 0 is immediate (default: 1)\n  \

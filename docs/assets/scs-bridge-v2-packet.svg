@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
-  <title id="title">OpenCarpanel SCS bridge version 2 packet layout</title>
+  <title id="title">OpenSimDash SCS bridge version 2 packet layout</title>
   <desc id="desc">A textbook-style segmented array showing all byte ranges in the fixed 188-byte SCS bridge v2 datagram.</desc>
   <rect width="1200" height="760" rx="28" fill="#07090c"/>
   <text x="58" y="64" fill="#f2f0e9" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="42" font-weight="750">SCS bridge v2 · 188 字节数据包</text>

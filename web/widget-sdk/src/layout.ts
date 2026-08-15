@@ -232,13 +232,13 @@ export const DEFAULT_LAYOUT: LayoutDocument = FALLBACK_PLUGIN
   ? {
       ...gameDefaultLayout(FALLBACK_PLUGIN),
       id: "default",
-      name: "OpenCarpanel Default",
+      name: "OpenSimDash Default",
     }
   : {
       schemaVersion: LAYOUT_SCHEMA_VERSION,
       revision: 0,
       id: "default",
-      name: "OpenCarpanel Default",
+      name: "OpenSimDash Default",
       widgets: [],
       theme: {
         background: "#07090c",

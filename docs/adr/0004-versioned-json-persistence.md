@@ -39,4 +39,4 @@ MVP 需要保存设置、已配对设备、布局和主题。这些数据规模�
 
 ## References
 
-- [主架构设计：配置与持久化](../plans/2026-08-11-opencarpanel-architecture-design.md#10-配置与持久化)
+- [主架构设计：配置与持久化](../plans/2026-08-11-opensimdash-architecture-design.md#10-配置与持久化)

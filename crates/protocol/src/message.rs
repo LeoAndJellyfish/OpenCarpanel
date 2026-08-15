@@ -3,8 +3,8 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-use opencarpanel_game_plugin_api::GamePluginMetadata;
-use opencarpanel_telemetry_core::{TelemetryEvent, TelemetryField, TelemetrySnapshot};
+use opensimdash_game_plugin_api::GamePluginMetadata;
+use opensimdash_telemetry_core::{TelemetryEvent, TelemetryField, TelemetrySnapshot};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;

@@ -1,4 +1,4 @@
-# OpenCarpanel F1 25 快速开始
+# OpenSimDash F1 25 快速开始
 
 当前 F1 25 adapter 同时支持原始 `2025` UDP 与 2026 Season Pack 的 `2026` UDP，覆盖驾驶、圈速/比赛状态、天气、轮胎、损伤、燃油/ERS、处罚和离散赛事事件；2026 mode 还会读取 packet 16 的主动空气动力学与超车状态。
 
@@ -11,8 +11,8 @@ EA 当前说明与两套规格入口：[F1 25 / 2026 Season Pack UDP Specificati
 按[多游戏快速开始](quickstart-multi-game.md)安装并启动。默认 `auto` 即可；排障时可在“网络”页固定为 F1 25。无头模式也可使用：
 
 ```powershell
-$env:OPENCARPANEL_GAME = "f1-25"
-.\target\release\opencarpanel-host.exe
+$env:OPENSIMDASH_GAME = "f1-25"
+.\target\release\opensimdash-host.exe
 ```
 
 ## 2. 配置 F1 25
