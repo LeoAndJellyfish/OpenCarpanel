@@ -41,6 +41,7 @@ pnpm-debug.log*
 /apps/desktop/target/
 
 # Local environment and developer-only configuration
+/.codex/
 .env
 .env.*
 !.env.example
