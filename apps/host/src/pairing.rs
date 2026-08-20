@@ -85,9 +85,21 @@ pub(crate) struct PairingService {
 }
 
 /// Successful authentication result for one WebSocket connection.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct Authentication {
     pub(crate) new_device_session: Option<String>,
+}
+
+impl fmt::Debug for Authentication {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Authentication")
+            .field(
+                "new_device_session",
+                &self.new_device_session.as_ref().map(|_| "[REDACTED]"),
+            )
+            .finish()
+    }
 }
 
 /// Failure while issuing or consuming local pairing credentials.
@@ -578,9 +590,12 @@ mod tests {
         let paired = service
             .authenticate(&hello_with_token(token, "  Driver's iPad  "))
             .await?;
+        let paired_debug = format!("{paired:?}");
         let session = paired
             .new_device_session
             .ok_or("pairing did not issue a device session")?;
+        assert!(paired_debug.contains("[REDACTED]"));
+        assert!(!paired_debug.contains(session.as_str()));
         let devices = service.devices().await;
         assert_eq!(devices.len(), 1);
         assert_eq!(devices[0].name, "Driver's iPad");

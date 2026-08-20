@@ -122,6 +122,32 @@ fn client_hello_and_event_ack_keep_stable_external_tags() -> serde_json::Result<
 }
 
 #[test]
+fn credential_bearing_messages_redact_debug_output() {
+    let client = ClientMessage::new(ClientPayload::Hello(ClientHello {
+        pairing_token: Some("pairing-secret-value".into()),
+        device_session: Some("client-session-secret-value".into()),
+        device_name: Some("Test tablet".into()),
+        last_event_seq: Some(10),
+        snapshot_hz: 60,
+    }));
+    let server = ServerMessage::new(ServerPayload::Hello(ServerHello {
+        server_version: "0.4.1".into(),
+        protocol_version: 1,
+        device_session: Some("server-session-secret-value".into()),
+    }));
+
+    let debug = format!("{client:?} {server:?}");
+    assert!(debug.contains("[REDACTED]"));
+    for secret in [
+        "pairing-secret-value",
+        "client-session-secret-value",
+        "server-session-secret-value",
+    ] {
+        assert!(!debug.contains(secret), "debug output leaked {secret}");
+    }
+}
+
+#[test]
 fn snapshot_data_is_flattened_beside_the_envelope_tag() -> serde_json::Result<()> {
     let value = encoded(&ServerMessage::new(ServerPayload::Snapshot(
         SnapshotMessage {
