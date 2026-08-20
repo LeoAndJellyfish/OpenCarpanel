@@ -101,7 +101,7 @@ pub struct RuntimeSnapshot {
 }
 
 /// One-time phone pairing information. The secret remains in a URL fragment.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PairingTicket {
     /// One-time LAN URL.
@@ -110,6 +110,17 @@ pub struct PairingTicket {
     pub qr_svg: String,
     /// Ticket lifetime from issue time.
     pub expires_in_seconds: u64,
+}
+
+impl fmt::Debug for PairingTicket {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("PairingTicket")
+            .field("url", &"[REDACTED]")
+            .field("qr_svg", &"[REDACTED]")
+            .field("expires_in_seconds", &self.expires_in_seconds)
+            .finish()
+    }
 }
 
 impl DesktopRuntime {
@@ -518,7 +529,10 @@ pub type SharedDesktopRuntime = Arc<DesktopRuntime>;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, net::TcpListener};
+    use std::{
+        fs,
+        net::{TcpListener, TcpStream},
+    };
 
     use base64::{Engine as _, engine::general_purpose::STANDARD};
     use opensimdash_game_plugin_api::{
@@ -534,13 +548,17 @@ mod tests {
         let temp = tempfile::tempdir()?;
         let data_directory = temp.path().join("data");
         let runtime_directory = temp.path().join("runtime");
+        let available = TcpListener::bind("127.0.0.1:0")?;
+        let initial_http_address = available.local_addr()?;
+        drop(available);
         let mut initial = AppSettings::default();
-        initial.host.http_bind = "127.0.0.1:0".to_owned();
+        initial.host.http_bind = initial_http_address.to_string();
         initial.host.udp_bind = "127.0.0.1:0".to_owned();
         SettingsRepository::new(&data_directory).save(&initial)?;
 
-        let runtime = DesktopRuntime::start_at(data_directory, runtime_directory, false).await?;
-        let _before = runtime.snapshot().await?;
+        let runtime =
+            DesktopRuntime::start_at(data_directory.clone(), runtime_directory, false).await?;
+        let before = runtime.snapshot().await?;
         let occupied = TcpListener::bind("127.0.0.1:0")?;
         let mut rejected = initial.clone();
         rejected.host.http_bind = occupied.local_addr()?.to_string();
@@ -550,9 +568,74 @@ mod tests {
             Err(error) => error,
         };
         assert!(error.contains("已恢复原有 Host"));
+        assert!(error.contains("failed to bind HTTP"));
+        let occupied_address = occupied.local_addr()?.to_string();
+        assert!(error.contains(occupied_address.as_str()));
         let after = runtime.snapshot().await?;
         assert_eq!(after.settings, initial);
         assert_eq!(after.diagnostics.status, "ok");
+        assert_eq!(after.endpoints.http_address, before.endpoints.http_address);
+        assert_eq!(
+            SettingsRepository::new(&data_directory).load()?.settings,
+            initial
+        );
+        let probe = TcpStream::connect(&after.endpoints.http_address)?;
+        drop(probe);
+        runtime.shutdown().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn corrupt_settings_recover_during_desktop_start() -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let data_directory = temp.path().join("data");
+        let runtime_directory = temp.path().join("runtime");
+        let repository = SettingsRepository::new(&data_directory);
+        let mut expected = AppSettings::default();
+        expected.host.http_bind = "127.0.0.1:0".to_owned();
+        expected.host.udp_bind = "127.0.0.1:0".to_owned();
+        expected.host.snapshot_hz = 30;
+        repository.save(&expected)?;
+        fs::write(repository.settings_path(), b"{broken")?;
+
+        let runtime = DesktopRuntime::start_at(data_directory, runtime_directory, false).await?;
+        let snapshot = runtime.snapshot().await?;
+        assert_eq!(snapshot.settings, expected);
+        assert_eq!(snapshot.diagnostics.status, "ok");
+        assert!(snapshot.recovery.recovered);
+        assert!(!snapshot.recovery.reset_to_defaults);
+        let quarantined = snapshot
+            .recovery
+            .quarantined_path
+            .as_deref()
+            .ok_or("desktop did not report the quarantined settings file")?;
+        assert!(Path::new(quarantined).is_file());
+        assert_eq!(repository.load()?.settings, expected);
+        runtime.shutdown().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn pairing_ticket_debug_output_redacts_the_secret() -> Result<(), Box<dyn Error>> {
+        let temp = tempfile::tempdir()?;
+        let data_directory = temp.path().join("data");
+        let runtime_directory = temp.path().join("runtime");
+        let mut settings = AppSettings::default();
+        settings.host.http_bind = "127.0.0.1:0".to_owned();
+        settings.host.udp_bind = "127.0.0.1:0".to_owned();
+        SettingsRepository::new(&data_directory).save(&settings)?;
+        let runtime = DesktopRuntime::start_at(data_directory, runtime_directory, false).await?;
+
+        let ticket = runtime.create_pairing().await?;
+        let (_, secret) = ticket
+            .url
+            .split_once("#pair=")
+            .ok_or("pairing URL did not contain a fragment credential")?;
+        let debug = format!("{ticket:?}");
+        assert!(debug.contains("[REDACTED]"));
+        assert!(!debug.contains(secret));
+        assert!(!debug.contains(ticket.url.as_str()));
+        assert!(!debug.contains(ticket.qr_svg.as_str()));
         runtime.shutdown().await?;
         Ok(())
     }

@@ -47,7 +47,7 @@ pub enum ClientPayload {
 }
 
 /// First message sent by a dashboard client.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientHello {
     /// One-time token copied from the QR-code fragment.
@@ -65,6 +65,25 @@ pub struct ClientHello {
     /// Requested snapshot publication frequency.
     #[schemars(range(min = 1, max = 120))]
     pub snapshot_hz: u16,
+}
+
+impl fmt::Debug for ClientHello {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ClientHello")
+            .field(
+                "pairing_token",
+                &self.pairing_token.as_ref().map(|_| "[REDACTED]"),
+            )
+            .field(
+                "device_session",
+                &self.device_session.as_ref().map(|_| "[REDACTED]"),
+            )
+            .field("device_name", &self.device_name)
+            .field("last_event_seq", &self.last_event_seq)
+            .field("snapshot_hz", &self.snapshot_hz)
+            .finish()
+    }
 }
 
 /// Acknowledges one reliable event sequence.
@@ -124,7 +143,7 @@ pub enum ServerPayload {
 }
 
 /// Host response to a successful hello.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerHello {
     /// Host application version.
@@ -134,6 +153,20 @@ pub struct ServerHello {
     /// Device session issued after one-time pairing.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_session: Option<String>,
+}
+
+impl fmt::Debug for ServerHello {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ServerHello")
+            .field("server_version", &self.server_version)
+            .field("protocol_version", &self.protocol_version)
+            .field(
+                "device_session",
+                &self.device_session.as_ref().map(|_| "[REDACTED]"),
+            )
+            .finish()
+    }
 }
 
 /// Replaceable latest telemetry state.

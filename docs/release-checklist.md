@@ -25,6 +25,7 @@
 - [x] 1440×1000 production UI 视觉检查：总览、配对、游戏、仪表盘、网络与系统页文案精简后布局完整（2026-08-14）
 - [x] 共享实例锁进程测试：CLI↔CLI 拒绝重复启动；GUI 与 CLI 使用同一 guard（2026-08-12）
 - [x] 设置文件原子保存、三份备份/损坏隔离、设备凭据只存 SHA-256 摘要的测试（2026-08-12）
+- [x] 安全与回滚自动化：pairing/session 的协议、认证与桌面票据 Debug 输出脱敏；桌面启动隔离坏配置并恢复有效备份；端口冲突后旧 Host 端点与磁盘配置保持可用（2026-08-20）
 - [x] GitHub Actions：Windows x64、macOS Apple Silicon、macOS Intel 安装包全部成功（Release run `31584105321`，2026-08-12）
 - [x] Release `latest.json` 同时包含 `windows-x86_64`、`darwin-aarch64`、`darwin-x86_64`，并逐项匹配对应 updater `.sig`（2026-08-12）
 - [x] 从公开 Release 下载 Windows NSIS updater，使用应用编译内的 Minisign 公钥完成独立密码学验签；SHA-256 与 GitHub asset digest 一致（2026-08-12）
